@@ -1,0 +1,30 @@
+[submodule "epcis-auth-service"]
+	path = epcis-auth-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-auth-service.git
+[submodule "epcis-supplier-service"]
+	path = epcis-supplier-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-supplier-service.git
+[submodule "epcis-manufacturer-service"]
+	path = epcis-manufacturer-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-manufacturer-service.git
+[submodule "epcis-user-facility-service"]
+	path = epcis-user-facility-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-user-facility-service.git
+[submodule "epcis-ppb-service"]
+	path = epcis-ppb-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-ppb-service.git
+[submodule "epcis-notification-service"]
+	path = epcis-notification-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-notification-service.git
+[submodule "epcis_track_and_trace_webapp"]
+	path = epcis_track_and_trace_webapp
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis_track_and_trace_webapp.git
+[submodule "epcis-service"]
+	path = epcis-service
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/epcis-service.git
+[submodule "keycloak-login-theme-TnT"]
+	path = keycloak-login-theme-TnT
+	url = git@github.com:apeiro-digital-track-and-trace-epcis/keycloak-login-theme-TnT.git
+[submodule "medic-scan-fetch"]
+	path = medic-scan-fetch
+	url = https://github.com/insen5/medic-scan-fetch.git

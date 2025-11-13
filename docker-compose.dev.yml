@@ -1,0 +1,518 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # Infrastructure Services
+  # ============================================
+
+  # PostgreSQL Databases (one per service)
+  postgres-auth:
+    image: postgres:15-alpine
+    container_name: postgres-auth
+    environment:
+      POSTGRES_USER: ${POSTGRES_AUTH_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_AUTH_DB:-auth_db}
+    ports:
+      - "${POSTGRES_AUTH_PORT:-5433}:5432"
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_AUTH_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-manufacturer:
+    image: postgres:15-alpine
+    container_name: postgres-manufacturer
+    environment:
+      POSTGRES_USER: ${POSTGRES_MANUFACTURER_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_MANUFACTURER_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_MANUFACTURER_DB:-manufacturer_db}
+    ports:
+      - "${POSTGRES_MANUFACTURER_PORT:-5434}:5432"
+    volumes:
+      - postgres-manufacturer-data:/var/lib/postgresql/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_MANUFACTURER_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-supplier:
+    image: postgres:15-alpine
+    container_name: postgres-supplier
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPPLIER_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPPLIER_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_SUPPLIER_DB:-supplier_db}
+    ports:
+      - "${POSTGRES_SUPPLIER_PORT:-5435}:5432"
+    volumes:
+      - postgres-supplier-data:/var/lib/postgresql/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPPLIER_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-ppb:
+    image: postgres:15-alpine
+    container_name: postgres-ppb
+    environment:
+      POSTGRES_USER: ${POSTGRES_PPB_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PPB_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_PPB_DB:-ppb_db}
+    ports:
+      - "${POSTGRES_PPB_PORT:-5436}:5432"
+    volumes:
+      - postgres-ppb-data:/var/lib/postgresql/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_PPB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-user-facility:
+    image: postgres:15-alpine
+    container_name: postgres-user-facility
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER_FACILITY_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_USER_FACILITY_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_USER_FACILITY_DB:-user_facility_db}
+    ports:
+      - "${POSTGRES_USER_FACILITY_PORT:-5437}:5432"
+    volumes:
+      - postgres-user-facility-data:/var/lib/postgresql/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_FACILITY_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-notification:
+    image: postgres:15-alpine
+    container_name: postgres-notification
+    environment:
+      POSTGRES_USER: ${POSTGRES_NOTIFICATION_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_NOTIFICATION_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_NOTIFICATION_DB:-notification_db}
+    ports:
+      - "${POSTGRES_NOTIFICATION_PORT:-5438}:5432"
+    volumes:
+      - postgres-notification-data:/var/lib/postgresql/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_NOTIFICATION_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis (shared)
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # OpenSearch
+  opensearch-node-01:
+    image: docker.io/opensearchproject/opensearch:2.19.2
+    container_name: opensearch-node-01
+    environment:
+      - cluster.name=openepcis-cluster
+      - node.name=opensearch-node-01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=true"
+    privileged: true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  opensearch-dashboards:
+    image: docker.io/opensearchproject/opensearch-dashboards:2.19.2
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      - 'OPENSEARCH_HOSTS=["http://opensearch-node-01:9200"]'
+      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true"
+    networks:
+      - epcis-net
+    depends_on:
+      opensearch-node-01:
+        condition: service_healthy
+
+  # Kafka
+  openepcis-kafka:
+    image: docker.io/bitnami/kafka:3.8
+    container_name: openepcis-kafka
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@openepcis-kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://openepcis-kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/bitnami/kafka
+    networks:
+      - epcis-net
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka Topic Setup (runs once)
+  kafka-setup:
+    image: docker.io/bitnami/kafka:3.8
+    container_name: kafka-setup
+    command: >
+      bash -c 'unset JMX_PORT;
+      for i in $$(seq 1 10); do
+        /opt/bitnami/kafka/bin/kafka-broker-api-versions.sh \
+          --bootstrap-server openepcis-kafka:9092 \
+          &>/dev/null && break
+        echo "Waiting for Kafka… ($$i/10)" && sleep 5
+      done;
+      topics=(
+        "capture-document-event"
+        "capture-document-event-count"
+        "capture-documents"
+        "capture-documents-agg"
+        "epcis-event-captured"
+        "epcis-event-persisted"
+        "epcis-event-validated"
+        "epcis-event-validated-failure"
+        "epcis-event-validated-success"
+        "streaming-subscription"
+        "event-saved"
+      );
+      for topic in "$${topics[@]}"; do
+        /opt/bitnami/kafka/bin/kafka-topics.sh \
+          --bootstrap-server openepcis-kafka:9092 \
+          --create --if-not-exists \
+          --partitions 1 \
+          --replication-factor 1 \
+          --topic "$$topic";
+      done;
+      exit'
+    networks:
+      - epcis-net
+    depends_on:
+      openepcis-kafka:
+        condition: service_healthy
+    profiles:
+      - setup
+
+  # ============================================
+  # EPCIS Service (Java/Quarkus)
+  # ============================================
+
+  quarkus-rest-api-ce:
+    image: ghcr.io/openepcis/openepcis-quarkus-rest-api-ce:stable
+    container_name: quarkus-rest-api-ce
+    environment:
+      - QUARKUS_OPENSEARCH_HOSTS=opensearch-node-01:9200
+      - KAFKA_BOOTSTRAP_SERVERS=openepcis-kafka:9092
+      - STORAGE_LOCAL_PATH=/data/openepcis
+    volumes:
+      - openepcis-store:/data/openepcis
+    ports:
+      - "8080:8080"
+    networks:
+      - epcis-net
+    depends_on:
+      opensearch-node-01:
+        condition: service_healthy
+      openepcis-kafka:
+        condition: service_healthy
+    restart: on-failure
+
+  # ============================================
+  # NestJS Microservices
+  # ============================================
+
+  auth-service:
+    build:
+      context: ./epcis-auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    command: npm run dev
+    volumes:
+      - ./epcis-auth-service/src:/app/src
+      - ./epcis-auth-service/package.json:/app/package.json
+      - ./epcis-auth-service/tsconfig.json:/app/tsconfig.json
+      - ./epcis-auth-service/nest-cli.json:/app/nest-cli.json
+      - auth-service-node-modules:/app/node_modules
+    ports:
+      - "${AUTH_PORT:-3001}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres-auth
+      - POSTGRES_PORT=5432
+    networks:
+      - epcis-net
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  manufacturer-service:
+    build:
+      context: ./epcis-manufacturer-service
+      dockerfile: Dockerfile
+    container_name: manufacturer-service
+    command: npm run dev
+    volumes:
+      - ./epcis-manufacturer-service/src:/app/src
+      - ./epcis-manufacturer-service/package.json:/app/package.json
+      - ./epcis-manufacturer-service/tsconfig.json:/app/tsconfig.json
+      - ./epcis-manufacturer-service/nest-cli.json:/app/nest-cli.json
+      - manufacturer-service-node-modules:/app/node_modules
+    ports:
+      - "${MANUFACTURER_PORT:-3002}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres-manufacturer
+      - POSTGRES_PORT=5432
+    networks:
+      - epcis-net
+    depends_on:
+      postgres-manufacturer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: unless-stopped
+
+  supplier-service:
+    build:
+      context: ./epcis-supplier-service
+      dockerfile: Dockerfile
+    container_name: supplier-service
+    command: npm run dev
+    volumes:
+      - ./epcis-supplier-service/src:/app/src
+      - ./epcis-supplier-service/package.json:/app/package.json
+      - ./epcis-supplier-service/tsconfig.json:/app/tsconfig.json
+      - ./epcis-supplier-service/nest-cli.json:/app/nest-cli.json
+      - supplier-service-node-modules:/app/node_modules
+    ports:
+      - "${SUPPLIER_PORT:-3003}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres-supplier
+      - POSTGRES_PORT=5432
+    networks:
+      - epcis-net
+    depends_on:
+      postgres-supplier:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: unless-stopped
+
+  ppb-service:
+    build:
+      context: ./epcis-ppb-service
+      dockerfile: Dockerfile
+    container_name: ppb-service
+    command: npm run dev
+    volumes:
+      - ./epcis-ppb-service/src:/app/src
+      - ./epcis-ppb-service/package.json:/app/package.json
+      - ./epcis-ppb-service/tsconfig.json:/app/tsconfig.json
+      - ./epcis-ppb-service/nest-cli.json:/app/nest-cli.json
+      - ppb-service-node-modules:/app/node_modules
+    ports:
+      - "${PPB_PORT:-3004}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres-ppb
+      - POSTGRES_PORT=5432
+    networks:
+      - epcis-net
+    depends_on:
+      postgres-ppb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: unless-stopped
+
+  user-facility-service:
+    build:
+      context: ./epcis-user-facility-service
+      dockerfile: Dockerfile
+    container_name: user-facility-service
+    command: npm run dev
+    volumes:
+      - ./epcis-user-facility-service/src:/app/src
+      - ./epcis-user-facility-service/package.json:/app/package.json
+      - ./epcis-user-facility-service/tsconfig.json:/app/tsconfig.json
+      - ./epcis-user-facility-service/nest-cli.json:/app/nest-cli.json
+      - user-facility-service-node-modules:/app/node_modules
+    ports:
+      - "${USER_FACILITY_PORT:-3005}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres-user-facility
+      - POSTGRES_PORT=5432
+    networks:
+      - epcis-net
+    depends_on:
+      postgres-user-facility:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./epcis-notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    command: npm run dev
+    volumes:
+      - ./epcis-notification-service/src:/app/src
+      - ./epcis-notification-service/package.json:/app/package.json
+      - ./epcis-notification-service/tsconfig.json:/app/tsconfig.json
+      - ./epcis-notification-service/nest-cli.json:/app/nest-cli.json
+      - notification-service-node-modules:/app/node_modules
+    ports:
+      - "${NOTIFICATION_PORT:-3006}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres-notification
+      - POSTGRES_PORT=5432
+    networks:
+      - epcis-net
+    depends_on:
+      postgres-notification:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # ============================================
+  # Frontend (Next.js)
+  # ============================================
+
+  frontend:
+    build:
+      context: ./epcis_track_and_trace_webapp
+      dockerfile: Dockerfile
+    container_name: frontend
+    command: npm run dev
+    volumes:
+      - ./epcis_track_and_trace_webapp:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "${FRONTEND_PORT:-8097}:8097"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - epcis-net
+    depends_on:
+      - auth-service
+      - manufacturer-service
+      - supplier-service
+      - ppb-service
+      - user-facility-service
+      - notification-service
+      - quarkus-rest-api-ce
+    restart: unless-stopped
+
+networks:
+  epcis-net:
+    driver: bridge
+
+volumes:
+  postgres-auth-data:
+  postgres-manufacturer-data:
+  postgres-supplier-data:
+  postgres-ppb-data:
+  postgres-user-facility-data:
+  postgres-notification-data:
+  redis-data:
+  opensearch-data:
+  kafka-data:
+  openepcis-store:
+  auth-service-node-modules:
+  manufacturer-service-node-modules:
+  supplier-service-node-modules:
+  ppb-service-node-modules:
+  user-facility-service-node-modules:
+  notification-service-node-modules:
+
