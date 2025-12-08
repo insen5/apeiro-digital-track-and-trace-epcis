@@ -28,3 +28,7 @@
 [submodule "medic-scan-fetch"]
 	path = medic-scan-fetch
 	url = https://github.com/insen5/medic-scan-fetch.git
+
+[submodule "kenya-tnt-system"]
+	path = kenya-tnt-system
+	url = https://github.com/insen5/kenya-tnt-system.git
