@@ -1442,7 +1442,7 @@ CREATE INDEX idx_batch_product ON batches(product_id);
 
 ### ✅ Phase 5: Core Modules Implementation (Weeks 3-6) - COMPLETED
 
-**Status**: Core modules implemented. Auth and Notification modules skipped as requested. **Additional**: Master Data module and Consignments feature implemented (not in original plan).
+**Status**: Core modules implemented. Auth and Notification modules skipped as requested. **Additional**: Master Data module, Consignments feature, PPB Batch service, and Kafka consumer implemented (not in original plan).
 
 
 
@@ -1485,7 +1485,10 @@ CREATE INDEX idx_batch_product ON batches(product_id);
 5. ✅ Remove HTTP calls to PPB (direct DB access to products table)
 6. ✅ Use EPCIS adapter (not direct HTTP to EPCIS service)
 
-**Additional**: Consignments feature implemented (not in original plan).
+**Additional**: 
+- ✅ Consignments feature implemented (not in original plan)
+- ✅ PPB Batch service with Kafka consumer (not in original plan)
+- ✅ PPB Consignment import (Option A JSON structure) with EPCIS event generation
 
 **Key Changes**:
 - Use GS1 Service Layer (not duplicate SSCC generation)
@@ -1530,9 +1533,9 @@ CREATE INDEX idx_batch_product ON batches(product_id);
 
 ---
 
-### 🔄 Phase 6: Integration Services (Weeks 7-8) - BACKLOG
+### ✅ Phase 6: Integration Services (Weeks 7-8) - PARTIALLY COMPLETED
 
-**Status**: Deferred to backlog. Will be implemented when integration requirements are defined.
+**Status**: Facility Integration Service completed. Manufacturer and Supplier integration services pending (see MANUFACTURER_SUPPLIER_INTEGRATION_ANALYSIS.md for hybrid approach).
 
 #### ⏳ Step 6.1: Create Manufacturer Integration Service - NOT STARTED
 
@@ -1563,33 +1566,41 @@ CREATE INDEX idx_batch_product ON batches(product_id);
 
 ---
 
-#### ⏳ Step 6.3: Create Facility Integration Service - NOT STARTED
+#### ✅ Step 6.3: Create Facility Integration Service - COMPLETED
 
 **Purpose**: Replace facility module - only receives events from LMIS
 
 **Steps**:
-1. Create lightweight service
-2. Create LMIS adapter interface
-3. Implement event receiving endpoints
-4. Transform LMIS events → EPCIS format
-5. Send to EPCIS Service via adapter
-6. Update Core Monolith for journey tracking
+1. ✅ Create lightweight service
+2. ✅ Create LMIS adapter interface
+3. ✅ Implement event receiving endpoints (unified endpoint for all event types)
+4. ✅ Transform LMIS events → EPCIS format
+5. ✅ Send to EPCIS Service via adapter
+6. ✅ Update Core Monolith for journey tracking
 
 **Endpoints**:
-- `POST /api/integration/facility/events/received`
-- `POST /api/integration/facility/events/consumed`
+- ✅ `POST /api/integration/facility/events` - Unified endpoint for all LMIS event types (dispense, receive, adjust, stock_count, return, recall)
 
-**Deliverable**: ⏳ Facility integration service created (replaces facility module) - NOT STARTED
+**Additional Features Implemented**:
+- ✅ API key authentication
+- ✅ 8 retry attempts with exponential backoff
+- ✅ Location data persistence support
+- ✅ Logging, metrics, and Swagger documentation
+- ✅ Mapping specification document created (`FACILITY_INTEGRATION_MAPPING_SPEC.md`)
+
+**Deliverable**: ✅ Facility integration service created (replaces facility module) - COMPLETED
 
 ---
 
-### 🔄 Phase 7: Analytics Schema & Optimization (Weeks 9-10) - BACKLOG
+### ✅ Phase 7: Analytics Schema & Optimization (Weeks 9-10) - PARTIALLY COMPLETED
 
-**Status**: Deferred to backlog. Will be implemented after core functionality is stable and analytics requirements are prioritized. Schema enhancements backlog document created.
+**Status**: L5 TNT P0 analytics tables implemented. PostGIS enabled. Normalized EPCIS event structure implemented. Materialized views and star schema deferred to backlog (documented in SCHEMA_ENHANCEMENTS_BACKLOG.md).
 
-#### ⏳ Step 7.1: Create Analytics Schema (Star Schema) - NOT STARTED
+#### ⏳ Step 7.1: Create Analytics Schema (Star Schema) - DEFERRED TO BACKLOG
 
 **File**: `core-monolith/database/analytics-schema.sql`
+
+**Status**: Documented in `SCHEMA_ENHANCEMENTS_BACKLOG.md` (Section 11.2). Will be implemented when analytics requirements are prioritized.
 
 **Steps**:
 1. Create fact_shipment table
@@ -1597,7 +1608,7 @@ CREATE INDEX idx_batch_product ON batches(product_id);
 3. Create ETL process to populate fact/dimension tables
 4. Set up scheduled ETL jobs
 
-**Deliverable**: ⏳ Analytics schema created - NOT STARTED
+**Deliverable**: ⏳ Analytics schema created - DEFERRED TO BACKLOG (documented)
 
 ---
 
@@ -1617,20 +1628,25 @@ CREATE INDEX idx_batch_product ON batches(product_id);
 
 ---
 
-#### ⏳ Step 7.3: Implement EPCIS Event Sync - NOT STARTED
+#### ✅ Step 7.3: Implement EPCIS Event Sync - COMPLETED (Dual Write Strategy)
 
-**Purpose**: Sync EPCIS events from OpenSearch to PostgreSQL for analytics
+**Purpose**: Sync EPCIS events to PostgreSQL for analytics
 
-**Steps**:
-1. Create Kafka consumer in Core Monolith
-2. Consume events from EPCIS Service Kafka topic
-3. Transform events to event summary format
-4. Store in `epcis_event_summary` table
-5. Handle event updates/deletes
+**Implementation**: Dual write strategy (not Kafka consumer)
+1. ✅ EPCIS events written to OpenEPCIS (primary)
+2. ✅ Event summaries written to normalized PostgreSQL tables (secondary)
+3. ✅ Normalized structure: `epcis_events` + `epcis_event_epcs` (replaces denormalized `epcis_event_summary`)
+4. ✅ Actor context included (actor_type, actor_user_id, actor_gln, actor_organization)
+5. ✅ 8 retry attempts with exponential backoff
+6. ✅ Idempotency checks
 
-**File**: `core-monolith/src/shared/infrastructure/epcis/epcis-event-sync.service.ts`
+**Migrations**:
+- ✅ `V6__Normalize_EPCIS_Event_Structure.sql` - Creates normalized tables
+- ✅ `V7__Fix_L5_TNT_Product_FKs_And_Remove_Legacy_Tables.sql` - Removes legacy `epcis_event_summary` table
 
-**Deliverable**: ⏳ EPCIS event sync implemented - NOT STARTED
+**File**: `core-monolith/src/shared/gs1/epcis-event.service.ts`
+
+**Deliverable**: ✅ EPCIS event sync implemented (dual write to normalized tables) - COMPLETED
 
 ---
 
@@ -1950,12 +1966,14 @@ EPCIS_API_SECRET=...
   - [x] Journey tracking service (single SQL query)
   - [x] Recall management service
   - [x] Analytics service
+  - [x] PPB Batch service (additional, not in original plan)
 - [x] Implement Manufacturer Module
   - [x] Batch service (calls PPB API for products, uses GS1 Service)
   - [x] Case service (uses GS1 Service, numeric quantities)
   - [x] Package service (uses GS1 Service)
   - [x] Shipment service (uses GS1 Service for SSCC)
   - [x] Consignments service (additional, not in original plan)
+  - [x] PPB Approved Batches API (additional, not in original plan)
 - [x] Implement Distributor Module
   - [x] Receive shipment service (direct DB query)
   - [x] Forward shipment service (new SSCC generation)
@@ -1963,6 +1981,18 @@ EPCIS_API_SECRET=...
   - [x] Supplier management
   - [x] Premise management
   - [x] Logistics Provider management
+  - [x] Product catalog (PPB products)
+- [x] Implement L5 TNT Analytics Module (additional, not in original plan)
+  - [x] Product status tracking (P0)
+  - [x] Product destruction tracking (P0)
+  - [x] Product returns tracking (P0)
+  - [x] Product verifications tracking (P0)
+  - [x] Facility operations tracking (P0) - receiving, dispensing, inventory
+- [x] Implement Kafka Consumer (additional, not in original plan)
+  - [x] Multi-topic consumer for PPB data streams
+  - [x] PPB batch data ingestion
+  - [x] Manufacturer, Supplier, Premise data sync
+  - [x] PPB consignment instantiation handler
 - [ ] Implement Auth Module - **SKIPPED** (as requested)
 - [ ] Implement Notification Module - **SKIPPED** (as requested)
 
@@ -1976,16 +2006,44 @@ EPCIS_API_SECRET=...
 - [x] Create Regulator/PPB Web App (full UI) - Products, journey, recall, analytics pages
 - [x] Test full applications (manual testing via UI)
 
-### 🔄 Phase 7: Integration Services for Type A users (Weeks 7-8) - BACKLOG
-- [ ] Create Manufacturer Integration Service
-- [ ] Create Supplier Integration Service
-- [ ] Create Facility Integration Service
+### ✅ Phase 6: Integration Services for Type A users (Weeks 7-8) - PARTIALLY COMPLETED
+- [x] Create Facility Integration Service - ✅ COMPLETED
+  - ✅ Unified endpoint for all LMIS event types (dispense, receive, adjust, stock_count, return, recall)
+  - ✅ Business event → EPCIS transformation
+  - ✅ Location data persistence support
+  - ✅ 8 retry attempts with exponential backoff
+  - ✅ API key authentication
+  - ✅ Logging, metrics, and Swagger documentation
+  - ✅ Mapping specification document created (`FACILITY_INTEGRATION_MAPPING_SPEC.md`)
+- [ ] Create Manufacturer Integration Service (Hybrid approach - see MANUFACTURER_SUPPLIER_INTEGRATION_ANALYSIS.md) - ⏳ PENDING
+  - [ ] Support business events → EPCIS (for Type B manufacturers)
+  - [ ] Support direct EPCIS validation (for Type A manufacturers)
+- [ ] Create Supplier Integration Service - ⏳ PENDING
+  - [ ] Business events → EPCIS transformation
+  - [ ] Forward shipment handling
 
-### 🔄 Phase 8: Analytics Schema & Optimization (Weeks 9-10) - BACKLOG
-- [ ] Create Analytics Schema (Star Schema)
-- [ ] Create Materialized Views (backlog documented in SCHEMA_ENHANCEMENTS_BACKLOG.md)
-- [ ] Implement EPCIS Event Sync
-- [x] Add PostGIS for location analytics (schema ready, queries pending)
+**Note**: See `MANUFACTURER_SUPPLIER_INTEGRATION_ANALYSIS.md` for architecture analysis and recommended hybrid approach.
+
+### ✅ Phase 7: Analytics Schema & Optimization (Weeks 9-10) - PARTIALLY COMPLETED
+- [x] Implement EPCIS Event Sync - ✅ COMPLETED (Dual write to normalized tables)
+  - ✅ Normalized event structure (`epcis_events` + `epcis_event_epcs`)
+  - ✅ Actor context in events (P0)
+  - ✅ 8 retry attempts with exponential backoff
+  - ✅ Legacy `epcis_event_summary` table removed
+- [x] Add PostGIS for location analytics - ✅ COMPLETED (schema ready, queries pending)
+- [x] Implement L5 TNT Analytics Tables (P0) - ✅ COMPLETED
+  - ✅ Product status tracking
+  - ✅ Product destruction tracking
+  - ✅ Product returns tracking
+  - ✅ Product verifications tracking
+  - ✅ Facility operations tracking (receiving, dispensing, inventory)
+- [x] Database schema cleanup - ✅ COMPLETED
+  - ✅ Removed legacy `products` table (replaced by `ppb_products`)
+  - ✅ Removed legacy `epcis_event_summary` table (replaced by normalized structure)
+  - ✅ Fixed all foreign keys to reference `ppb_products`
+  - ✅ Recreated `ppb_product_to_program_mapping` table
+- [ ] Create Analytics Schema (Star Schema) - ⏳ DEFERRED TO BACKLOG (documented in SCHEMA_ENHANCEMENTS_BACKLOG.md)
+- [ ] Create Materialized Views - ⏳ DEFERRED TO BACKLOG (documented in SCHEMA_ENHANCEMENTS_BACKLOG.md)
 
 
 ### ⏳ Phase 9: Testing & Validation (Weeks 13-14) - PENDING
@@ -2003,6 +2061,18 @@ EPCIS_API_SECRET=...
 ### ⏳ Phase 11: Extract to Separate Repository - PENDING
 - [ ] Prepare for extraction
 - [ ] Update parent repository
+
+### 🔄 Phase 12: Integration Services Extraction (Future Enhancement) - PLANNED
+**Status**: Optional - Only if scaling needs arise
+
+- [ ] Extract Facility Integration Service to separate microservice (if needed)
+- [ ] Extract Manufacturer Integration Service to separate microservice (if needed)
+- [ ] Extract Supplier Integration Service to separate microservice (if needed)
+- [ ] Create shared integration service library
+- [ ] Implement service-to-service communication
+- [ ] Add API gateway for integration services
+
+**Note**: Current implementation uses adapter pattern within Core Monolith, making future extraction straightforward if needed. See `MANUFACTURER_SUPPLIER_INTEGRATION_ANALYSIS.md` for detailed analysis.
 
 ---
 
