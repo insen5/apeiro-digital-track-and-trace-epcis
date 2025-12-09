@@ -1,0 +1,124 @@
+{
+  "header": {
+    "eventID": "EVT-QUICK-TEST-001",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-12-09T03:00:00Z",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+
+  "consignment": {
+    "consignmentID": "QUICK-TEST-001",
+    "consignment_ref_number": "CRN-QUICK-001",
+    "shipmentDate": "2025-12-09",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "registrationNo": "REG-QUICK-001",
+    "totalQuantity": 100,
+
+    "parties": {
+      "manufacturer_party": {
+        "name": "MAN-001",
+        "ppbID": "MAN001",
+        "gln": "6164003000000"
+      },
+      "mah_party": {
+        "name": "MAN-001",
+        "ppbID": "MAN001",
+        "gln": "6164003000000"
+      },
+      "manufacturing_site": {
+        "sgln": "urn:epc:id:sgln:616400300.00001.0",
+        "label": "MAN-001 Manufacturing Site"
+      },
+      "importer_party": {
+        "name": "KEMSA",
+        "country": "KE",
+        "gln": "0614141000013"
+      },
+      "destination_party": {
+        "name": "KEMSA",
+        "gln": "0614141000013"
+      },
+      "destination_location": {
+        "sgln": "urn:epc:id:sgln:061414100.00013.0",
+        "label": "KEMSA Warehouse - Nairobi"
+      }
+    },
+
+    "logistics": {
+      "carrier": "DHL Express",
+      "origin": "Mumbai, India",
+      "port_of_entry": "Mombasa Port",
+      "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
+      "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
+    },
+
+    "items": [
+      {
+        "type": "shipment",
+        "label": "QUICK-SHIP-001",
+        "sscc": "616400300000888001",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "KEMSA",
+          "carrier": "DHL Express"
+        }
+      },
+      {
+        "type": "package",
+        "label": "QUICK-PKG-001",
+        "sscc": "616400300000888002",
+        "parentSSCC": "616400300000888001",
+        "metadata": {
+          "packageType": "pallet"
+        }
+      },
+      {
+        "type": "case",
+        "label": "QUICK-CASE-001",
+        "sscc": "616400300000888003",
+        "parentSSCC": "616400300000888002",
+        "metadata": {
+          "caseType": "carton"
+        }
+      },
+      {
+        "type": "batch",
+        "label": "QUICK-BATCH-001",
+        "sscc": null,
+        "parentSSCC": "616400300000888003",
+        "GTIN": "61640056789012",
+        "productName": "Metformin 500mg Tablets",
+        "product_code": "PH111D",
+        "batchNo": "QUICK-BATCH-MET-001",
+        "batchStatus": "active",
+        "manufactureDate": "2025-06-01",
+        "expiryDate": "2027-06-01",
+        "quantityApproved": 100,
+        "permit_id": "PERMIT-QUICK-001",
+        "approval": {
+          "approval_status": true,
+          "approval_datestamp": "2025-12-09T03:00:00Z",
+          "quantities": {
+            "declared_total": 100,
+            "declared_sent": 100
+          }
+        },
+        "serialization": {
+          "is_partial_approval": false,
+          "ranges": [
+            {
+              "start": "SN-QUICK-001",
+              "end": "SN-QUICK-100",
+              "count": 100
+            }
+          ],
+          "explicit": []
+        }
+      }
+    ]
+  }
+}
+
