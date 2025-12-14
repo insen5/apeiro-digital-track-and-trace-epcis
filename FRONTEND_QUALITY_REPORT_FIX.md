@@ -218,3 +218,4 @@ Once those backends are refactored to use `GenericQualityReportService`, apply t
 
 **Last Updated:** December 14, 2025  
 **Status:** Ready for production
+
