@@ -1,22 +1,20 @@
 {
   "header": {
-    "eventID": "EVT-QUICK-TEST-001",
+    "eventID": "EVT-AMOX-DEMO-006",
     "eventType": "REGULATORY_INSTANTIATION",
-    "eventTimestamp": "2025-12-09T03:00:00Z",
+    "eventTimestamp": "2025-12-09T15:00:00Z",
     "sourceSystem": "PPB",
     "destinationSystem": "TNT",
     "version": "1.0"
   },
-
   "consignment": {
-    "consignmentID": "QUICK-TEST-001",
-    "consignment_ref_number": "CRN-QUICK-001",
+    "consignmentID": "AMOX-CONS-006",
+    "consignment_ref_number": "CRN-AMOX-006",
     "shipmentDate": "2025-12-09",
     "countryOfOrigin": "IN",
     "destinationCountry": "KE",
-    "registrationNo": "REG-QUICK-001",
-    "totalQuantity": 100,
-
+    "registrationNo": "REG-AMOX-006",
+    "totalQuantity": 1200,
     "parties": {
       "manufacturer_party": {
         "name": "MAN-001",
@@ -46,73 +44,71 @@
         "label": "KEMSA Warehouse - Nairobi"
       }
     },
-
     "logistics": {
-      "carrier": "DHL Express",
+      "carrier": "Maersk Logistics",
       "origin": "Mumbai, India",
       "port_of_entry": "Mombasa Port",
       "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
       "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
     },
-
     "items": [
       {
         "type": "shipment",
-        "label": "QUICK-SHIP-001",
-        "sscc": "616400300000888001",
+        "label": "AMOX-SHIP-006",
+        "sscc": "616400300000666001",
         "parentSSCC": null,
         "metadata": {
           "customer": "KEMSA",
-          "carrier": "DHL Express"
+          "carrier": "Maersk Logistics"
         }
       },
       {
         "type": "package",
-        "label": "QUICK-PKG-001",
-        "sscc": "616400300000888002",
-        "parentSSCC": "616400300000888001",
+        "label": "AMOX-PKG-006",
+        "sscc": "616400300000666002",
+        "parentSSCC": "616400300000666001",
         "metadata": {
           "packageType": "pallet"
         }
       },
       {
         "type": "case",
-        "label": "QUICK-CASE-001",
-        "sscc": "616400300000888003",
-        "parentSSCC": "616400300000888002",
+        "label": "AMOX-CASE-006",
+        "sscc": "616400300000666003",
+        "parentSSCC": "616400300000666002",
         "metadata": {
           "caseType": "carton"
         }
       },
       {
         "type": "batch",
-        "label": "QUICK-BATCH-001",
+        "label": "AMOX-BATCH-006",
         "sscc": null,
-        "parentSSCC": "616400300000888003",
-        "GTIN": "61640056789012",
-        "productName": "Metformin 500mg Tablets",
-        "product_code": "PH111D",
-        "batchNo": "QUICK-BATCH-MET-001",
+        "parentSSCC": "616400300000666003",
+        "GTIN": "08901234567913",
+        "productName": "AMOXICILLIN 875MG+CLAVULANIC ACID 125MG INJECTION",
+        "product_code": "PH11949",
+        "batchNo": "AMX-BATCH-2025-006",
         "batchStatus": "active",
-        "manufactureDate": "2025-06-01",
-        "expiryDate": "2027-06-01",
-        "quantityApproved": 100,
-        "permit_id": "PERMIT-QUICK-001",
+        "manufactureDate": "2025-08-15",
+        "expiryDate": "2027-08-15",
+        "quantityApproved": 1200,
+        "permit_id": "PERMIT-AMOX-006",
         "approval": {
           "approval_status": true,
-          "approval_datestamp": "2025-12-09T03:00:00Z",
+          "approval_datestamp": "2025-12-09T15:00:00Z",
           "quantities": {
-            "declared_total": 100,
-            "declared_sent": 100
+            "declared_total": 1200,
+            "declared_sent": 1200
           }
         },
         "serialization": {
           "is_partial_approval": false,
           "ranges": [
             {
-              "start": "SN-QUICK-001",
-              "end": "SN-QUICK-100",
-              "count": 100
+              "start": "AMX-SN-006-001",
+              "end": "AMX-SN-006-1200",
+              "count": 1200
             }
           ],
           "explicit": []
@@ -121,4 +117,3 @@
     ]
   }
 }
-

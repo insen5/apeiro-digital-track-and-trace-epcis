@@ -1,382 +1,212 @@
 # Kenya Track and Trace System - Cursor AI Rules
 
-## 🚨 CRITICAL: Database Naming Convention
+## 🚨 CRITICAL: Database & TypeORM Naming Standard
 
-### PostgreSQL Schema Standard: snake_case ONLY
-- ALL database columns MUST use snake_case (e.g., user_id, created_at, event_type)
-- ALL table names MUST be plural snake_case (e.g., epcis_events, facility_inventory)
-- NEVER use camelCase for database columns (e.g., userId, createdAt are FORBIDDEN)
-- See DATABASE_NAMING_AUDIT.md for complete audit and rationale
-
-### Foreign Key Naming
-- Format: {table_singular}_id (e.g., user_id, batch_id, product_id, facility_user_id)
-- ALWAYS snake_case
-- Reference users.id as user_id (not userId)
-- Reference batches.id as batch_id (not batchId)
-
-### Timestamp Columns
-- ALWAYS use: created_at, updated_at (NEVER createdAt, updatedAt)
-- Use PostgreSQL type: timestamp without time zone
-- Default: now() or CURRENT_TIMESTAMP
-
-### Before Creating ANY New Table or Column
-1. Check existing database schema first:
-   ```bash
-   cd kenya-tnt-system
-   docker-compose exec postgres psql -U tnt_user -d kenya_tnt_db -c "\d tablename"
-   docker-compose exec postgres psql -U tnt_user -d kenya_tnt_db -c "\dt"
-   ```
-2. Follow snake_case pattern from epcis_events and facility_* tables
-3. Reference DATABASE_NAMING_AUDIT.md for examples
+**Decision Date:** December 11, 2025  
+**Status:** ✅ FINAL - No migration planned for legacy tables  
+**Reference:** FINAL_RECOMMENDATION_CAMEL_VS_SNAKE.md
 
 ---
 
-## 🎯 TypeORM Entity Rules
+## 📋 THE STANDARD (Read This First!)
 
-### Entity Property Naming
-- Entity properties MUST match database column names EXACTLY
-- Use snake_case for all properties (matches PostgreSQL schema)
-- Example: `user_id: string` not `userId: string`
+### For **NEW** Tables & Entities
 
-### Column Decorators
-- ❌ AVOID: @Column({ name: 'column_name' }) unless bridging legacy camelCase tables
-- ✅ PREFER: @Column() with property name matching database column
-- If you see @Column({ name: '...' }), question whether it's needed
+**Database Columns:** snake_case (PostgreSQL standard)  
+**Entity Properties:** camelCase (JavaScript/API standard)  
+**Mapping:** Use `@Column({ name: '...' })` to bridge them
 
-### TypeORM Configuration
-- NO naming strategy (synchronize: false in database.module.ts)
-- Comment on line 84 explains: "database uses camelCase columns" (this is WRONG - will be migrated to snake_case)
-- Current reality: Mixed naming (being standardized to snake_case)
-
-### Entity Examples (Follow These Patterns)
-
-✅ CORRECT - snake_case matching database:
+**Example:**
 ```typescript
-@Entity('epcis_events')
-export class EPCISEvent {
-  @Column({ unique: true })
-  event_id: string;  // Matches database column event_id
+// Database: snake_case columns
+CREATE TABLE product_audits (
+  id SERIAL PRIMARY KEY,
+  user_id UUID,
+  created_at TIMESTAMP
+);
+
+// Entity: camelCase properties + overrides
+@Entity('product_audits')
+export class ProductAudit {
+  @Column({ name: 'user_id' })
+  userId: string;  // API: { "userId": "..." }
   
-  @Column()
-  event_type: string;  // Matches database column event_type
-  
-  @Column({ type: 'uuid', nullable: true })
-  actor_user_id: string;  // Matches database column actor_user_id
-  
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;  // Matches database column created_at
+  @Column({ name: 'created_at' })
+  createdAt: Date;  // API: { "createdAt": "..." }
 }
 ```
 
-❌ WRONG - camelCase properties (legacy only):
-```typescript
-@Column()
-userId: string;  // Only acceptable in legacy tables (users, batches, consignments)
-```
+### For **LEGACY** Tables (users, batches, consignments)
 
-### Reference Entities
-- Gold standard: src/shared/domain/entities/epcis-event.entity.ts
-- Facility examples: facility-inventory.entity.ts, facility-receiving.entity.ts
-- Legacy examples (being migrated): user.entity.ts, batch.entity.ts
+**Database:** camelCase columns (keep as-is)  
+**Entities:** camelCase properties (no overrides)  
+**Status:** No migration
 
 ---
 
-## 📂 Project Structure
+## 🎯 Rules for NEW Development
 
-### Backend (NestJS + TypeORM)
-- **Core monolith**: kenya-tnt-system/core-monolith/
-- **Entities**: src/shared/domain/entities/
-- **Services**: src/modules/{auth,analytics,ppb,manufacturer}/
-- **Database**: PostgreSQL via docker-compose
+### 1. Database (SQL) - Use snake_case
 
-### Frontend (React + TypeScript)
-- **Webapp**: epcis_track_and_trace_webapp/
-- **Mobile**: medic-scan-fetch/
-
-### Microservices (Legacy - being consolidated)
-- epcis-auth-service/
-- epcis-manufacturer-service/
-- epcis-ppb-service/
-- Note: Favor monolith over microservices for new features
-
----
-
-## 🔐 NestJS Best Practices
-
-### Module Organization
-- Follow DDD structure: domain/ entities, services/ application logic
-- Use @Injectable() for services
-- Use @Controller() for REST endpoints
-- Register entities in DatabaseModule (database.module.ts)
-
-### Authentication
-- JWT-based auth in src/modules/auth/
-- User roles: 'dha', 'manufacturer', 'user_facility', 'cpa'
-- Always validate user context in services
-
-### Error Handling
-- Use NestJS exceptions: BadRequestException, NotFoundException, UnauthorizedException
-- Log errors appropriately
-- Return meaningful error messages
-
----
-
-## 📊 EPCIS Standard Compliance
-
-### Event Types
-- ObjectEvent, AggregationEvent, TransactionEvent, TransformationEvent
-- Follow GS1 EPCIS 1.2 and 2.0 standards
-- See epcis-event.entity.ts for schema
-
-### Business Steps (bizStep)
-- receiving, shipping, packing, unpacking, dispensing, destroying
-- Use GS1 vocabulary URIs when applicable
-
-### Dispositions
-- in_transit, in_progress, active, inactive, recalled
-- Follow GS1 standard dispositions
-
-### EPCs and Identifiers
-- SGTIN: Serialized Global Trade Item Number
-- SSCC: Serial Shipping Container Code (18 digits for packages)
-- GLN: Global Location Number (13 digits for organizations)
-- Format validation required
-
----
-
-## 🧪 Testing Requirements
-
-### When Creating New Features
-- Write unit tests for services
-- Write integration tests for endpoints
-- Test database migrations in development first
-- Verify entity queries work with actual database
-
-### Critical Test Scenarios
-- Authentication flows (login, token refresh)
-- PPB consignment import
-- EPCIS event creation and journey tracking
-- Facility inventory operations
-- Serial number lookups
-
----
-
-## 🗄️ Database Migrations
-
-### Migration Files
-- Location: kenya-tnt-system/database/migrations/
-- Use sequential versioning: V11__Description.sql, V12__Description.sql
-- ALWAYS use snake_case in SQL
-
-### Migration Template
 ```sql
--- V{N}__{Description}.sql
--- Description: Brief explanation of changes
--- Date: YYYY-MM-DD
--- Author: Name
-
-BEGIN;
-
--- Create table with snake_case columns
-CREATE TABLE IF NOT EXISTS new_table (
-  id SERIAL PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id),
-  product_id INTEGER NOT NULL REFERENCES ppb_products(id),
-  quantity NUMERIC(15,2) NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+CREATE TABLE new_feature (
+  user_id UUID NOT NULL,
+  product_id INTEGER,
+  is_enabled BOOLEAN,
+  created_at TIMESTAMP DEFAULT NOW()
 );
-
--- Create indexes
-CREATE INDEX idx_new_table_user_id ON new_table(user_id);
-CREATE INDEX idx_new_table_product_id ON new_table(product_id);
-
-COMMIT;
 ```
 
-### Before Running Migrations
-- Backup database: `pg_dump -U tnt_user -d kenya_tnt_db > backup_$(date +%Y%m%d).sql`
-- Test in development environment first
-- Verify corresponding entity is updated
+### 2. Entities - Use camelCase + Overrides
+
+```typescript
+@Entity('new_feature')
+export class NewFeature {
+  @Column({ name: 'user_id' })
+  userId: string;
+  
+  @Column({ name: 'product_id' })
+  productId: number;
+  
+  @Column({ name: 'is_enabled' })
+  isEnabled: boolean;
+  
+  @Column({ name: 'created_at' })
+  createdAt: Date;
+}
+```
+
+### 3. Why This Pattern?
+
+- ✅ PostgreSQL-friendly DB (snake_case)
+- ✅ JavaScript-friendly API (camelCase)
+- ✅ No serialization layer needed
+- ✅ Frontend compatibility
+
+**Gold Standard:** `epcis-event.entity.ts`, `facility-inventory.entity.ts`
 
 ---
 
-## ⚡ TypeScript Conventions
+## 📚 Reference Examples
 
-### Naming
-- Interfaces: PascalCase (e.g., CreateUserDto, JourneyResponse)
-- Classes: PascalCase (e.g., AuthService, EPCISEvent)
-- Functions/methods: camelCase (e.g., getUserById, createConsignment)
-- Constants: UPPER_SNAKE_CASE (e.g., MAX_RETRY_ATTEMPTS)
-- Database properties: snake_case (e.g., user_id, created_at)
+**Follow These (Modern):**
+- epcis-event.entity.ts
+- facility-inventory.entity.ts  
+- product-status.entity.ts
 
-### Imports
-- Use absolute imports via tsconfig paths
-- Group imports: stdlib, third-party, local
-- Sort alphabetically within groups
+**Don't Copy (Legacy):**
+- user.entity.ts (camelCase DB)
+- batch.entity.ts (camelCase DB)
 
 ---
 
-## 🎨 Frontend (React) Guidelines
+## ✅ Before Creating New Tables
 
-### Component Naming
-- PascalCase for components (e.g., ConsignmentList, EventTimeline)
-- camelCase for utilities (e.g., formatDate, parseEPC)
-
-### API Integration
-- Use environment variables for API URLs
-- Handle loading/error states
-- Show user-friendly error messages
-
-### State Management
-- Use React hooks (useState, useEffect, useContext)
-- Consider Zustand or Redux for complex state
-- Avoid prop drilling
+1. Check schema: `\d tablename`
+2. Follow EPCIS pattern
+3. Use snake_case SQL + camelCase entities
 
 ---
 
-## 📝 Documentation Requirements
+**Last Updated**: December 11, 2025  
+**Reference**: FINAL_RECOMMENDATION_CAMEL_VS_SNAKE.md
 
-### When Adding New Features
-- Update README.md if user-facing
-- Document API endpoints with examples
-- Add JSDoc comments for complex functions
-- Update architecture diagrams if structure changes
+# ====================================================================================
+# DOCUMENTATION REFERENCE RULES (Added: Dec 11, 2025)
+# ====================================================================================
 
-### Code Comments
-- Explain WHY, not WHAT
-- Document business logic and EPCIS compliance
-- Note any workarounds or temporary solutions
-- Reference related entities/services
+## Primary Documentation Index
+**ALWAYS START HERE**: DOCUMENTATION_INDEX.md
+- This is the single source of truth for all documentation
+- Lists ONLY current/active documentation
+- Updated after each major change
 
----
+## Documentation Organization
 
-## 🔍 Code Review Checklist
+### Current/Active Documentation (Use ONLY These)
+**Root Directory**:
+- README.md - Project overview
+- ARCHITECTURE.md - System architecture (LATEST)
+- DATA_PERSISTENCE_ANALYSIS.md - Consolidated data analysis (LATEST, Dec 11)
+- PARTIES_OBJECT_PERSISTENCE_AUDIT.md - Parties JSON field mapping
+- README_IMPLEMENTATION_STATUS.md - Current implementation status
+- DOCUMENTATION_INDEX.md - Documentation navigation (START HERE)
 
-Before committing, verify:
-- [ ] Database columns use snake_case
-- [ ] Entity properties match database exactly
-- [ ] No unnecessary @Column({ name: ... }) overrides
-- [ ] TypeScript compiles without errors
-- [ ] Imports are organized
-- [ ] No hardcoded secrets or credentials
-- [ ] Error handling is comprehensive
-- [ ] Tests cover new functionality
+**Organized Directories**:
+- docs/architecture/ - Architecture decisions
+- docs/data-model/ - Database schemas
+- docs/implementation/ - Implementation guides
+- docs/testing/ - Test documentation
+- test-data/ - Test JSON files with README
 
----
+### Deprecated/Archived (NEVER Reference)
+**IGNORE**:
+- docs/archive/ - Old documentation (historical reference only)
+- test-data/archive/ - Old test files
+- Any file with version suffix (V1, V2, FINAL, PROPER, OLD, etc.)
 
-## 🚫 Common Mistakes to AVOID
+## Test Data Rules
 
-### Database Schema
-- ❌ Creating camelCase columns (userId, createdAt)
-- ❌ Inconsistent foreign key naming (user vs userId vs user_id)
-- ❌ Missing indexes on frequently queried columns
-- ❌ Using VARCHAR without length limits
+**PRIMARY TEST FILE**: test-data/TEST_QUICK_DEMO.json
+- Use this for standard consignment import testing
+- Do NOT create DEMO_V1, DEMO_V2, DEMO_FINAL variations
+- Use git for versioning, NOT filename suffixes
 
-### TypeORM Entities
-- ❌ Using camelCase properties for new entities
-- ❌ Adding @Column({ name: ... }) when not needed
-- ❌ Forgetting to register entity in DatabaseModule
-- ❌ Missing relationships (OneToMany, ManyToOne)
+**Test File Naming**: `{PURPOSE}_{PRODUCT}_{OPTIONAL_VARIANT}.json`
+- Good: TEST_QUICK_DEMO.json, TEST_VACCINE_BATCH.json
+- Bad: DEMO_FINAL.json, DEMO_PROPER.json, TEST_V2.json
 
-### NestJS
-- ❌ Circular dependencies between modules
-- ❌ Not using dependency injection
-- ❌ Synchronous operations blocking event loop
-- ❌ Not validating DTOs
+## Documentation Lifecycle
 
----
+### When Creating New Docs:
+1. Add to appropriate docs/ subdirectory
+2. Update DOCUMENTATION_INDEX.md
+3. Add "Last Updated: YYYY-MM-DD" in file header
 
-## 📚 Key Reference Files
+### When Updating Docs:
+1. Update file in-place (git tracks changes)
+2. Update "Last Updated" date in header
+3. If major rewrite: Archive old version to docs/archive/ with date suffix
 
-When working on specific areas, reference these files:
+### When Document Becomes Outdated:
+```bash
+mv OLD_DOC.md docs/archive/OLD_DOC_YYYY-MM-DD.md
+# Update DOCUMENTATION_INDEX.md to remove reference
+```
 
-### Database & Entities
-- DATABASE_NAMING_AUDIT.md - Complete naming convention audit
-- kenya-tnt-system/SNAKE_NAMING_STRATEGY_REMOVAL_SUMMARY.md
-- kenya-tnt-system/MIGRATION_STRATEGY.md
-- src/shared/domain/entities/epcis-event.entity.ts (gold standard)
+## Database Schema Reference
 
-### Architecture
-- ARCHITECTURE.md
-- kenya-tnt-system/core-monolith/JOURNEY_TRACKING_IMPLEMENTATION.md
+**LATEST DATABASE SCHEMA**: After migrations V02, V03, V05
+- Consignments: 38 fields (includes ALL party fields)
+- Batches: 15 fields (includes manufacturing metadata)
+- Parties: 4 normalized tables (parties, locations, consignment_parties, consignment_locations)
 
-### EPCIS
-- epcis-hardening-plan.md
-- FLMIS_EVENT_VERIFICATION_REPORT.md
+**Migration Files**: kenya-tnt-system/database/migrations/
+- V02: ILMD support, clinical tables
+- V03: Party normalization, ppb_batches cleanup
+- V04: Product manufacturers, addresses (pending)
+- V05: Complete parties object fields
 
-### Business Logic
-- src/modules/ppb/ppb.service.ts - PPB consignment imports
-- src/shared/analytics/journey/journey.service.ts - Journey tracking
+## AI Agent Rules
 
----
+**When asked about documentation**:
+1. Check DOCUMENTATION_INDEX.md first
+2. Reference ONLY files listed in index
+3. Ignore files in docs/archive/
+4. For data model: Use DATA_PERSISTENCE_ANALYSIS.md (Dec 11, 2025)
+5. For testing: Use test-data/TEST_QUICK_DEMO.json
 
-## 🎯 When Creating New Features
+**When asked about database schema**:
+1. Check applied migrations in kenya-tnt-system/database/migrations/
+2. Verify actual schema: `docker-compose exec postgres psql -U tnt_user -d kenya_tnt_db -c "\d tablename"`
+3. Reference DATA_PERSISTENCE_ANALYSIS.md for complete field mapping
 
-1. **Check existing patterns first**
-   - Review similar existing features
-   - Check database schema: `\d tablename`
-   - Follow established conventions
-
-2. **Database changes**
-   - Create migration file (snake_case SQL)
-   - Update/create entity (snake_case properties)
-   - Register entity in DatabaseModule
-   - Test in development
-
-3. **Service layer**
-   - Create/update service with business logic
-   - Use TypeORM repositories
-   - Handle errors gracefully
-   - Add logging
-
-4. **Controller/API**
-   - Create/update controller
-   - Validate DTOs
-   - Document endpoints
-   - Test with actual requests
-
-5. **Frontend (if needed)**
-   - Create/update React components
-   - Integrate with API
-   - Handle loading/error states
-   - Test user flows
+**When confused by multiple files**:
+1. Look for "Last Updated" date in file header
+2. Prefer files with recent dates
+3. Check DOCUMENTATION_INDEX.md for canonical reference
 
 ---
 
-## 🔄 Current Migration Status
-
-⚠️ **Active Migration**: Standardizing database to snake_case
-- Old tables (users, batches, consignments): Currently camelCase → Will migrate to snake_case
-- New tables (epcis_*, facility_*, product_*): Already snake_case ✅
-- See DATABASE_NAMING_AUDIT.md for complete plan
-- Until migration complete: Legacy tables may have camelCase columns
-
-**When in doubt**: Follow the snake_case convention (PostgreSQL standard)
-
----
-
-## 💡 Pro Tips
-
-1. **Always check the database before coding**
-   - Don't assume column names
-   - Verify with `\d tablename`
-
-2. **Reference existing code**
-   - EPCIS events = gold standard for new features
-   - User/Batch entities = legacy (being updated)
-
-3. **Test database changes locally first**
-   - Never test migrations in production
-   - Use docker-compose for local DB
-
-4. **Ask for clarification**
-   - If unsure about naming, ask!
-   - Better to clarify than create inconsistency
-
----
-
-**Last Updated**: December 9, 2025
-**Maintained By**: Development Team
-**Questions?**: Reference DATABASE_NAMING_AUDIT.md or ask the team
-
+**Last Updated**: December 11, 2025
+**Purpose**: Prevent documentation confusion and ensure AI references latest files only

@@ -703,3 +703,29 @@ This pattern enables:
 5. **PPB** tracks complete journey via EPCIS queries and service-to-service calls
 6. **Notifications** sent for batch expiry warnings and recalls
 
+
+---
+
+## ILMD and Extensions Support (Added: Dec 9, 2025)
+
+### Instance/Lot Master Data (ILMD)
+
+All ObjectEvents now support ILMD (EPCIS 2.0 standard) for batch-level metadata:
+
+- **lotNumber**: Batch/lot number
+- **itemExpirationDate**: Product expiry date (ISO 8601)
+- **productionDate**: Manufacturing date (ISO 8601)
+- **countryOfOrigin**: ISO 3166-1 alpha-2 country code
+- Custom fields via [key: string]: any
+
+### Extensions
+
+Custom regulatory and business metadata transmitted via extensions:
+
+- **PPB Batch Data**: permit_id, approval_status, product_code
+- **Parties**: manufacturer, MAH, importer details
+- **Logistics**: carrier, origin, port_of_entry
+
+See `DATA_PERSISTENCE_ANALYSIS.md` for complete data flow analysis.
+
+---

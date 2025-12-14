@@ -1,0 +1,140 @@
+{
+  "header": {
+    "eventID": "EVT-DEMO-DOX-PROPER-2025-001",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-12-09T00:00:00Z",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+
+  "consignment": {
+    "consignmentID": "DEMO-DOX-PROPER-2025-001",
+    "consignment_ref_number": "CRN-DEMO-DOX-2025-001",
+    "shipmentDate": "2025-12-09",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "registrationNo": "PPB-DOX-2025-001",
+    "totalQuantity": 10000,
+
+    "parties": {
+      "manufacturer_party": {
+        "name": "MAN-001",
+        "ppbID": "345345",
+        "gln": "6164003000000"
+      },
+      "mah_party": {
+        "name": "MAN-001",
+        "ppbID": "345345",
+        "gln": "6164003000000"
+      },
+      "manufacturing_site": {
+        "sgln": "urn:epc:id:sgln:616400300.00001.0",
+        "label": "MAN-001 Manufacturing Facility"
+      },
+      "importer_party": {
+        "name": "KEMSA",
+        "country": "KE",
+        "gln": "0614141000013"
+      },
+      "importer_location": {
+        "sgln": "urn:epc:id:sgln:061414100.00001.0",
+        "label": "KEMSA Import Warehouse"
+      },
+      "destination_party": {
+        "name": "KEMSA",
+        "gln": "0614141000013"
+      },
+      "destination_location": {
+        "sgln": "urn:epc:id:sgln:061414100.00002.0",
+        "label": "KEMSA Main Distribution Center - Nairobi"
+      }
+    },
+
+    "logistics": {
+      "carrier": "DHL Global Forwarding",
+      "origin": "Surat, Gujarat, India",
+      "port_of_entry": "Mombasa Port - Berth 11",
+      "final_destination_sgln": "urn:epc:id:sgln:061414100.00002.0",
+      "final_destination_address": "KEMSA Distribution Center, Nairobi, Kenya"
+    },
+
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-DOX-MAN001-2025-001",
+        "sscc": "616400300000000001",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "KEMSA",
+          "carrier": "DHL Global Forwarding",
+          "pickupLocation": "Surat, Gujarat, India",
+          "destinationAddress": "KEMSA Distribution Center, Nairobi, Kenya"
+        }
+      },
+
+      {
+        "type": "package",
+        "label": "PKG-DOX-001",
+        "sscc": "616400300000000002",
+        "parentSSCC": "616400300000000001",
+        "metadata": {
+          "packageType": "pallet",
+          "weight": "500kg"
+        }
+      },
+
+      {
+        "type": "case",
+        "label": "CASE-DOX-001",
+        "sscc": "616400300000000003",
+        "parentSSCC": "616400300000000002",
+        "metadata": {
+          "caseType": "carton"
+        }
+      },
+
+      {
+        "type": "batch",
+        "label": "BATCH-DOX-PROPER-001",
+        "sscc": null,
+        "parentSSCC": "616400300000000003",
+
+        "GTIN": "61640056789019",
+        "productName": "Doxycycline 100mg Capsules",
+        "product_code": "PH15133",
+        "batchNo": "BATCH-DOX-PROPER-2025-001",
+        "batchStatus": "active",
+        "manufactureDate": "2025-06-01",
+        "expiryDate": "2027-06-01",
+        "quantityApproved": 10000,
+        "permit_id": "PPB-18905",
+
+        "approval": {
+          "approval_status": true,
+          "approval_datestamp": "2025-12-09T00:00:00Z",
+          "quantities": {
+            "declared_total": 10000,
+            "declared_sent": 10000
+          }
+        },
+
+        "serialization": {
+          "is_partial_approval": false,
+          "ranges": [
+            {
+              "start": "SN-DOX-001",
+              "end": "SN-DOX-1000",
+              "count": 1000
+            }
+          ],
+          "explicit": [
+            "SN-DOX-SAMPLE-001",
+            "SN-DOX-SAMPLE-002",
+            "SN-DOX-SAMPLE-003"
+          ]
+        }
+      }
+    ]
+  }
+}

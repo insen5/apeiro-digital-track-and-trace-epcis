@@ -1,0 +1,126 @@
+{
+  "header": {
+    "eventID": "EVT-UI-UPDATE-001",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-12-11T14:20:00+03:00",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+  "consignment": {
+    "consignmentID": "UI-UPDATE-DEMO-001",
+    "consignment_ref_number": "CRN-UI-2025-001",
+    "shipmentDate": "2025-12-10",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "registrationNo": "REG-UI-001",
+    "totalQuantity": 250,
+    "parties": {
+      "manufacturer_party": {
+        "name": "Ranbaxy Pharmaceuticals",
+        "ppbID": "MAN-RANBAXY",
+        "gln": "6164003000000"
+      },
+      "mah_party": {
+        "name": "Ranbaxy Pharmaceuticals",
+        "ppbID": "MAN-RANBAXY",
+        "gln": "6164003000000"
+      },
+      "manufacturing_site": {
+        "sgln": "urn:epc:id:sgln:6164003.00001.0",
+        "label": "Ranbaxy Surat Plant"
+      },
+      "importer_party": {
+        "name": "Kenya Medical Supplies Authority",
+        "country": "KE",
+        "gln": "0614141000013"
+      },
+      "importer_location": {
+        "sgln": "urn:epc:id:sgln:0614141.00002.0",
+        "label": "KEMSA Central Warehouse"
+      },
+      "destination_party": {
+        "name": "Kenyatta National Hospital",
+        "gln": "0614141000020"
+      },
+      "destination_location": {
+        "sgln": "urn:epc:id:sgln:0614141.00020.0",
+        "label": "KNH Main Pharmacy"
+      }
+    },
+    "logistics": {
+      "carrier": "Kenya Airways Cargo",
+      "origin": "Surat, Gujarat, India",
+      "port_of_entry": "Jomo Kenyatta International Airport",
+      "final_destination_sgln": "urn:epc:id:sgln:0614141.00020.0",
+      "final_destination_address": "Nairobi, Kenya"
+    },
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-UI-001",
+        "sscc": "616400300009999001",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "KEMSA → KNH",
+          "carrier": "Kenya Airways Cargo",
+          "pickupLocation": "Surat, India",
+          "destinationAddress": "Kenyatta National Hospital, Nairobi"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-UI-001",
+        "sscc": "616400300009999002",
+        "parentSSCC": "616400300009999001",
+        "metadata": {
+          "packageType": "pallet",
+          "weight": "45kg"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-UI-001",
+        "sscc": "616400300009999003",
+        "parentSSCC": "616400300009999002",
+        "metadata": {
+          "caseType": "cardboard box"
+        }
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-METF-UI-001",
+        "sscc": null,
+        "parentSSCC": "616400300009999003",
+        "GTIN": "61640056789012",
+        "productName": "Metformin 500mg Tablets",
+        "product_code": "PH111D",
+        "batchNo": "BATCH-UI-DEMO-001",
+        "batchStatus": "active",
+        "manufactureDate": "2025-10-01",
+        "expiryDate": "2027-10-01",
+        "quantityApproved": 250,
+        "permit_id": "18905",
+        "approval": {
+          "approval_status": true,
+          "approval_datestamp": "2025-12-11T14:20:00+03:00",
+          "quantities": {
+            "declared_total": 250,
+            "declared_sent": 250
+          }
+        },
+        "serialization": {
+          "is_partial_approval": false,
+          "ranges": [
+            {
+              "start": "SN-UI-00001",
+              "end": "SN-UI-00250",
+              "count": 250
+            }
+          ],
+          "explicit": []
+        }
+      }
+    ]
+  }
+}

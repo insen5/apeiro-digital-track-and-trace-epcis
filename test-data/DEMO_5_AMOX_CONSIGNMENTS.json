@@ -1,0 +1,597 @@
+[
+  {
+    "header": {
+      "eventID": "EVT-AMOX-DEMO-001",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-12-09T10:00:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "AMOX-CONS-001",
+      "consignment_ref_number": "CRN-AMOX-001",
+      "shipmentDate": "2025-12-09",
+      "countryOfOrigin": "IN",
+      "destinationCountry": "KE",
+      "registrationNo": "REG-AMOX-001",
+      "totalQuantity": 500,
+      "parties": {
+        "manufacturer_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "mah_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:616400300.00001.0",
+          "label": "MAN-001 Manufacturing Site"
+        },
+        "importer_party": {
+          "name": "KEMSA",
+          "country": "KE",
+          "gln": "0614141000013"
+        },
+        "destination_party": {
+          "name": "KEMSA",
+          "gln": "0614141000013"
+        },
+        "destination_location": {
+          "sgln": "urn:epc:id:sgln:061414100.00013.0",
+          "label": "KEMSA Warehouse - Nairobi"
+        }
+      },
+      "logistics": {
+        "carrier": "DHL Express",
+        "origin": "Mumbai, India",
+        "port_of_entry": "Mombasa Port",
+        "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
+        "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "AMOX-SHIP-001",
+          "sscc": "616400300000111001",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "KEMSA",
+            "carrier": "DHL Express"
+          }
+        },
+        {
+          "type": "package",
+          "label": "AMOX-PKG-001",
+          "sscc": "616400300000111002",
+          "parentSSCC": "616400300000111001",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "AMOX-CASE-001",
+          "sscc": "616400300000111003",
+          "parentSSCC": "616400300000111002",
+          "metadata": {
+            "caseType": "carton"
+          }
+        },
+        {
+          "type": "batch",
+          "label": "AMOX-BATCH-001",
+          "sscc": null,
+          "parentSSCC": "616400300000111003",
+          "GTIN": "08901234567913",
+          "productName": "AMOXICILLIN 875MG+CLAVULANIC ACID 125MG INJECTION",
+          "product_code": "PH11949",
+          "batchNo": "AMX-BATCH-2025-001",
+          "batchStatus": "active",
+          "manufactureDate": "2025-06-01",
+          "expiryDate": "2027-06-01",
+          "quantityApproved": 500,
+          "permit_id": "PERMIT-AMOX-001",
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-12-09T10:00:00Z",
+            "quantities": {
+              "declared_total": 500,
+              "declared_sent": 500
+            }
+          },
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "AMX-SN-001-001",
+                "end": "AMX-SN-001-500",
+                "count": 500
+              }
+            ],
+            "explicit": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "header": {
+      "eventID": "EVT-AMOX-DEMO-002",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-12-09T11:00:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "AMOX-CONS-002",
+      "consignment_ref_number": "CRN-AMOX-002",
+      "shipmentDate": "2025-12-09",
+      "countryOfOrigin": "IN",
+      "destinationCountry": "KE",
+      "registrationNo": "REG-AMOX-002",
+      "totalQuantity": 750,
+      "parties": {
+        "manufacturer_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "mah_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:616400300.00001.0",
+          "label": "MAN-001 Manufacturing Site"
+        },
+        "importer_party": {
+          "name": "KEMSA",
+          "country": "KE",
+          "gln": "0614141000013"
+        },
+        "destination_party": {
+          "name": "KEMSA",
+          "gln": "0614141000013"
+        },
+        "destination_location": {
+          "sgln": "urn:epc:id:sgln:061414100.00013.0",
+          "label": "KEMSA Warehouse - Nairobi"
+        }
+      },
+      "logistics": {
+        "carrier": "DHL Express",
+        "origin": "Mumbai, India",
+        "port_of_entry": "Mombasa Port",
+        "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
+        "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "AMOX-SHIP-002",
+          "sscc": "616400300000222001",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "KEMSA",
+            "carrier": "DHL Express"
+          }
+        },
+        {
+          "type": "package",
+          "label": "AMOX-PKG-002",
+          "sscc": "616400300000222002",
+          "parentSSCC": "616400300000222001",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "AMOX-CASE-002",
+          "sscc": "616400300000222003",
+          "parentSSCC": "616400300000222002",
+          "metadata": {
+            "caseType": "carton"
+          }
+        },
+        {
+          "type": "batch",
+          "label": "AMOX-BATCH-002",
+          "sscc": null,
+          "parentSSCC": "616400300000222003",
+          "GTIN": "08901234567913",
+          "productName": "AMOXICILLIN 875MG+CLAVULANIC ACID 125MG INJECTION",
+          "product_code": "PH11949",
+          "batchNo": "AMX-BATCH-2025-002",
+          "batchStatus": "active",
+          "manufactureDate": "2025-06-15",
+          "expiryDate": "2027-06-15",
+          "quantityApproved": 750,
+          "permit_id": "PERMIT-AMOX-002",
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-12-09T11:00:00Z",
+            "quantities": {
+              "declared_total": 750,
+              "declared_sent": 750
+            }
+          },
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "AMX-SN-002-001",
+                "end": "AMX-SN-002-750",
+                "count": 750
+              }
+            ],
+            "explicit": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "header": {
+      "eventID": "EVT-AMOX-DEMO-003",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-12-09T12:00:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "AMOX-CONS-003",
+      "consignment_ref_number": "CRN-AMOX-003",
+      "shipmentDate": "2025-12-09",
+      "countryOfOrigin": "IN",
+      "destinationCountry": "KE",
+      "registrationNo": "REG-AMOX-003",
+      "totalQuantity": 1000,
+      "parties": {
+        "manufacturer_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "mah_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:616400300.00001.0",
+          "label": "MAN-001 Manufacturing Site"
+        },
+        "importer_party": {
+          "name": "KEMSA",
+          "country": "KE",
+          "gln": "0614141000013"
+        },
+        "destination_party": {
+          "name": "KEMSA",
+          "gln": "0614141000013"
+        },
+        "destination_location": {
+          "sgln": "urn:epc:id:sgln:061414100.00013.0",
+          "label": "KEMSA Warehouse - Nairobi"
+        }
+      },
+      "logistics": {
+        "carrier": "FedEx International",
+        "origin": "Mumbai, India",
+        "port_of_entry": "Mombasa Port",
+        "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
+        "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "AMOX-SHIP-003",
+          "sscc": "616400300000333001",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "KEMSA",
+            "carrier": "FedEx International"
+          }
+        },
+        {
+          "type": "package",
+          "label": "AMOX-PKG-003",
+          "sscc": "616400300000333002",
+          "parentSSCC": "616400300000333001",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "AMOX-CASE-003",
+          "sscc": "616400300000333003",
+          "parentSSCC": "616400300000333002",
+          "metadata": {
+            "caseType": "carton"
+          }
+        },
+        {
+          "type": "batch",
+          "label": "AMOX-BATCH-003",
+          "sscc": null,
+          "parentSSCC": "616400300000333003",
+          "GTIN": "08901234567913",
+          "productName": "AMOXICILLIN 875MG+CLAVULANIC ACID 125MG INJECTION",
+          "product_code": "PH11949",
+          "batchNo": "AMX-BATCH-2025-003",
+          "batchStatus": "active",
+          "manufactureDate": "2025-07-01",
+          "expiryDate": "2027-07-01",
+          "quantityApproved": 1000,
+          "permit_id": "PERMIT-AMOX-003",
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-12-09T12:00:00Z",
+            "quantities": {
+              "declared_total": 1000,
+              "declared_sent": 1000
+            }
+          },
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "AMX-SN-003-001",
+                "end": "AMX-SN-003-1000",
+                "count": 1000
+              }
+            ],
+            "explicit": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "header": {
+      "eventID": "EVT-AMOX-DEMO-004",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-12-09T13:00:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "AMOX-CONS-004",
+      "consignment_ref_number": "CRN-AMOX-004",
+      "shipmentDate": "2025-12-09",
+      "countryOfOrigin": "IN",
+      "destinationCountry": "KE",
+      "registrationNo": "REG-AMOX-004",
+      "totalQuantity": 600,
+      "parties": {
+        "manufacturer_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "mah_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:616400300.00001.0",
+          "label": "MAN-001 Manufacturing Site"
+        },
+        "importer_party": {
+          "name": "KEMSA",
+          "country": "KE",
+          "gln": "0614141000013"
+        },
+        "destination_party": {
+          "name": "KEMSA",
+          "gln": "0614141000013"
+        },
+        "destination_location": {
+          "sgln": "urn:epc:id:sgln:061414100.00013.0",
+          "label": "KEMSA Warehouse - Nairobi"
+        }
+      },
+      "logistics": {
+        "carrier": "UPS Worldwide",
+        "origin": "Mumbai, India",
+        "port_of_entry": "Mombasa Port",
+        "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
+        "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "AMOX-SHIP-004",
+          "sscc": "616400300000444001",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "KEMSA",
+            "carrier": "UPS Worldwide"
+          }
+        },
+        {
+          "type": "package",
+          "label": "AMOX-PKG-004",
+          "sscc": "616400300000444002",
+          "parentSSCC": "616400300000444001",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "AMOX-CASE-004",
+          "sscc": "616400300000444003",
+          "parentSSCC": "616400300000444002",
+          "metadata": {
+            "caseType": "carton"
+          }
+        },
+        {
+          "type": "batch",
+          "label": "AMOX-BATCH-004",
+          "sscc": null,
+          "parentSSCC": "616400300000444003",
+          "GTIN": "08901234567913",
+          "productName": "AMOXICILLIN 875MG+CLAVULANIC ACID 125MG INJECTION",
+          "product_code": "PH11949",
+          "batchNo": "AMX-BATCH-2025-004",
+          "batchStatus": "active",
+          "manufactureDate": "2025-07-15",
+          "expiryDate": "2027-07-15",
+          "quantityApproved": 600,
+          "permit_id": "PERMIT-AMOX-004",
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-12-09T13:00:00Z",
+            "quantities": {
+              "declared_total": 600,
+              "declared_sent": 600
+            }
+          },
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "AMX-SN-004-001",
+                "end": "AMX-SN-004-600",
+                "count": 600
+              }
+            ],
+            "explicit": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "header": {
+      "eventID": "EVT-AMOX-DEMO-005",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-12-09T14:00:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "AMOX-CONS-005",
+      "consignment_ref_number": "CRN-AMOX-005",
+      "shipmentDate": "2025-12-09",
+      "countryOfOrigin": "IN",
+      "destinationCountry": "KE",
+      "registrationNo": "REG-AMOX-005",
+      "totalQuantity": 850,
+      "parties": {
+        "manufacturer_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "mah_party": {
+          "name": "MAN-001",
+          "ppbID": "MAN001",
+          "gln": "6164003000000"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:616400300.00001.0",
+          "label": "MAN-001 Manufacturing Site"
+        },
+        "importer_party": {
+          "name": "KEMSA",
+          "country": "KE",
+          "gln": "0614141000013"
+        },
+        "destination_party": {
+          "name": "KEMSA",
+          "gln": "0614141000013"
+        },
+        "destination_location": {
+          "sgln": "urn:epc:id:sgln:061414100.00013.0",
+          "label": "KEMSA Warehouse - Nairobi"
+        }
+      },
+      "logistics": {
+        "carrier": "DHL Express",
+        "origin": "Mumbai, India",
+        "port_of_entry": "Mombasa Port",
+        "final_destination_sgln": "urn:epc:id:sgln:061414100.00013.0",
+        "final_destination_address": "KEMSA Central Warehouse, Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "AMOX-SHIP-005",
+          "sscc": "616400300000555001",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "KEMSA",
+            "carrier": "DHL Express"
+          }
+        },
+        {
+          "type": "package",
+          "label": "AMOX-PKG-005",
+          "sscc": "616400300000555002",
+          "parentSSCC": "616400300000555001",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "AMOX-CASE-005",
+          "sscc": "616400300000555003",
+          "parentSSCC": "616400300000555002",
+          "metadata": {
+            "caseType": "carton"
+          }
+        },
+        {
+          "type": "batch",
+          "label": "AMOX-BATCH-005",
+          "sscc": null,
+          "parentSSCC": "616400300000555003",
+          "GTIN": "08901234567913",
+          "productName": "AMOXICILLIN 875MG+CLAVULANIC ACID 125MG INJECTION",
+          "product_code": "PH11949",
+          "batchNo": "AMX-BATCH-2025-005",
+          "batchStatus": "active",
+          "manufactureDate": "2025-08-01",
+          "expiryDate": "2027-08-01",
+          "quantityApproved": 850,
+          "permit_id": "PERMIT-AMOX-005",
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-12-09T14:00:00Z",
+            "quantities": {
+              "declared_total": 850,
+              "declared_sent": 850
+            }
+          },
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "AMX-SN-005-001",
+                "end": "AMX-SN-005-850",
+                "count": 850
+              }
+            ],
+            "explicit": []
+          }
+        }
+      ]
+    }
+  }
+]

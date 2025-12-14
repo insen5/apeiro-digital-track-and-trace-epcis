@@ -1,0 +1,84 @@
+{
+  "header": {
+    "eventID": "EVT-DEMO-DOX-2025-001",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-12-09T00:00:00Z",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+  "consignment": {
+    "consignmentID": "DEMO-DOX-2025-001",
+    "shipmentDate": "2025-12-09",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "registrationNo": "PPB-DOX-2025-001",
+    "totalQuantity": 10000,
+    "manufacturerPPBID": "345345",
+    "MAHPPBID": "345345",
+    "manufacturerGLN": "6164003000000",
+    "MAHGLN": "6164003000000",
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIPMENT-DOX-001",
+        "sscc": "161640030000000009",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "KEMSA",
+          "carrier": "DHL Express"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-DOX-001",
+        "sscc": "161640030000000017",
+        "parentSSCC": "161640030000000009"
+      },
+      {
+        "type": "case",
+        "label": "CASE-DOX-001",
+        "sscc": "161640030000000025",
+        "parentSSCC": "161640030000000017"
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-DOX-2025-001",
+        "parentSSCC": "161640030000000025",
+        "GTIN": "61640056789019",
+        "productName": "Doxycycline 100mg Capsules",
+        "batchNo": "DOX-BATCH-2025-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2025-06-01",
+        "expiryDate": "2027-06-01",
+        "quantityApproved": 10000,
+        "product_code": "PH15133",
+        "permit_id": "PERMIT-DOX-001",
+        "serialization": {
+          "is_partial_approval": false,
+          "ranges": [
+            {
+              "start": "DOX-001",
+              "end": "DOX-050"
+            }
+          ],
+          "explicit": [
+            "DOX-DEMO-001",
+            "DOX-DEMO-002",
+            "DOX-DEMO-003",
+            "DOX-DEMO-004",
+            "DOX-DEMO-005"
+          ]
+        },
+        "approval": {
+          "approval_status": true,
+          "approval_datestamp": "2025-12-09T00:00:00Z",
+          "quantities": {
+            "declared_total": 10000,
+            "declared_sent": 10000
+          }
+        }
+      }
+    ]
+  }
+}
