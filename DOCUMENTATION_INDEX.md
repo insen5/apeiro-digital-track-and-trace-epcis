@@ -12,8 +12,9 @@
 2. **[docs/data-model/DATABASE_SCHEMA_LATEST.md](./docs/data-model/DATABASE_SCHEMA_LATEST.md)** - Complete database schema after V02-V05
 
 ### Implementation Status
-3. **[README_IMPLEMENTATION_STATUS.md](./README_IMPLEMENTATION_STATUS.md)** - What's implemented NOW
-4. **[docs/implementation/MIGRATION_STATUS.md](./docs/implementation/MIGRATION_STATUS.md)** - Applied migrations
+3. **[IMPLEMENTATION_STATUS_CONSOLIDATED.md](./IMPLEMENTATION_STATUS_CONSOLIDATED.md)** - ⭐ **START HERE** - Complete status of architecture + Tatmeen gaps
+4. **[README_IMPLEMENTATION_STATUS.md](./README_IMPLEMENTATION_STATUS.md)** - What's implemented NOW
+5. **[docs/implementation/MIGRATION_STATUS.md](./docs/implementation/MIGRATION_STATUS.md)** - Applied migrations
 
 ### Data Persistence
 5. **[DATA_PERSISTENCE_ANALYSIS.md](./DATA_PERSISTENCE_ANALYSIS.md)** - Complete analysis (CONSOLIDATED)
@@ -34,6 +35,7 @@
 16. **[kenya-tnt-system/REAL_TIME_PREMISE_SYNC.md](./kenya-tnt-system/REAL_TIME_PREMISE_SYNC.md)** - Sync strategies (batch/incremental/webhook)
 17. **[kenya-tnt-system/FACILITY_UAT_MASTER_DATA.md](./kenya-tnt-system/FACILITY_UAT_MASTER_DATA.md)** - Facility UAT sync setup & usage (Safaricom HIE)
 18. **[kenya-tnt-system/REAL_TIME_FACILITY_UAT_SYNC.md](./kenya-tnt-system/REAL_TIME_FACILITY_UAT_SYNC.md)** - Facility sync strategies (incremental/webhook)
+19. **[kenya-tnt-system/QUALITY_ALERT_SYSTEM.md](./kenya-tnt-system/QUALITY_ALERT_SYSTEM.md)** - 🚨 Automated quality monitoring & alerts
 
 ---
 
@@ -109,6 +111,12 @@ mv OLD_DOC.md docs/archive/OLD_DOC_2025-12-11.md
 - DATA_PERSISTENCE_ANALYSIS.md (Dec 11, 2025)
 - PARTIES_OBJECT_PERSISTENCE_AUDIT.md (Dec 11, 2025)
 
+**Planning & Architecture:**
+- full-rearch-plan.md (Dec 2025) - Original architecture plan
+- FEATURE_GAP_ANALYSIS.md (Dec 2025) - Tatmeen Level 5 comparison
+- **IMPLEMENTATION_STATUS_CONSOLIDATED.md (Dec 14, 2025) ← CURRENT STATUS**
+- **kenya-tnt-system/LEVEL_5_FEATURES_GUIDE.md (Dec 14, 2025) ← LEVEL 5 FEATURES**
+
 **Implementation:**
 - README_IMPLEMENTATION_STATUS.md (Dec 11, 2025)
 
@@ -121,6 +129,12 @@ mv OLD_DOC.md docs/archive/OLD_DOC_2025-12-11.md
 - DATA_QUALITY_REPORT_PREMISE_MASTER_DATA.md (Dec 14, 2025)
 - DATA_QUALITY_REPORT_PRODUCT_MASTER_DATA.md (Dec 14, 2025)
 - DATA_QUALITY_REPORT_FACILITY_UAT_MASTER_DATA.md (Dec 14, 2025)
+- **kenya-tnt-system/QUALITY_ALERT_SYSTEM.md (Dec 14, 2025) ← AUTOMATED ALERTS**
+
+**Level 5 T&T Features:**
+- **LEVEL_5_IMPLEMENTATION_COMPLETE.md (Dec 14, 2025) ← COMPLETE IMPLEMENTATION SUMMARY**
+- **kenya-tnt-system/LEVEL_5_FEATURES_GUIDE.md (Dec 14, 2025) ← USER GUIDE**
+- **kenya-tnt-system/LEVEL_5_QUICK_REF.md (Dec 14, 2025) ← QUICK REFERENCE**
 
 **Testing:**
 - test-data/TEST_QUICK_DEMO.json (CURRENT)
