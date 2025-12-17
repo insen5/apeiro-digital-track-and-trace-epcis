@@ -141,11 +141,14 @@
   - [x] Actor context in events (P0)
   - [x] 8 retry attempts
   - [x] Legacy table cleanup
-- [x] **PostGIS for Location Analytics** ✅ COMPLETED (schema ready)
-  - [x] PostGIS extension enabled
-  - [x] Location columns added
-  - [ ] Spatial indexes (pending)
-  - [ ] Location queries (pending)
+- [x] **PostGIS for Location Analytics** ⚠️ INFRASTRUCTURE READY (0% queries)
+  - [x] PostGIS extension enabled (v3.4.3)
+  - [x] Location columns added (latitude/longitude in facilities)
+  - [x] LMIS event support for coordinates
+  - [ ] Spatial indexes (30 min task)
+  - [ ] Coordinate extraction from APIs (2 hours)
+  - [ ] Location queries (1-2 weeks)
+  - **See:** `POSTGIS_LOCATION_ANALYSIS.md` for full roadmap
 - [x] **L5 TNT Analytics Tables (P0)** ✅ COMPLETED
   - [x] Product status tracking
   - [x] Product destruction
@@ -158,11 +161,13 @@
   - [x] Fixed all FKs to `ppb_products`
 - [ ] **Analytics Schema (Star Schema)** ⏳ DEFERRED
   - Documented in `SCHEMA_ENHANCEMENTS_BACKLOG.md`
+  - NOT required for PostGIS features
 - [ ] **Materialized Views** ⏳ DEFERRED
   - Documented in backlog
+  - Optional for PostGIS performance (future optimization)
 
 **Status:** 50% Complete  
-**Note:** Core analytics ready, advanced analytics deferred
+**Note:** Core analytics ready, PostGIS infrastructure ready (just needs indexes + queries)
 
 ---
 
@@ -194,14 +199,15 @@
 
 ---
 
-### ❌ Phase 9: Testing & Validation - **NOT STARTED** (0%)
-- [ ] Unit testing
+### ⚠️ Phase 9: Testing & Validation - **PARTIALLY STARTED** (20%)
+- [x] Unit testing (partial - GS1 services have tests)
 - [ ] Integration testing
 - [ ] Performance testing
-- [ ] GS1 compliance testing
+- [ ] GS1 compliance testing (comprehensive suite needed)
 
-**Status:** 0% Complete  
-**Priority:** P2 (manual testing done)
+**Status:** 20% Complete  
+**Priority:** P1 (GS1 compliance needed)  
+**See:** `CLARIFICATIONS_USER_FACILITY_MESSAGE_LOG_GS1.md` for GS1 test plan
 
 ---
 
@@ -312,9 +318,10 @@
 |--------|--------|----------|-------|
 | **Destruction Management** | ✅ 100% | P1 | **COMPLETED!** ✨ |
 | **Hierarchy Management** | ✅ 100% | P1 | **COMPLETED!** ✨ |
-| **Mobile Commissioning** | ❌ 0% | P1 | Unit-level serialization |
+| **Mobile Commissioning** | ⚠️ Optional | P1 | Manufacturer-side tool (not T&T responsibility) |
 | **GS1 Education System** | ✅ 100% | P1 | **COMPLETED!** ✨ |
-| **Message Log Module** | ❌ 0% | P1 | EPCIS tracking |
+| **Message Log Backend** | ✅ 100% | P1 | **EXISTS!** (epcis_events table) |
+| **Message Log UI** | ❌ 0% | P1 | Need UI/API (1 day) |
 | **Manufacturing Data** | ⚠️ 20% | P1 | Need date/origin/GLN |
 | **Reference Document** | ✅ 100% | P1 | **COMPLETED!** ✨ |
 | **Barcode Scanning** | ❌ 0% | P1 | Mobile scanning |
