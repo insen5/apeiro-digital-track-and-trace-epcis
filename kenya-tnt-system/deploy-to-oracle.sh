@@ -248,3 +248,4 @@ echo "$PUBLIC_IP" > /tmp/kenya-tnt-ip.txt
 echo "$SSH_KEY_PATH" > /tmp/kenya-tnt-ssh-key.txt
 
 print_success "Infrastructure setup complete! Ready for application deployment."
+

@@ -284,3 +284,4 @@ echo ""
 echo "View logs:"
 echo "  ssh -i $SSH_KEY_PATH ubuntu@$PUBLIC_IP \"cd ~/apeiro-digital-track-and-trace-epcis/kenya-tnt-system && docker-compose -f docker-compose.production.yml logs -f\""
 echo ""
+
