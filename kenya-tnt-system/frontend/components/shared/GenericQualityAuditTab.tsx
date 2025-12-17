@@ -283,7 +283,7 @@ export default function GenericQualityAuditTab({
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Records</p>
-                <p className="text-2xl font-bold">{entity.totalRecords.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{(entity.totalRecords ?? 0).toLocaleString()}</p>
                 <p className="text-xs text-gray-400 mt-1">{entityDisplayName}s</p>
               </div>
             </div>
@@ -299,10 +299,10 @@ export default function GenericQualityAuditTab({
               <div>
                 <p className="text-sm text-gray-500">Complete Records</p>
                 <p className="text-2xl font-bold">
-                  {latestAudit.completeRecords.toLocaleString()}
+                  {(latestAudit.completeRecords ?? 0).toLocaleString()}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {latestAudit.completenessPercentage.toFixed(1)}% complete
+                  {(latestAudit.completenessPercentage ?? 0).toFixed(1)}% complete
                 </p>
               </div>
             </div>
@@ -317,11 +317,11 @@ export default function GenericQualityAuditTab({
               </div>
               <div>
                 <p className="text-sm text-gray-500">Quality Score</p>
-                <p className={`text-2xl font-bold ${getScoreColor(latestAudit.overallQualityScore)}`}>
-                  {latestAudit.overallQualityScore.toFixed(1)}/100
+                <p className={`text-2xl font-bold ${getScoreColor(latestAudit.overallQualityScore ?? 0)}`}>
+                  {(latestAudit.overallQualityScore ?? 0).toFixed(1)}/100
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Grade: {latestAudit.overallQualityScore >= 90 ? 'A+' : latestAudit.overallQualityScore >= 80 ? 'A' : latestAudit.overallQualityScore >= 70 ? 'B' : latestAudit.overallQualityScore >= 60 ? 'C' : 'F'}
+                  Grade: {(latestAudit.overallQualityScore ?? 0) >= 90 ? 'A+' : (latestAudit.overallQualityScore ?? 0) >= 80 ? 'A' : (latestAudit.overallQualityScore ?? 0) >= 70 ? 'B' : (latestAudit.overallQualityScore ?? 0) >= 60 ? 'C' : 'F'}
                 </p>
               </div>
             </div>
@@ -365,6 +365,7 @@ export default function GenericQualityAuditTab({
               timeliness: 15,
             };
             const weight = weights[dimension as keyof typeof weights] || 0;
+            const safeScore = score ?? 0;
             
             return (
               <div key={dimension}>
@@ -372,14 +373,14 @@ export default function GenericQualityAuditTab({
                   <span className="text-sm font-medium capitalize">
                     {dimension} ({weight}% weight)
                   </span>
-                  <span className={`text-sm font-bold ${getScoreColor(score)}`}>
-                    {score.toFixed(0)}/100
+                  <span className={`text-sm font-bold ${getScoreColor(safeScore)}`}>
+                    {safeScore.toFixed(0)}/100
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className={`h-3 rounded-full transition-all duration-300 ${getScoreBgColor(score)}`}
-                    style={{ width: `${score}%` }}
+                    className={`h-3 rounded-full transition-all duration-300 ${getScoreBgColor(safeScore)}`}
+                    style={{ width: `${safeScore}%` }}
                   />
                 </div>
               </div>
