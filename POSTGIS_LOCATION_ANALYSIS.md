@@ -40,6 +40,7 @@ latitude  NUMERIC(10,8)
 longitude NUMERIC(11,8)
 
 -- Current data: 0 facilities with coordinates (NULL values)
+-- Validation: Kenya bounds (lat: -4.7 to 5.0, lng: 33.9 to 41.9)
 ```
 
 ### 3. **LMIS Event Location Support** ✅
@@ -177,6 +178,14 @@ facilityData.longitude = apiResponse.longitude;
 
 #### **2b. NLMIS API** 
 Similar check for production facilities sync.
+
+#### **2c. Coordinate Validation (Kenya-Specific Bounds)**
+**IMPLEMENTED:** Data quality reports now validate coordinates against Kenya's geographical bounds:
+- **Latitude:** -4.7° to 5.0° (Kenya spans from south to north)
+- **Longitude:** 33.9° to 41.9° (Kenya spans from west to east)
+- **Global bounds check:** Also validates lat ∈ [-90, 90] and lng ∈ [-180, 180]
+
+Any coordinates outside these ranges are flagged as `invalidCoordinates` in the data quality report.
 
 ---
 
