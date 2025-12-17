@@ -1,0 +1,200 @@
+{
+  "header": {
+    "eventID": "EVT-2025-FRESH-002",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-01-28T14:20:00Z",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+  "consignment": {
+    "consignmentID": "CONS-2025-FRESH-002",
+    "shipmentDate": "2025-01-26",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "manufacturer": {
+      "ppbID": "MAN-001",
+      "gln": "6164003000000"
+    },
+    "mah": {
+      "ppbID": "MAH-001",
+      "gln": "6164003000001"
+    },
+    "registrationNo": "PPB/REG/2025/FRESH-002",
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-FRESH-002",
+        "sscc": "061640030000078901",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "East Africa Medical Supplies",
+          "carrier": "FedEx",
+          "pickupLocation": "Delhi, India",
+          "destinationAddress": "Mombasa, Kenya"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-FRESH-003",
+        "sscc": "061640030000078902",
+        "parentSSCC": "061640030000078901",
+        "metadata": {
+          "packageType": "pallet"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-FRESH-004",
+        "sscc": "061640030000078903",
+        "parentSSCC": "061640030000078901",
+        "metadata": {
+          "packageType": "pallet"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-FRESH-004",
+        "sscc": "061640030000078904",
+        "parentSSCC": "061640030000078902",
+        "metadata": {}
+      },
+      {
+        "type": "case",
+        "label": "CASE-FRESH-005",
+        "sscc": "061640030000078905",
+        "parentSSCC": "061640030000078902",
+        "metadata": {}
+      },
+      {
+        "type": "case",
+        "label": "CASE-FRESH-006",
+        "sscc": "061640030000078906",
+        "parentSSCC": "061640030000078903",
+        "metadata": {}
+      },
+      {
+        "type": "case",
+        "label": "CASE-FRESH-007",
+        "sscc": "061640030000078907",
+        "parentSSCC": "061640030000078903",
+        "metadata": {}
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-FRESH-005",
+        "sscc": null,
+        "parentSSCC": "061640030000078904",
+        "GTIN": "61640056789016",
+        "productName": "Aspirin 100mg Tablets",
+        "batchNo": "BATCH-FRESH-2025-005",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-08-20",
+        "expiryDate": "2027-08-20",
+        "quantityApproved": 10000,
+        "serialNumbers": [
+          "KE0050001",
+          "KE0050002",
+          "KE0050003",
+          "KE0050004",
+          "KE0050005",
+          "KE0050006",
+          "KE0050007",
+          "KE0050008",
+          "KE0050009",
+          "KE0050010",
+          "KE0050011",
+          "KE0050012"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-FRESH-006",
+        "sscc": null,
+        "parentSSCC": "061640030000078904",
+        "GTIN": "61640056789017",
+        "productName": "Ciprofloxacin 500mg Tablets",
+        "batchNo": "BATCH-FRESH-2025-006",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-09-10",
+        "expiryDate": "2027-09-10",
+        "quantityApproved": 7500,
+        "serialNumbers": [
+          "KE0060001",
+          "KE0060002",
+          "KE0060003",
+          "KE0060004",
+          "KE0060005",
+          "KE0060006",
+          "KE0060007"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-FRESH-007",
+        "sscc": null,
+        "parentSSCC": "061640030000078905",
+        "GTIN": "61640056789018",
+        "productName": "Azithromycin 250mg Capsules",
+        "batchNo": "BATCH-FRESH-2025-007",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-10-05",
+        "expiryDate": "2027-10-05",
+        "quantityApproved": 4500,
+        "serialNumbers": [
+          "KE0070001",
+          "KE0070002",
+          "KE0070003",
+          "KE0070004",
+          "KE0070005"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-FRESH-008",
+        "sscc": null,
+        "parentSSCC": "061640030000078906",
+        "GTIN": "61640056789019",
+        "productName": "Doxycycline 100mg Capsules",
+        "batchNo": "BATCH-FRESH-2025-008",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-11-20",
+        "expiryDate": "2027-11-20",
+        "quantityApproved": 5500,
+        "serialNumbers": [
+          "KE0080001",
+          "KE0080002",
+          "KE0080003",
+          "KE0080004",
+          "KE0080005",
+          "KE0080006"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-FRESH-009",
+        "sscc": null,
+        "parentSSCC": "061640030000078907",
+        "GTIN": "61640056789020",
+        "productName": "Omeprazole 20mg Capsules",
+        "batchNo": "BATCH-FRESH-2025-009",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-12-10",
+        "expiryDate": "2027-12-10",
+        "quantityApproved": 9000,
+        "serialNumbers": [
+          "KE0090001",
+          "KE0090002",
+          "KE0090003",
+          "KE0090004",
+          "KE0090005",
+          "KE0090006",
+          "KE0090007",
+          "KE0090008",
+          "KE0090009"
+        ]
+      }
+    ]
+  }
+}
+

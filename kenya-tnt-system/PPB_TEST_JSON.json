@@ -1,0 +1,252 @@
+{
+  "header": {
+    "eventID": "EVT-2025-001234",
+    "eventType": "INBOUND_SHIPMENT",
+    "eventTimestamp": "2025-11-12T10:30:00Z",
+    "sourceSystem": "PPB-HIE",
+    "destinationSystem": "TNT"
+  },
+  "consignment": {
+    "manufacturerPPBID": "345345",
+    "MAHPPBID": "34234324",
+    "manufacturerGLN": "6164003000000",
+    "MAHGLN": "6164003000000",
+    "registrationNo": "PPB/REG/2025/001234",
+    "consignmentID": "CONS-2025-001234",
+    "shipmentDate": "2025-11-10",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "totalQuantity": 50000,
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-IND-2025-001",
+        "sscc": "616400300000123456",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "KEMSA",
+          "carrier": "DHL Global Forwarding",
+          "pickupLocation": "Mumbai Port, Maharashtra, India",
+          "destinationAddress": "Nairobi, Kenya"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-001",
+        "sscc": "616400300000123457",
+        "parentSSCC": "616400300000123456",
+        "metadata": {
+          "packageType": "pallet",
+          "weight": "850kg"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-002",
+        "sscc": "616400300000123458",
+        "parentSSCC": "616400300000123456",
+        "metadata": {
+          "packageType": "pallet",
+          "weight": "850kg"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-001",
+        "sscc": "616400300000123459",
+        "parentSSCC": "616400300000123457",
+        "metadata": {
+          "caseType": "carton"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-002",
+        "sscc": "616400300000123460",
+        "parentSSCC": "616400300000123457",
+        "metadata": {
+          "caseType": "carton"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-003",
+        "sscc": "616400300000123461",
+        "parentSSCC": "616400300000123458",
+        "metadata": {
+          "caseType": "carton"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-004",
+        "sscc": "616400300000123462",
+        "parentSSCC": "616400300000123458",
+        "metadata": {
+          "caseType": "carton"
+        }
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-MET-001",
+        "sscc": null,
+        "parentSSCC": "616400300000123459",
+        "GTIN": "61640056789012",
+        "productName": "Metformin Hydrochloride 500mg Tablets",
+        "batchNo": "BATCH-MET-2024-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-09-15",
+        "expiryDate": "2027-09-15",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0010001",
+          "KE0010002",
+          "KE0010003",
+          "KE0010004",
+          "KE0010005"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-MET-002",
+        "sscc": null,
+        "parentSSCC": "616400300000123459",
+        "GTIN": "61640056789012",
+        "productName": "Metformin Hydrochloride 500mg Tablets",
+        "batchNo": "BATCH-MET-2024-002",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-09-20",
+        "expiryDate": "2027-09-20",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0010006",
+          "KE0010007",
+          "KE0010008",
+          "KE0010009",
+          "KE0010010"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-AML-001",
+        "sscc": null,
+        "parentSSCC": "616400300000123460",
+        "GTIN": "61640056789013",
+        "productName": "Amlodipine 5mg Tablets",
+        "batchNo": "BATCH-AML-2024-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-10-01",
+        "expiryDate": "2027-10-01",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0020001",
+          "KE0020002",
+          "KE0020003",
+          "KE0020004",
+          "KE0020005"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-AML-002",
+        "sscc": null,
+        "parentSSCC": "616400300000123460",
+        "GTIN": "61640056789013",
+        "productName": "Amlodipine 5mg Tablets",
+        "batchNo": "BATCH-AML-2024-002",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-10-05",
+        "expiryDate": "2027-10-05",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0020006",
+          "KE0020007",
+          "KE0020008",
+          "KE0020009",
+          "KE0020010"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-ART-001",
+        "sscc": null,
+        "parentSSCC": "616400300000123461",
+        "GTIN": "61640056789014",
+        "productName": "Artemether-Lumefantrine 20/120mg Tablets",
+        "batchNo": "BATCH-ART-2024-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-08-15",
+        "expiryDate": "2026-08-15",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0030001",
+          "KE0030002",
+          "KE0030003",
+          "KE0030004",
+          "KE0030005"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-ART-002",
+        "sscc": null,
+        "parentSSCC": "616400300000123461",
+        "GTIN": "61640056789014",
+        "productName": "Artemether-Lumefantrine 20/120mg Tablets",
+        "batchNo": "BATCH-ART-2024-002",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-08-20",
+        "expiryDate": "2026-08-20",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0030006",
+          "KE0030007",
+          "KE0030008",
+          "KE0030009",
+          "KE0030010"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-PAR-001",
+        "sscc": null,
+        "parentSSCC": "616400300000123462",
+        "GTIN": "61640056789015",
+        "productName": "Paracetamol 500mg Tablets",
+        "batchNo": "BATCH-PAR-2024-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-11-01",
+        "expiryDate": "2027-11-01",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0040001",
+          "KE0040002",
+          "KE0040003",
+          "KE0040004",
+          "KE0040005"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-PAR-002",
+        "sscc": null,
+        "parentSSCC": "616400300000123462",
+        "GTIN": "61640056789015",
+        "productName": "Paracetamol 500mg Tablets",
+        "batchNo": "BATCH-PAR-2024-002",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-11-05",
+        "expiryDate": "2027-11-05",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0040006",
+          "KE0040007",
+          "KE0040008",
+          "KE0040009",
+          "KE0040010"
+        ]
+      }
+    ]
+  }
+}
+

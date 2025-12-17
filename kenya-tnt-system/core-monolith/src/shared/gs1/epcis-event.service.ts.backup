@@ -1,0 +1,702 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
+import { EPCISService } from '../infrastructure/epcis/epcis.service';
+import {
+  EPCISDocument,
+  AggregationEvent,
+  ObjectEvent,
+  BizTransaction,
+  QuantityElement,
+  SourceDestination,
+  SensorElement,
+  ErrorDeclaration,
+} from '../infrastructure/epcis/types';
+import { EPCISEvent } from '../domain/entities/epcis-event.entity';
+import { EPCISEventEPC } from '../domain/entities/epcis-event-epc.entity';
+import { EPCISEventBizTransaction } from '../domain/entities/epcis-event-biz-transaction.entity';
+import { EPCISEventQuantity } from '../domain/entities/epcis-event-quantity.entity';
+import { EPCISEventSource } from '../domain/entities/epcis-event-source.entity';
+import { EPCISEventDestination } from '../domain/entities/epcis-event-destination.entity';
+import { EPCISEventSensor } from '../domain/entities/epcis-event-sensor.entity';
+
+/**
+ * EPCIS Event Service
+ *
+ * Creates EPCIS 2.0 compliant events using the EPCIS adapter.
+ * Implements dual write: sends events to OpenEPCIS and saves summaries to PostgreSQL.
+ * This service uses the vendor-agnostic EPCIS adapter interface.
+ */
+/**
+ * EPCIS Version Selection
+ * Supports both EPCIS 1.2 (legacy) and 2.0 (current standard)
+ */
+export enum EPCISVersion {
+  V1_2 = '1.2',
+  V2_0 = '2.0',
+}
+
+@Injectable()
+export class EPCISEventService {
+  private readonly logger = new Logger(EPCISEventService.name);
+  private readonly MAX_RETRY_ATTEMPTS = 8; // Increased from 3 to 8 for better resilience
+  private readonly RETRY_DELAY_MS = 1000; // 1 second
+
+  constructor(
+    private readonly epcisService: EPCISService,
+    private readonly dataSource: DataSource,
+    @InjectRepository(EPCISEvent)
+    private readonly eventRepo: Repository<EPCISEvent>,
+    @InjectRepository(EPCISEventEPC)
+    private readonly eventEpcRepo: Repository<EPCISEventEPC>,
+    @InjectRepository(EPCISEventBizTransaction)
+    private readonly bizTransactionRepo: Repository<EPCISEventBizTransaction>,
+    @InjectRepository(EPCISEventQuantity)
+    private readonly quantityRepo: Repository<EPCISEventQuantity>,
+    @InjectRepository(EPCISEventSource)
+    private readonly sourceRepo: Repository<EPCISEventSource>,
+    @InjectRepository(EPCISEventDestination)
+    private readonly destinationRepo: Repository<EPCISEventDestination>,
+    @InjectRepository(EPCISEventSensor)
+    private readonly sensorRepo: Repository<EPCISEventSensor>,
+  ) {}
+
+  /**
+   * Create an AggregationEvent
+   *
+   * Used for: Cases (batches → case), Packages (cases → package), Shipments (packages → shipment)
+   *
+   * Implements dual write: sends to OpenEPCIS and saves summary to PostgreSQL.
+   * If summary save fails, it retries but doesn't fail the main operation.
+   *
+   * @param parentId EPC URI of parent (e.g., case, package, shipment)
+   * @param childEPCs Array of EPC URIs of children (e.g., batches, cases, packages)
+   * @param options Optional event properties
+   * @returns Event ID
+   */
+  async createAggregationEvent(
+    parentId: string,
+    childEPCs: string[],
+    options?: {
+      bizStep?: string;
+      disposition?: string;
+      readPoint?: { id: string };
+      bizLocation?: { id: string };
+      action?: 'ADD' | 'DELETE' | 'OBSERVE';
+      // EPCIS standard fields (1.2 and 2.0)
+      bizTransactionList?: BizTransaction[];
+      quantityList?: QuantityElement[];
+      sourceList?: SourceDestination[];
+      destinationList?: SourceDestination[];
+      sensorElementList?: SensorElement[]; // EPCIS 2.0 only
+      errorDeclaration?: ErrorDeclaration;
+      eventTimeZoneOffset?: string;
+      // Location coordinates (P0 - Critical for geographic analytics)
+      latitude?: number;
+      longitude?: number;
+      accuracyMeters?: number;
+      // Actor context (P0 - Critical for L5 TNT)
+      actorType?: string;
+      actorUserId?: string;
+      actorGLN?: string;
+      actorOrganization?: string;
+      sourceEntityType?: string;
+      sourceEntityId?: number;
+    },
+  ): Promise<string> {
+    const eventId = `urn:uuid:${uuidv4()}`;
+    const eventTime = new Date();
+
+    const event: AggregationEvent = {
+      eventID: eventId,
+      type: 'AggregationEvent',
+      eventTime: eventTime.toISOString(),
+      eventTimeZoneOffset: options?.eventTimeZoneOffset || this.getTimeZoneOffset(),
+      parentID: parentId,
+      childEPCs,
+      action: options?.action || 'ADD',
+      bizStep: options?.bizStep || 'packing',
+      disposition: options?.disposition || 'in_progress',
+      readPoint: options?.readPoint,
+      bizLocation: options?.bizLocation,
+      bizTransactionList: options?.bizTransactionList,
+      quantityList: options?.quantityList,
+      sourceList: options?.sourceList,
+      destinationList: options?.destinationList,
+      sensorElementList: options?.sensorElementList, // EPCIS 2.0 only
+      errorDeclaration: options?.errorDeclaration,
+    };
+
+    // Support both EPCIS 1.2 and 2.0
+    const version = options?.epcisVersion || EPCISVersion.V2_0;
+    
+    let document: any;
+    if (version === EPCISVersion.V2_0) {
+      // EPCIS 2.0: Native ilmd and extensions, JSON-LD context
+      document = {
+        '@context': ['https://ref.gs1.org/standards/epcis/epcis-context.jsonld'],
+        type: 'EPCISDocument',
+        schemaVersion: '2.0',
+        creationDate: new Date().toISOString(),
+        epcisBody: {
+          eventList: [event],
+        },
+      };
+    } else {
+      // EPCIS 1.2: Move ilmd to extension namespace, no @context
+      const event12 = { ...event };
+      
+      document = {
+        type: 'EPCISDocument',
+        schemaVersion: '1.2',
+        creationDate: new Date().toISOString(),
+        epcisBody: {
+          eventList: [event12],
+        },
+      };
+    }
+
+    // Step 1: Send to OpenEPCIS (try, but don't fail if unavailable)
+    let epcisSuccess = false;
+    try {
+      const result = await this.epcisService.captureEvent(document);
+      if (result.success) {
+        epcisSuccess = true;
+        this.logger.log(
+          `AggregationEvent sent to OpenEPCIS: ${eventId} for parent ${parentId}`,
+        );
+      } else {
+        this.logger.warn(
+          `OpenEPCIS returned errors for event ${eventId}: ${result.errors?.join(', ')}`,
+        );
+        // Don't throw - continue to save to database
+      }
+    } catch (error: any) {
+      // Log error but don't fail - allow database persistence to proceed
+      this.logger.warn(
+        `Failed to send AggregationEvent to OpenEPCIS for parent ${parentId} (continuing with database save)`,
+        error?.message,
+      );
+      // Log detailed error for debugging
+      this.logger.debug(
+        `OpenEPCIS error details: ${JSON.stringify({
+          message: error?.message,
+          code: error?.code,
+          response: error?.response?.data,
+          status: error?.response?.status,
+          url: error?.config?.url,
+        })}`,
+      );
+      // Don't throw - continue to save to database even if OpenEPCIS fails
+    }
+
+    // Step 2: Save to normalized PostgreSQL tables (primary operation - must succeed)
+    // Always save to database, regardless of OpenEPCIS status
+    await this.saveEventToNormalizedTables({
+        eventId,
+        eventType: 'AggregationEvent',
+        parentId: parentId,
+        childEPCs: childEPCs,
+        bizStep: event.bizStep,
+        disposition: event.disposition,
+        action: event.action,
+        eventTime: eventTime,
+        eventTimeZoneOffset: event.eventTimeZoneOffset,
+        readPointId: event.readPoint?.id,
+        bizLocationId: event.bizLocation?.id,
+        latitude: options?.latitude,
+        longitude: options?.longitude,
+        // EPCIS standard fields
+        bizTransactionList: event.bizTransactionList,
+        quantityList: event.quantityList,
+        sourceList: event.sourceList,
+        destinationList: event.destinationList,
+        sensorElementList: event.sensorElementList,
+        errorDeclaration: event.errorDeclaration,
+        // Actor context (P0 - Critical for L5 TNT)
+        actorType: options?.actorType,
+        actorUserId: options?.actorUserId,
+        actorGLN: options?.actorGLN,
+        actorOrganization: options?.actorOrganization,
+        sourceEntityType: options?.sourceEntityType,
+        sourceEntityId: options?.sourceEntityId,
+      });
+
+    // Log final status
+    if (epcisSuccess) {
+      this.logger.log(`Event ${eventId} successfully sent to OpenEPCIS and saved to database`);
+    } else {
+      this.logger.warn(`Event ${eventId} saved to database but OpenEPCIS was unavailable`);
+    }
+
+    return eventId;
+  }
+
+  /**
+   * Create an ObjectEvent
+   *
+   * Used for: Unit-level tracking (SGTINs), individual product events
+   *
+   * Implements dual write: sends to OpenEPCIS and saves summary to PostgreSQL.
+   * If summary save fails, it retries but doesn't fail the main operation.
+   *
+   * @param epcList Array of EPC URIs (e.g., SGTINs)
+   * @param options Optional event properties
+   * @returns Event ID
+   */
+  async createObjectEvent(
+    epcList: string[],
+    options?: {
+      bizStep?: string;
+      disposition?: string;
+      readPoint?: { id: string };
+      bizLocation?: { id: string };
+      action?: 'ADD' | 'DELETE' | 'OBSERVE';
+      // EPCIS standard fields (1.2 and 2.0)
+      bizTransactionList?: BizTransaction[];
+      quantityList?: QuantityElement[];
+      sourceList?: SourceDestination[];
+      destinationList?: SourceDestination[];
+      sensorElementList?: SensorElement[]; // EPCIS 2.0 only
+      errorDeclaration?: ErrorDeclaration;
+      eventTimeZoneOffset?: string;
+      // EPCIS 2.0: Instance/Lot Master Data (Critical for batch tracking)
+      ilmd?: {
+        lotNumber?: string;
+        itemExpirationDate?: string; // ISO 8601 date
+        productionDate?: string; // ISO 8601 date
+        countryOfOrigin?: string; // ISO 3166-1 alpha-2
+        countryOfExport?: string;
+        [key: string]: any; // Allow custom ILMD fields
+      };
+      // EPCIS 2.0: Extensions for regulatory/business metadata
+      extensions?: Record<string, any>;
+      // EPCIS Version Selection (default: 2.0)
+      epcisVersion?: EPCISVersion;
+      // Location coordinates (P0 - Critical for geographic analytics)
+      latitude?: number;
+      longitude?: number;
+      accuracyMeters?: number;
+      // Actor context (P0 - Critical for L5 TNT)
+      actorType?: string;
+      actorUserId?: string;
+      actorGLN?: string;
+      actorOrganization?: string;
+      sourceEntityType?: string;
+      sourceEntityId?: number;
+    },
+  ): Promise<string> {
+    const eventId = `urn:uuid:${uuidv4()}`;
+    const eventTime = new Date();
+
+    const event: ObjectEvent = {
+      eventID: eventId,
+      type: 'ObjectEvent',
+      eventTime: eventTime.toISOString(),
+      eventTimeZoneOffset: options?.eventTimeZoneOffset || this.getTimeZoneOffset(),
+      epcList,
+      action: options?.action || 'ADD',
+      bizStep: options?.bizStep,
+      disposition: options?.disposition,
+      readPoint: options?.readPoint,
+      bizLocation: options?.bizLocation,
+      bizTransactionList: options?.bizTransactionList,
+      quantityList: options?.quantityList,
+      sourceList: options?.sourceList,
+      destinationList: options?.destinationList,
+      sensorElementList: options?.sensorElementList, // EPCIS 2.0 only
+      errorDeclaration: options?.errorDeclaration,
+      ilmd: options?.ilmd, // EPCIS 2.0: Batch/lot master data
+      extensions: options?.extensions, // EPCIS 2.0: Custom extensions
+    };
+
+    // Support both EPCIS 1.2 and 2.0
+    const version = options?.epcisVersion || EPCISVersion.V2_0;
+    
+    let document: any;
+    if (version === EPCISVersion.V2_0) {
+      // EPCIS 2.0: Native ilmd and extensions, JSON-LD context
+      document = {
+        '@context': ['https://ref.gs1.org/standards/epcis/epcis-context.jsonld'],
+        type: 'EPCISDocument',
+        schemaVersion: '2.0',
+        creationDate: new Date().toISOString(),
+        epcisBody: {
+          eventList: [event],
+        },
+      };
+    } else {
+      // EPCIS 1.2: Move ilmd to extension namespace, no @context
+      const event12 = { ...event };
+      
+      document = {
+        type: 'EPCISDocument',
+        schemaVersion: '1.2',
+        creationDate: new Date().toISOString(),
+        epcisBody: {
+          eventList: [event12],
+        },
+      };
+    }
+
+    // Step 1: Send to OpenEPCIS (try, but don't fail if unavailable)
+    let epcisSuccess = false;
+    try {
+      const result = await this.epcisService.captureEvent(document);
+      if (result.success) {
+        epcisSuccess = true;
+        this.logger.log(
+          `ObjectEvent sent to OpenEPCIS: ${eventId} for ${epcList.length} EPCs`,
+        );
+      } else {
+        this.logger.warn(
+          `OpenEPCIS returned errors for event ${eventId}: ${result.errors?.join(', ')}`,
+        );
+        // Don't throw - continue to save to database
+      }
+    } catch (error: any) {
+      // Log error but don't fail - allow database persistence to proceed
+      this.logger.warn(
+        `Failed to send ObjectEvent to OpenEPCIS (continuing with database save)`,
+        error?.message,
+      );
+      // Don't throw - continue to save to database even if OpenEPCIS fails
+    }
+
+    // Step 2: Save to normalized PostgreSQL tables (primary operation - must succeed)
+    // Always save to database, regardless of OpenEPCIS status
+    await this.saveEventToNormalizedTables({
+      eventId,
+      eventType: 'ObjectEvent',
+      parentId: null, // ObjectEvents don't have parent
+      childEPCs: epcList, // For ObjectEvents, epcList becomes childEPCs
+      bizStep: event.bizStep,
+      disposition: event.disposition,
+      action: event.action,
+      eventTime: eventTime,
+      eventTimeZoneOffset: event.eventTimeZoneOffset,
+      readPointId: event.readPoint?.id,
+      bizLocationId: event.bizLocation?.id,
+      latitude: options?.latitude,
+      longitude: options?.longitude,
+      // EPCIS standard fields
+      bizTransactionList: event.bizTransactionList,
+      quantityList: event.quantityList,
+      sourceList: event.sourceList,
+      destinationList: event.destinationList,
+      sensorElementList: event.sensorElementList,
+      errorDeclaration: event.errorDeclaration,
+      // Actor context (P0 - Critical for L5 TNT)
+      actorType: options?.actorType,
+      actorUserId: options?.actorUserId,
+      actorGLN: options?.actorGLN,
+      actorOrganization: options?.actorOrganization,
+      sourceEntityType: options?.sourceEntityType,
+      sourceEntityId: options?.sourceEntityId,
+    });
+
+    // Log final status
+    if (epcisSuccess) {
+      this.logger.log(`Event ${eventId} successfully sent to OpenEPCIS and saved to database`);
+    } else {
+      this.logger.warn(`Event ${eventId} saved to database but OpenEPCIS was unavailable`);
+    }
+
+    return eventId;
+  }
+
+  /**
+   * Save event to normalized PostgreSQL tables with retry logic
+   *
+   * This is a secondary operation that should not fail the main event creation.
+   * If all retries fail, it logs an error but doesn't throw.
+   *
+   * @param summary Event data to save
+   */
+  private async saveEventToNormalizedTables(summary: {
+    eventId: string;
+    eventType: string;
+    parentId: string | null;
+    childEPCs: string[];
+    bizStep?: string;
+    disposition?: string;
+    action?: 'ADD' | 'DELETE' | 'OBSERVE';
+    eventTime: Date;
+    eventTimeZoneOffset?: string;
+    readPointId?: string;
+    bizLocationId?: string;
+    latitude?: number;
+    longitude?: number;
+    // EPCIS standard fields
+    bizTransactionList?: BizTransaction[];
+    quantityList?: QuantityElement[];
+    sourceList?: SourceDestination[];
+    destinationList?: SourceDestination[];
+    sensorElementList?: SensorElement[];
+    errorDeclaration?: ErrorDeclaration;
+    // Actor context (P0 - Critical for L5 TNT)
+    actorType?: string;
+    actorUserId?: string;
+    actorGLN?: string;
+    actorOrganization?: string;
+    sourceEntityType?: string;
+    sourceEntityId?: number;
+  }): Promise<void> {
+    this.logger.log(`[DB] saveEventToNormalizedTables called for event: ${summary.eventId}`);
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        this.logger.log(`[DB] Attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS} for event: ${summary.eventId}`);
+        
+        // Use raw SQL insert to bypass TypeORM column mapping issues completely
+        this.logger.log(`[DB] Inserting EPCIS event: ${summary.eventId}, type: ${summary.eventType}`);
+        let insertResult: any;
+        try {
+          // Use raw SQL to completely bypass TypeORM's entity mapping
+          const sql = `
+            INSERT INTO epcis_events (
+              event_id, event_type, parent_id, biz_step, disposition, action,
+              event_time, event_timezone_offset, read_point_id, biz_location_id,
+              latitude, longitude,
+              error_declaration_time, error_declaration_reason, error_corrective_event_ids,
+              actor_type, actor_user_id, actor_gln, actor_organization,
+              source_entity_type, source_entity_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+            RETURNING id
+          `;
+          
+          const params = [
+            summary.eventId,
+            summary.eventType,
+            summary.parentId,
+            summary.bizStep,
+            summary.disposition,
+            summary.action,
+            summary.eventTime,
+            summary.eventTimeZoneOffset,
+            summary.readPointId,
+            summary.bizLocationId,
+            summary.latitude,
+            summary.longitude,
+            summary.errorDeclaration?.declarationTime
+              ? new Date(summary.errorDeclaration.declarationTime)
+              : null,
+            summary.errorDeclaration?.reason,
+            summary.errorDeclaration?.correctiveEventIDs,
+            summary.actorType,
+            summary.actorUserId,
+            summary.actorGLN,
+            summary.actorOrganization,
+            summary.sourceEntityType,
+            summary.sourceEntityId,
+          ];
+          
+          insertResult = await this.dataSource.query(sql, params);
+          this.logger.log(`[DB] Insert successful. ID: ${insertResult[0]?.id}`);
+        } catch (insertError: any) {
+          this.logger.error(`[DB] Failed to insert event ${summary.eventId}:`, insertError?.message);
+          this.logger.error(`[DB] Insert error stack:`, insertError?.stack);
+          throw insertError; // Re-throw to trigger retry
+        }
+
+        // Construct saved event from insert result (raw SQL returns array)
+        const savedEventId = insertResult[0]?.id;
+        const savedEvent = {
+          id: savedEventId,
+          eventId: summary.eventId,
+        } as any;
+        this.logger.log(`[DB] Saved event ID: ${savedEvent.id}, eventId: ${savedEvent.eventId}`);
+
+        // Create EPC records in junction table
+        this.logger.log(`[DEBUG] Saving EPCs - summary.childEPCs count: ${summary.childEPCs?.length || 0}`);
+        if (summary.childEPCs && summary.childEPCs.length > 0) {
+          this.logger.log(`[DEBUG] Creating ${summary.childEPCs.length} EPC entities for event ${savedEvent.eventId}`);
+          const epcEntities = summary.childEPCs.map((epc) => {
+            const epcType = this.detectEPCType(epc);
+            this.logger.log(`[DEBUG] EPC: ${epc}, type: ${epcType}`);
+            return this.eventEpcRepo.create({
+              eventId: savedEvent.eventId,
+              epc,
+              epcType,
+            });
+          });
+
+          const savedEpcs = await this.eventEpcRepo.save(epcEntities);
+          this.logger.log(`[DEBUG] Successfully saved ${savedEpcs.length} EPCs to epcis_event_epcs`);
+        } else {
+          this.logger.warn(`[WARNING] No childEPCs to save for event ${savedEvent.eventId}!`);
+        }
+
+        // Create business transaction records
+        if (summary.bizTransactionList && summary.bizTransactionList.length > 0) {
+          const bizTransactionEntities = summary.bizTransactionList.map((bt) =>
+            this.bizTransactionRepo.create({
+              eventId: savedEvent.eventId,
+              transactionType: bt.type,
+              transactionId: bt.bizTransaction,
+            }),
+          );
+          await this.bizTransactionRepo.save(bizTransactionEntities);
+        }
+
+        // Create quantity records
+        if (summary.quantityList && summary.quantityList.length > 0) {
+          const quantityEntities = summary.quantityList.map((q) =>
+            this.quantityRepo.create({
+              eventId: savedEvent.eventId,
+              epcClass: q.epcClass,
+              quantity: q.quantity,
+              unitOfMeasure: q.uom,
+            }),
+          );
+          await this.quantityRepo.save(quantityEntities);
+        }
+
+        // Create source records
+        if (summary.sourceList && summary.sourceList.length > 0) {
+          const sourceEntities = summary.sourceList.map((s) =>
+            this.sourceRepo.create({
+              eventId: savedEvent.eventId,
+              sourceType: s.type,
+              sourceId: s.id,
+            }),
+          );
+          await this.sourceRepo.save(sourceEntities);
+        }
+
+        // Create destination records
+        if (summary.destinationList && summary.destinationList.length > 0) {
+          const destinationEntities = summary.destinationList.map((d) =>
+            this.destinationRepo.create({
+              eventId: savedEvent.eventId,
+              destinationType: d.type,
+              destinationId: d.id,
+            }),
+          );
+          await this.destinationRepo.save(destinationEntities);
+        }
+
+        // Create sensor records (EPCIS 2.0 only)
+        if (summary.sensorElementList && summary.sensorElementList.length > 0) {
+          const sensorEntities = summary.sensorElementList.map((s) =>
+            this.sensorRepo.create({
+              eventId: savedEvent.eventId,
+              sensorType: s.type,
+              deviceId: s.deviceID,
+              deviceMetadata: s.deviceMetadata,
+              rawData: s.rawData,
+              dataProcessingMethod: s.dataProcessingMethod,
+              sensorTime: s.time ? new Date(s.time) : undefined,
+              microorganism: s.microorganism,
+              chemicalSubstance: s.chemicalSubstance,
+              value: s.value,
+              stringValue: s.stringValue,
+              booleanValue: s.booleanValue,
+              hexBinaryValue: s.hexBinaryValue,
+              uriValue: s.uriValue,
+              minValue: s.minValue,
+              maxValue: s.maxValue,
+              meanValue: s.meanValue,
+              percRank: s.percRank,
+              percValue: s.percValue,
+              unitOfMeasure: s.uom,
+              exception: s.exception,
+              metadata: s.metadata,
+            }),
+          );
+          await this.sensorRepo.save(sensorEntities);
+        }
+
+        this.logger.log(
+          `Event saved successfully: ${summary.eventId} (attempt ${attempt})`,
+        );
+        return; // Success, exit retry loop
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if it's a duplicate key error (race condition)
+        if (error?.code === '23505' || error?.message?.includes('duplicate')) {
+          this.logger.debug(
+            `Event already exists (duplicate key): ${summary.eventId}`,
+          );
+          return; // Not an error, just a race condition
+        }
+
+        // Log warning but continue retrying
+        this.logger.warn(
+          `Failed to save event (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS}): ${summary.eventId}`,
+          error?.message,
+        );
+
+        // Wait before retrying (exponential backoff)
+        if (attempt < this.MAX_RETRY_ATTEMPTS) {
+          const delay = this.RETRY_DELAY_MS * attempt;
+          await this.sleep(delay);
+        }
+      }
+    }
+
+    // All retries failed - log error but don't throw
+    this.logger.error(
+      `Failed to save event after ${this.MAX_RETRY_ATTEMPTS} attempts: ${summary.eventId}`,
+      lastError?.message,
+      lastError?.stack,
+    );
+    // Note: We don't throw here because the primary operation (OpenEPCIS) succeeded
+    // The event can be synced later via a background job if needed
+  }
+
+  /**
+   * Detect EPC type from EPC URI
+   */
+  private detectEPCType(epc: string): string {
+    if (epc.includes('sgtin')) return 'SGTIN';
+    if (epc.includes('sscc')) return 'SSCC';
+    if (epc.includes('batch')) return 'BATCH_URI';
+    return 'UNKNOWN';
+  }
+
+  /**
+   * Extract latitude from bizLocation if available
+   * Currently not supported in standard EPCIS, but kept for future extensibility
+   */
+  private extractLatitude(
+    bizLocation?: { id: string; [key: string]: any },
+  ): number | undefined {
+    // EPCIS standard doesn't include lat/long in bizLocation
+    // This is for future extensibility if location data is added
+    return bizLocation?.['latitude'] as number | undefined;
+  }
+
+  /**
+   * Extract longitude from bizLocation if available
+   * Currently not supported in standard EPCIS, but kept for future extensibility
+   */
+  private extractLongitude(
+    bizLocation?: { id: string; [key: string]: any },
+  ): number | undefined {
+    // EPCIS standard doesn't include lat/long in bizLocation
+    // This is for future extensibility if location data is added
+    return bizLocation?.['longitude'] as number | undefined;
+  }
+
+  /**
+   * Sleep utility for retry delays
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get timezone offset in ISO 8601 format (e.g., +04:00)
+   * Defaults to +04:00 (Kenya timezone) or can be configured
+   */
+  private getTimeZoneOffset(): string {
+    // TODO: Get from configuration or system timezone
+    // For now, default to Kenya timezone (EAT = UTC+3, but using +04:00 as in existing code)
+    return '+04:00';
+  }
+}
+

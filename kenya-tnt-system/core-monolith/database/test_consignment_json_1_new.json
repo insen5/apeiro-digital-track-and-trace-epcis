@@ -1,0 +1,168 @@
+{
+  "header": {
+    "eventID": "EVT-2025-TEST-NEW-001",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-01-25T10:30:00Z",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+  "consignment": {
+    "consignmentID": "CONS-2025-TEST-NEW-001",
+    "shipmentDate": "2025-01-20",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "manufacturer": {
+      "ppbID": "MAN-001",
+      "gln": "6164003000000"
+    },
+    "mah": {
+      "ppbID": "MAH-001",
+      "gln": "6164003000001"
+    },
+    "registrationNo": "PPB/REG/2025/TEST-NEW-001",
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-TEST-NEW-001",
+        "sscc": "061640030000045678",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "Kenya Pharma Distributors",
+          "carrier": "DHL Express",
+          "pickupLocation": "Mumbai, India",
+          "destinationAddress": "Nairobi, Kenya"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-TEST-NEW-001",
+        "sscc": "061640030000045679",
+        "parentSSCC": "061640030000045678",
+        "metadata": {
+          "packageType": "pallet"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-TEST-NEW-002",
+        "sscc": "061640030000045680",
+        "parentSSCC": "061640030000045678",
+        "metadata": {
+          "packageType": "pallet"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-TEST-NEW-001",
+        "sscc": "061640030000045681",
+        "parentSSCC": "061640030000045679",
+        "metadata": {}
+      },
+      {
+        "type": "case",
+        "label": "CASE-TEST-NEW-002",
+        "sscc": "061640030000045682",
+        "parentSSCC": "061640030000045679",
+        "metadata": {}
+      },
+      {
+        "type": "case",
+        "label": "CASE-TEST-NEW-003",
+        "sscc": "061640030000045683",
+        "parentSSCC": "061640030000045680",
+        "metadata": {}
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-TEST-NEW-001",
+        "sscc": null,
+        "parentSSCC": "061640030000045681",
+        "GTIN": "61640056789012",
+        "productName": "Metformin 500mg Tablets",
+        "batchNo": "BATCH-TEST-NEW-2025-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-09-16",
+        "expiryDate": "2027-09-16",
+        "quantityApproved": 5000,
+        "serialNumbers": [
+          "KE0010001",
+          "KE0010002",
+          "KE0010003",
+          "KE0010004",
+          "KE0010005",
+          "KE0010006",
+          "KE0010007",
+          "KE0010008",
+          "KE0010009",
+          "KE0010010"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-TEST-NEW-002",
+        "sscc": null,
+        "parentSSCC": "061640030000045681",
+        "GTIN": "61640056789013",
+        "productName": "Amoxicillin 250mg Capsules",
+        "batchNo": "BATCH-TEST-NEW-2025-002",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-10-01",
+        "expiryDate": "2027-10-01",
+        "quantityApproved": 3000,
+        "serialNumbers": [
+          "KE0020001",
+          "KE0020002",
+          "KE0020003",
+          "KE0020004",
+          "KE0020005"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-TEST-NEW-003",
+        "sscc": null,
+        "parentSSCC": "061640030000045682",
+        "GTIN": "61640056789014",
+        "productName": "Paracetamol 500mg Tablets",
+        "batchNo": "BATCH-TEST-NEW-2025-003",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-11-15",
+        "expiryDate": "2027-11-15",
+        "quantityApproved": 8000,
+        "serialNumbers": [
+          "KE0030001",
+          "KE0030002",
+          "KE0030003",
+          "KE0030004",
+          "KE0030005",
+          "KE0030006",
+          "KE0030007",
+          "KE0030008"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-TEST-NEW-004",
+        "sscc": null,
+        "parentSSCC": "061640030000045683",
+        "GTIN": "61640056789015",
+        "productName": "Ibuprofen 400mg Tablets",
+        "batchNo": "BATCH-TEST-NEW-2025-004",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-12-01",
+        "expiryDate": "2027-12-01",
+        "quantityApproved": 6000,
+        "serialNumbers": [
+          "KE0040001",
+          "KE0040002",
+          "KE0040003",
+          "KE0040004",
+          "KE0040005",
+          "KE0040006"
+        ]
+      }
+    ]
+  }
+}
+

@@ -1,41 +1,66 @@
 # 📚 Documentation Index - Single Source of Truth
 
-**Last Updated**: December 14, 2025  
+**Last Updated**: December 17, 2025  
 **Purpose**: Navigate to the LATEST and CURRENT documentation only
 
 ---
 
 ## 🎯 START HERE - Current Documentation
 
+### 📖 Quick Reference Indices (Search These First!)
+
+1. **[DATA_QUALITY_INDEX.md](./DATA_QUALITY_INDEX.md)** - 🔍 **SEARCH HERE** for all quality/sync documentation
+2. **[DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md)** - This file (complete navigation)
+
 ### Architecture & Design
-1. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture (CURRENT)
-2. **[docs/data-model/DATABASE_SCHEMA_LATEST.md](./docs/data-model/DATABASE_SCHEMA_LATEST.md)** - Complete database schema after V02-V05
+
+3. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture (CURRENT)
+4. **[docs/data-model/DATABASE_SCHEMA_LATEST.md](./docs/data-model/DATABASE_SCHEMA_LATEST.md)** - Complete database schema after V02-V05
 
 ### Implementation Status
-3. **[IMPLEMENTATION_STATUS_CONSOLIDATED.md](./IMPLEMENTATION_STATUS_CONSOLIDATED.md)** - ⭐ **START HERE** - Complete status of architecture + Tatmeen gaps
-4. **[README_IMPLEMENTATION_STATUS.md](./README_IMPLEMENTATION_STATUS.md)** - What's implemented NOW
-5. **[docs/implementation/MIGRATION_STATUS.md](./docs/implementation/MIGRATION_STATUS.md)** - Applied migrations
+
+5. **[IMPLEMENTATION_STATUS_CONSOLIDATED.md](./IMPLEMENTATION_STATUS_CONSOLIDATED.md)** - ⭐ **START HERE** - Complete status of architecture + Tatmeen gaps
+6. **[README_IMPLEMENTATION_STATUS.md](./README_IMPLEMENTATION_STATUS.md)** - What's implemented NOW
+7. **[docs/implementation/MIGRATION_STATUS.md](./docs/implementation/MIGRATION_STATUS.md)** - Applied migrations
 
 ### Data Persistence
-5. **[DATA_PERSISTENCE_ANALYSIS.md](./DATA_PERSISTENCE_ANALYSIS.md)** - Complete analysis (CONSOLIDATED)
-6. **[PARTIES_OBJECT_PERSISTENCE_AUDIT.md](./PARTIES_OBJECT_PERSISTENCE_AUDIT.md)** - Parties JSON → Database mapping
+
+8. **[DATA_PERSISTENCE_ANALYSIS.md](./DATA_PERSISTENCE_ANALYSIS.md)** - Complete analysis (CONSOLIDATED)
+9. **[PARTIES_OBJECT_PERSISTENCE_AUDIT.md](./PARTIES_OBJECT_PERSISTENCE_AUDIT.md)** - Parties JSON → Database mapping
 
 ### Testing
-7. **[test-data/README_TEST_DATA.md](./test-data/README_TEST_DATA.md)** - Which test files to use
-8. **[docs/testing/TEST_ILMD_IMPLEMENTATION.md](./docs/testing/TEST_ILMD_IMPLEMENTATION.md)** - ILMD testing guide
+
+10. **[test-data/README_TEST_DATA.md](./test-data/README_TEST_DATA.md)** - Which test files to use
+11. **[docs/testing/TEST_ILMD_IMPLEMENTATION.md](./docs/testing/TEST_ILMD_IMPLEMENTATION.md)** - ILMD testing guide
 
 ### Master Data & Data Quality
-9. **[DATA_QUALITY_README.md](./DATA_QUALITY_README.md)** - **START HERE** - Quick start guide for data quality
-10. **[DATA_QUALITY_EXECUTIVE_SUMMARY.md](./DATA_QUALITY_EXECUTIVE_SUMMARY.md)** - Executive overview comparing premise vs product quality
-11. **[DATA_QUALITY_REPORT_PREMISE_MASTER_DATA.md](./DATA_QUALITY_REPORT_PREMISE_MASTER_DATA.md)** - Detailed premise data quality analysis
-12. **[DATA_QUALITY_REPORT_PRODUCT_MASTER_DATA.md](./DATA_QUALITY_REPORT_PRODUCT_MASTER_DATA.md)** - Detailed product data quality analysis
-13. **[DATA_QUALITY_REPORT_FACILITY_UAT_MASTER_DATA.md](./DATA_QUALITY_REPORT_FACILITY_UAT_MASTER_DATA.md)** - Detailed facility UAT data quality analysis
-14. **[kenya-tnt-system/AUTOMATED_SYNC_SETUP_GUIDE.md](./kenya-tnt-system/AUTOMATED_SYNC_SETUP_GUIDE.md)** - Cron setup for automated 3-hour syncs
-15. **[kenya-tnt-system/PREMISE_MASTER_DATA.md](./kenya-tnt-system/PREMISE_MASTER_DATA.md)** - Premise sync setup & usage
-16. **[kenya-tnt-system/REAL_TIME_PREMISE_SYNC.md](./kenya-tnt-system/REAL_TIME_PREMISE_SYNC.md)** - Sync strategies (batch/incremental/webhook)
-17. **[kenya-tnt-system/FACILITY_UAT_MASTER_DATA.md](./kenya-tnt-system/FACILITY_UAT_MASTER_DATA.md)** - Facility UAT sync setup & usage (Safaricom HIE)
-18. **[kenya-tnt-system/REAL_TIME_FACILITY_UAT_SYNC.md](./kenya-tnt-system/REAL_TIME_FACILITY_UAT_SYNC.md)** - Facility sync strategies (incremental/webhook)
-19. **[kenya-tnt-system/QUALITY_ALERT_SYSTEM.md](./kenya-tnt-system/QUALITY_ALERT_SYSTEM.md)** - 🚨 Automated quality monitoring & alerts
+
+**⚡ Quick Access**: See [DATA_QUALITY_INDEX.md](./DATA_QUALITY_INDEX.md) for complete quality documentation navigation
+
+12. **[DATA_QUALITY_README.md](./DATA_QUALITY_README.md)** - **START HERE** - Quick start guide for data quality
+13. **[DATA_QUALITY_EXECUTIVE_SUMMARY.md](./DATA_QUALITY_EXECUTIVE_SUMMARY.md)** - Executive overview comparing premise vs product quality
+14. **[kenya-tnt-system/core-monolith/src/modules/shared/master-data/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/README.md)** - 📦 **MASTER DATA MODULE** - Complete technical documentation
+
+---
+
+## 📦 Module Documentation (Documentation Lives Near Code!)
+
+### Core Modules
+
+| Module | README | Purpose |
+|--------|--------|---------|
+| **Master Data** | [master-data/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/README.md) | Quality auditing, sync orchestration |
+| **Hierarchy** | [hierarchy/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/hierarchy/README.md) | Packaging hierarchy (pallet/case/package) |
+| **EPCIS Backfill** | [epcis-backfill/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/epcis-backfill/README.md) | Retrospective EPCIS event generation |
+| **Barcode Scanner** | [barcode-scanner/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/barcode-scanner/README.md) | Scanner integration & debugging |
+
+### Feature Modules
+
+| Module | README | Purpose |
+|--------|--------|---------|
+| **Manufacturer** | [manufacturer/README.md](./kenya-tnt-system/core-monolith/src/modules/manufacturer/README.md) | Batch creation, consignment imports |
+| **Regulator (PPB)** | [regulator/README.md](./kenya-tnt-system/core-monolith/src/modules/regulator/README.md) | Regulatory oversight, analytics |
+| **Facility Integration** | [integration/facility/README.md](./kenya-tnt-system/core-monolith/src/modules/integration/facility/README.md) | FLMIS/LMIS integration |
 
 ---
 
@@ -43,46 +68,87 @@
 
 All files in `docs/archive/` are outdated and kept for historical reference only.
 
+**Recently Archived** (December 2025): Implementation summaries, completion docs, fix logs moved to `docs/archive/2025-12/`
+
 ---
 
-## 🗂️ Documentation Structure
+## 🗂️ New Documentation Structure (Post-Reorganization)
 
 ```
 /
-├── README.md                          ← Main project README
-├── ARCHITECTURE.md                    ← System architecture (LATEST)
-├── DOCUMENTATION_INDEX.md             ← THIS FILE (Start here!)
-├── DATA_PERSISTENCE_ANALYSIS.md       ← Data flow analysis (LATEST)
-├── README_IMPLEMENTATION_STATUS.md    ← Current implementation status
+├── README.md                                    ← Main project README
+├── ARCHITECTURE.md                              ← System architecture (LATEST)
+├── DOCUMENTATION_INDEX.md                       ← THIS FILE (Navigation hub)
+├── DATA_QUALITY_INDEX.md                        ← Quality documentation index (SEARCH HERE!)
+├── DATA_PERSISTENCE_ANALYSIS.md                 ← Data flow analysis
+├── README_IMPLEMENTATION_STATUS.md              ← Current implementation status
+├── CODING_STANDARDS_README.md                   ← Coding standards
+├── FINAL_RECOMMENDATION_CAMEL_VS_SNAKE.md       ← Database naming standards
 │
 ├── docs/
-│   ├── architecture/                  ← Architecture decisions
-│   ├── data-model/                    ← Database schema documentation
-│   ├── implementation/                ← Implementation guides
-│   ├── testing/                       ← Test guides
-│   └── archive/                       ← OLD files (deprecated)
+│   ├── planning/                                ← Architecture & planning
+│   ├── data-model/                              ← Database schema documentation
+│   ├── implementation/                          ← Implementation guides
+│   ├── testing/                                 ← Test guides
+│   └── archive/
+│       └── 2025-12/                             ← December 2025 archived docs
 │
-├── test-data/                         ← Test JSON files
-│   ├── README_TEST_DATA.md           ← Which files to use
-│   ├── TEST_QUICK_DEMO.json          ← CURRENT test file
-│   └── archive/                       ← Old test files
+├── test-data/                                   ← Test JSON files
+│   ├── README_TEST_DATA.md                     ← Which files to use
+│   └── TEST_QUICK_DEMO.json                    ← CURRENT test file
 │
-└── kenya-tnt-system/                  ← Application code
-    └── database/migrations/           ← Migration files (versioned)
+└── kenya-tnt-system/
+    ├── core-monolith/
+    │   ├── docs/
+    │   │   ├── deployment/                      ← Deployment guides
+    │   │   ├── database/                        ← Database documentation
+    │   │   ├── testing/                         ← Testing documentation
+    │   │   ├── LEVEL_5_FEATURES_GUIDE.md       ← Level 5 T&T features
+    │   │   └── AUTOMATED_SYNC_SETUP_GUIDE.md   ← Sync scheduling
+    │   │
+    │   └── src/modules/
+    │       ├── shared/
+    │       │   ├── master-data/                 ← 📦 See DATA_QUALITY_INDEX.md
+    │       │   │   ├── README.md
+    │       │   │   └── docs/                    ← Quality, sync, alerts
+    │       │   ├── hierarchy/README.md
+    │       │   ├── epcis-backfill/README.md
+    │       │   └── barcode-scanner/README.md
+    │       │
+    │       ├── manufacturer/
+    │       │   ├── README.md
+    │       │   └── consignments/PERFORMANCE_ANALYSIS.md
+    │       │
+    │       ├── regulator/
+    │       │   ├── README.md
+    │       │   └── ppb-batches/
+    │       │       ├── VALIDATION.md
+    │       │       └── docs/                    ← PPB documentation
+    │       │
+    │       └── integration/
+    │           └── facility/
+    │               ├── README.md
+    │               ├── EVENT_VERIFICATION.md
+    │               └── docs/
+    │
+    └── frontend/
+        └── docs/                                ← Frontend documentation
 ```
 
 ---
 
 ## 📋 Quick Reference
 
-**Need to understand data persistence?** → DATA_PERSISTENCE_ANALYSIS.md  
-**Need to test ILMD?** → docs/testing/TEST_ILMD_IMPLEMENTATION.md  
-**Need database schema?** → docs/data-model/DATABASE_SCHEMA_LATEST.md  
-**Need migration history?** → docs/implementation/MIGRATION_STATUS.md  
-**Need premise master data?** → kenya-tnt-system/PREMISE_MASTER_DATA.md  
-**Need facility UAT master data?** → kenya-tnt-system/FACILITY_UAT_MASTER_DATA.md  
-**Need data quality reports?** → DATA_QUALITY_REPORT_*_MASTER_DATA.md  
-**Confused by old docs?** → Check docs/archive/ (don't use them!)
+**Need data quality documentation?** → [DATA_QUALITY_INDEX.md](./DATA_QUALITY_INDEX.md) 🔍  
+**Need to understand master data system?** → [master-data/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/README.md)  
+**Need quality reports for specific entity?** → [DATA_QUALITY_INDEX.md](./DATA_QUALITY_INDEX.md) (see entity-specific section)  
+**Need deployment guides?** → [core-monolith/docs/deployment/](./kenya-tnt-system/core-monolith/docs/deployment/)  
+**Need data persistence details?** → [DATA_PERSISTENCE_ANALYSIS.md](./DATA_PERSISTENCE_ANALYSIS.md)  
+**Need database schema?** → [docs/data-model/DATABASE_SCHEMA_LATEST.md](./docs/data-model/DATABASE_SCHEMA_LATEST.md)  
+**Need migration history?** → [docs/implementation/MIGRATION_STATUS.md](./docs/implementation/MIGRATION_STATUS.md)  
+**Need to test ILMD?** → [docs/testing/TEST_ILMD_IMPLEMENTATION.md](./docs/testing/TEST_ILMD_IMPLEMENTATION.md)  
+**Need module documentation?** → See "Module Documentation" section above  
+**Confused by old docs?** → Check docs/archive/2025-12/ (don't use them!)
 
 ---
 
@@ -110,38 +176,69 @@ mv OLD_DOC.md docs/archive/OLD_DOC_2025-12-11.md
 **Data & Schema:**
 - DATA_PERSISTENCE_ANALYSIS.md (Dec 11, 2025)
 - PARTIES_OBJECT_PERSISTENCE_AUDIT.md (Dec 11, 2025)
+- docs/data-model/DATABASE_SCHEMA_LATEST.md
 
 **Planning & Architecture:**
 - full-rearch-plan.md (Dec 2025) - Original architecture plan
 - FEATURE_GAP_ANALYSIS.md (Dec 2025) - Tatmeen Level 5 comparison
 - **IMPLEMENTATION_STATUS_CONSOLIDATED.md (Dec 14, 2025) ← CURRENT STATUS**
-- **kenya-tnt-system/LEVEL_5_FEATURES_GUIDE.md (Dec 14, 2025) ← LEVEL 5 FEATURES**
+- **core-monolith/docs/LEVEL_5_FEATURES_GUIDE.md (Dec 17, 2025) ← LEVEL 5 FEATURES**
 
 **Implementation:**
 - README_IMPLEMENTATION_STATUS.md (Dec 11, 2025)
 
-**Master Data & Data Quality:**
-- **DATA_QUALITY_EXECUTIVE_SUMMARY.md (Dec 14, 2025) ← START HERE FOR DATA QUALITY**
-- kenya-tnt-system/PREMISE_MASTER_DATA.md (Dec 12, 2025)
-- kenya-tnt-system/REAL_TIME_PREMISE_SYNC.md (Dec 12, 2025)
-- kenya-tnt-system/FACILITY_UAT_MASTER_DATA.md (Dec 14, 2025)
-- kenya-tnt-system/REAL_TIME_FACILITY_UAT_SYNC.md (Dec 14, 2025)
-- DATA_QUALITY_REPORT_PREMISE_MASTER_DATA.md (Dec 14, 2025)
-- DATA_QUALITY_REPORT_PRODUCT_MASTER_DATA.md (Dec 14, 2025)
-- DATA_QUALITY_REPORT_FACILITY_UAT_MASTER_DATA.md (Dec 14, 2025)
-- **kenya-tnt-system/QUALITY_ALERT_SYSTEM.md (Dec 14, 2025) ← AUTOMATED ALERTS**
+**Master Data & Data Quality (Dec 17, 2025 - REORGANIZED):**
+- **[DATA_QUALITY_INDEX.md](./DATA_QUALITY_INDEX.md) (Dec 17, 2025) ← 🔍 SEARCH HERE FOR ALL QUALITY DOCS**
+- **DATA_QUALITY_EXECUTIVE_SUMMARY.md (Dec 14, 2025) ← START HERE FOR EXECUTIVES**
+- DATA_QUALITY_README.md (Dec 14, 2025) ← Quick start
+- **[master-data/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/README.md) (Dec 17, 2025) ← COMPLETE TECHNICAL DOCS**
+- master-data/docs/ARCHITECTURE.md - System architecture
+- master-data/docs/SYNC_SYSTEM.md - Sync logging
+- master-data/docs/QUALITY_PARAMETERS.md - Calculation logic
+- master-data/docs/ENRICHMENT_GUIDE.md - Visual comparison
+- master-data/docs/ALERT_SYSTEM.md - Automated alerts
+- master-data/docs/SCHEDULING.md - Cron setup
+- master-data/docs/entities/products/QUALITY_REPORT.md - Product quality
+- master-data/docs/entities/premises/QUALITY_REPORT.md - Premise quality
+- master-data/docs/entities/facilities/QUALITY_REPORT_UAT.md - Facility quality
 
-**Level 5 T&T Features:**
-- **LEVEL_5_IMPLEMENTATION_COMPLETE.md (Dec 14, 2025) ← COMPLETE IMPLEMENTATION SUMMARY**
-- **kenya-tnt-system/LEVEL_5_FEATURES_GUIDE.md (Dec 14, 2025) ← USER GUIDE**
-- **kenya-tnt-system/LEVEL_5_QUICK_REF.md (Dec 14, 2025) ← QUICK REFERENCE**
+**Module Documentation (Dec 17, 2025 - NEW):**
+- manufacturer/README.md - Manufacturer module
+- regulator/README.md - PPB regulator module
+- integration/facility/README.md - FLMIS integration
+- hierarchy/README.md - Packaging hierarchy
+- epcis-backfill/README.md - EPCIS backfill
+- barcode-scanner/README.md - Scanner integration
+
+**Deployment (Dec 17, 2025 - REORGANIZED):**
+- core-monolith/docs/deployment/ORACLE_CLOUD_DEPLOYMENT.md
+- core-monolith/docs/deployment/DOCKER_WORKFLOW_README.md
+- core-monolith/docs/deployment/QUICK_DEPLOY.md
 
 **Testing:**
 - test-data/TEST_QUICK_DEMO.json (CURRENT)
+- core-monolith/docs/testing/ - Testing documentation
 
-**Everything Else**: Check docs/archive/ (outdated)
+**Everything Else**: Check docs/archive/2025-12/ (outdated)
+
+---
+
+## 🔄 Recent Changes
+
+### December 17, 2025 - Major Documentation Reorganization
+- ✅ Moved 60+ documentation files closer to the code they document
+- ✅ Created module READMEs for all major modules
+- ✅ Master data documentation now in `master-data/docs/`
+- ✅ Entity-specific docs in `master-data/docs/entities/`
+- ✅ Deployment docs in `core-monolith/docs/deployment/`
+- ✅ Archived 40+ completed/outdated docs to `docs/archive/2025-12/`
+- ✅ Created [DATA_QUALITY_INDEX.md](./DATA_QUALITY_INDEX.md) for easy searching
+- ✅ Updated all internal links and references
+
+**Benefit**: Documentation is now easier to find, maintain, and keep in sync with code changes!
 
 ---
 
 **Maintained By**: Development Team  
-**Review Frequency**: After each major change
+**Review Frequency**: After each major change  
+**Last Major Reorganization**: December 17, 2025

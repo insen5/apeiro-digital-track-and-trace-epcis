@@ -1,0 +1,513 @@
+[
+  {
+    "header": {
+      "eventID": "EVT-2025-TEST-001",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-01-20T10:30:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "CONS-2025-TEST-001",
+      "consignment_ref_number": "CRN-2025-0001",
+      "shipmentDate": "2025-01-15",
+      "countryOfOrigin": "IN",
+      "destinationCountry": "KE",
+      "registrationNo": "12243324",
+      "totalQuantity": 15000,
+      "parties": {
+        "manufacturer_party": {
+          "name": "KEM Pharma Ltd",
+          "ppbID": "345345",
+          "gln": "urn:epc:id:sgln:7894500.00001.0",
+          "country": "IN"
+        },
+        "mah_party": {
+          "name": "Pharma Holdings Kenya",
+          "ppbID": "34234324",
+          "gln": "urn:epc:id:sgln:7894500.00002.0",
+          "country": "KE"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:7894500.00003.0",
+          "label": "Mumbai Manufacturing Facility"
+        },
+        "importer_party": {
+          "name": "HealthSup Distributors Ltd",
+          "ppbID": "IMP-001",
+          "gln": "urn:epc:id:sgln:7894500.00004.0",
+          "country": "KE"
+        },
+        "destination_party": {
+          "name": "Nairobi Central Warehouse",
+          "ppbID": "DEST-001",
+          "gln": "urn:epc:id:sgln:7894500.00005.0",
+          "country": "KE"
+        },
+        "destination_location": {
+          "sgln": "urn:epc:id:sgln:7894500.00006.0",
+          "label": "Nairobi Central Distribution Center"
+        }
+      },
+      "logistics": {
+        "carrier": "e-lock Ltd",
+        "origin": "Mumbai, India",
+        "port_of_entry": "Mombasa Port – Berth 11",
+        "final_destination_sgln": "urn:epc:id:sgln:7894500.00006.0",
+        "final_destination_address": "Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "SHIP-2025-TEST-001",
+          "sscc": "123456789012345678",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "HealthSup Distributors Ltd",
+            "carrier": "e-lock Ltd"
+          }
+        },
+        {
+          "type": "package",
+          "label": "PKG-001",
+          "sscc": "123456789012345679",
+          "parentSSCC": "123456789012345678",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "package",
+          "label": "PKG-002",
+          "sscc": "123456789012345680",
+          "parentSSCC": "123456789012345678",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "CASE-001",
+          "sscc": "123456789012345681",
+          "parentSSCC": "123456789012345679",
+          "metadata": {}
+        },
+        {
+          "type": "case",
+          "label": "CASE-002",
+          "sscc": null,
+          "parentSSCC": "123456789012345679",
+          "metadata": {}
+        },
+        {
+          "type": "case",
+          "label": "CASE-003",
+          "sscc": "123456789012345682",
+          "parentSSCC": "123456789012345680",
+          "metadata": {}
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-MET-001",
+          "sscc": null,
+          "parentSSCC": "123456789012345681",
+          "GTIN": "61640056789012",
+          "productName": "Metformin 500mg Tablets",
+          "batchNo": "BATCH-2025-TEST-001",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-09-16",
+          "expiryDate": "2027-09-16",
+          "quantityApproved": 5000,
+          "product_code": "PH111D",
+          "permit_id": "18905",
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "KE0010001",
+                "end": "KE0010500",
+                "count": 500
+              }
+            ],
+            "explicit": [
+              "KE0010001",
+              "KE0010002",
+              "KE0010003",
+              "KE0010004",
+              "KE0010005"
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-10T08:00:00Z",
+            "quantities": {
+              "declared_total": 5000,
+              "declared_sent": 5000
+            }
+          }
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-MET-002",
+          "sscc": null,
+          "parentSSCC": "123456789012345681",
+          "GTIN": "61640056789012",
+          "productName": "Metformin 500mg Tablets",
+          "batchNo": "BATCH-2025-TEST-002",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-09-20",
+          "expiryDate": "2027-09-20",
+          "quantityApproved": 3000,
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "KE0010006",
+                "end": "KE0013006",
+                "count": 3000
+              }
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-10T08:00:00Z",
+            "quantities": {
+              "declared_total": 3000,
+              "declared_sent": 3000
+            }
+          }
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-AMP-001",
+          "sscc": null,
+          "parentSSCC": "123456789012345682",
+          "GTIN": "61640056789013",
+          "productName": "Amoxicillin 250mg Capsules",
+          "batchNo": "BATCH-2025-TEST-003",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-08-12",
+          "expiryDate": "2027-08-12",
+          "quantityApproved": 7000,
+          "serialization": {
+            "is_partial_approval": true,
+            "explicit": [
+              "KE00100243432",
+              "KE001534302",
+              "KE001003303",
+              "KE001003304",
+              "KE001003305",
+              "KE001003306",
+              "KE001003307"
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-10T08:00:00Z",
+            "quantities": {
+              "declared_total": 10000,
+              "declared_sent": 7000
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "header": {
+      "eventID": "EVT-2025-TEST-002",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-01-21T14:20:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "CONS-2025-TEST-002",
+      "consignment_ref_number": "CRN-2025-0002",
+      "shipmentDate": "2025-01-18",
+      "countryOfOrigin": "CN",
+      "destinationCountry": "KE",
+      "registrationNo": "22334455",
+      "totalQuantity": 20000,
+      "parties": {
+        "manufacturer_party": {
+          "name": "China Pharma Manufacturing Co",
+          "ppbID": "456456",
+          "gln": "urn:epc:id:sgln:7894500.00007.0",
+          "country": "CN"
+        },
+        "mah_party": {
+          "name": "MediCare Pharmaceuticals Kenya",
+          "ppbID": "45345345",
+          "gln": "urn:epc:id:sgln:7894500.00008.0",
+          "country": "KE"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:7894500.00009.0",
+          "label": "Shanghai Manufacturing Plant"
+        },
+        "importer_party": {
+          "name": "MediCare Pharmaceuticals Kenya",
+          "ppbID": "IMP-002",
+          "gln": "urn:epc:id:sgln:7894500.00010.0",
+          "country": "KE"
+        }
+      },
+      "logistics": {
+        "carrier": "TransLogistics Kenya",
+        "origin": "Shanghai, China",
+        "port_of_entry": "Mombasa Port – Berth 5",
+        "final_destination_sgln": "urn:epc:id:sgln:7894500.00011.0",
+        "final_destination_address": "Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "SHIP-2025-TEST-002",
+          "sscc": "234567890123456788",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "MediCare Pharmaceuticals Kenya",
+            "carrier": "TransLogistics Kenya"
+          }
+        },
+        {
+          "type": "package",
+          "label": "PKG-2025-TEST-003",
+          "sscc": "234567890123456789",
+          "parentSSCC": "234567890123456788",
+          "metadata": {
+            "packageType": "pallet",
+            "customer": "MediCare Pharmaceuticals Kenya"
+          }
+        },
+        {
+          "type": "case",
+          "label": "CASE-2025-004",
+          "sscc": "234567890123456790",
+          "parentSSCC": "234567890123456789",
+          "metadata": {}
+        },
+        {
+          "type": "case",
+          "label": "CASE-2025-005",
+          "sscc": null,
+          "parentSSCC": "234567890123456789",
+          "metadata": {}
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-PAR-001",
+          "sscc": null,
+          "parentSSCC": "234567890123456790",
+          "GTIN": "61640056789016",
+          "productName": "Paracetamol 500mg Tablets",
+          "batchNo": "BATCH-2025-TEST-004",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-10-01",
+          "expiryDate": "2027-10-01",
+          "quantityApproved": 10000,
+          "serialization": {
+            "is_partial_approval": false,
+            "explicit": [
+              "KE0020001",
+              "KE0020002",
+              "KE0020003",
+              "KE0020004",
+              "KE0020005",
+              "KE0020006",
+              "KE0020007",
+              "KE0020008",
+              "KE0020009",
+              "KE0020010"
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-15T10:00:00Z",
+            "quantities": {
+              "declared_total": 10000,
+              "declared_sent": 10000
+            }
+          }
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-IBU-001",
+          "sscc": null,
+          "parentSSCC": "234567890123456790",
+          "GTIN": "61640056789017",
+          "productName": "Ibuprofen 400mg Tablets",
+          "batchNo": "BATCH-2025-TEST-005",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-10-05",
+          "expiryDate": "2027-10-05",
+          "quantityApproved": 10000,
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "KE0021001",
+                "end": "KE0022000",
+                "count": 1000
+              }
+            ],
+            "explicit": [
+              "KE0021001",
+              "KE0021002",
+              "KE0021003"
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-15T10:00:00Z",
+            "quantities": {
+              "declared_total": 10000,
+              "declared_sent": 10000
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "header": {
+      "eventID": "EVT-2025-TEST-003",
+      "eventType": "REGULATORY_INSTANTIATION",
+      "eventTimestamp": "2025-01-22T09:15:00Z",
+      "sourceSystem": "PPB",
+      "destinationSystem": "TNT",
+      "version": "1.0"
+    },
+    "consignment": {
+      "consignmentID": "CONS-2025-TEST-003",
+      "consignment_ref_number": "CRN-2025-0003",
+      "shipmentDate": "2025-01-19",
+      "countryOfOrigin": "DE",
+      "destinationCountry": "KE",
+      "registrationNo": "33445566",
+      "totalQuantity": 8000,
+      "parties": {
+        "manufacturer_party": {
+          "name": "German Pharma GmbH",
+          "ppbID": "567567",
+          "gln": "urn:epc:id:sgln:7894500.00012.0",
+          "country": "DE"
+        },
+        "mah_party": {
+          "name": "PharmaLink East Africa Ltd",
+          "ppbID": "56456456",
+          "gln": "urn:epc:id:sgln:7894500.00013.0",
+          "country": "KE"
+        },
+        "manufacturing_site": {
+          "sgln": "urn:epc:id:sgln:7894500.00014.0",
+          "label": "Berlin Manufacturing Facility"
+        }
+      },
+      "logistics": {
+        "carrier": "SecurePharma Transport",
+        "origin": "Berlin, Germany",
+        "port_of_entry": "Mombasa Port – Berth 8",
+        "final_destination_sgln": "urn:epc:id:sgln:7894500.00015.0",
+        "final_destination_address": "Nairobi, Kenya"
+      },
+      "items": [
+        {
+          "type": "shipment",
+          "label": "SHIP-2025-TEST-003",
+          "sscc": "345678901234567889",
+          "parentSSCC": null,
+          "metadata": {
+            "customer": "PharmaLink East Africa Ltd",
+            "carrier": "SecurePharma Transport"
+          }
+        },
+        {
+          "type": "package",
+          "label": "PKG-2025-TEST-004",
+          "sscc": "345678901234567891",
+          "parentSSCC": "345678901234567889",
+          "metadata": {
+            "packageType": "pallet"
+          }
+        },
+        {
+          "type": "case",
+          "label": "CASE-2025-006",
+          "sscc": "345678901234567890",
+          "parentSSCC": "345678901234567891",
+          "metadata": {
+            "customer": "PharmaLink East Africa Ltd"
+          }
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-ASP-001",
+          "sscc": null,
+          "parentSSCC": "345678901234567890",
+          "GTIN": "61640056789020",
+          "productName": "Aspirin 100mg Tablets",
+          "batchNo": "BATCH-2025-TEST-006",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-11-01",
+          "expiryDate": "2027-11-01",
+          "quantityApproved": 5000,
+          "serialization": {
+            "is_partial_approval": false,
+            "ranges": [
+              {
+                "start": "KE0030001",
+                "end": "KE0030500",
+                "count": 500
+              }
+            ],
+            "explicit": [
+              "KE0030501",
+              "KE0030502"
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-18T12:00:00Z",
+            "quantities": {
+              "declared_total": 5000,
+              "declared_sent": 5000
+            }
+          }
+        },
+        {
+          "type": "batch",
+          "label": "BATCH-OME-001",
+          "sscc": null,
+          "parentSSCC": "345678901234567890",
+          "GTIN": "61640056789021",
+          "productName": "Omeprazole 20mg Capsules",
+          "batchNo": "BATCH-2025-TEST-007",
+          "batchStatus": "Active",
+          "manufactureDate": "2024-11-10",
+          "expiryDate": "2027-11-10",
+          "quantityApproved": 3000,
+          "serialization": {
+            "is_partial_approval": false,
+            "explicit": [
+              "KE0031001",
+              "KE0031002",
+              "KE0031003"
+            ]
+          },
+          "approval": {
+            "approval_status": true,
+            "approval_datestamp": "2025-01-18T12:00:00Z",
+            "quantities": {
+              "declared_total": 3000,
+              "declared_sent": 3000
+            }
+          }
+        }
+      ]
+    }
+  }
+]

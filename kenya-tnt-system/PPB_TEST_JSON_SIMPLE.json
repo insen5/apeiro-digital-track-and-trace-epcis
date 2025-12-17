@@ -1,0 +1,86 @@
+{
+  "header": {
+    "eventID": "EVT-2025-000001",
+    "eventType": "INBOUND_SHIPMENT",
+    "eventTimestamp": "2025-11-12T10:30:00Z",
+    "sourceSystem": "PPB-HIE",
+    "destinationSystem": "TNT"
+  },
+  "consignment": {
+    "manufacturerPPBID": "345345",
+    "MAHPPBID": "34234324",
+    "manufacturerGLN": "6164003000000",
+    "MAHGLN": "6164003000000",
+    "registrationNo": "PPB/REG/2025/000001",
+    "consignmentID": "CONS-2025-000001",
+    "shipmentDate": "2025-11-10",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "totalQuantity": 10000,
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-001",
+        "sscc": "616400300000111111",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "KEMSA",
+          "carrier": "DHL",
+          "pickupLocation": "Mumbai, India",
+          "destinationAddress": "Nairobi, Kenya"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-001",
+        "sscc": "616400300000111112",
+        "parentSSCC": "616400300000111111",
+        "metadata": {}
+      },
+      {
+        "type": "case",
+        "label": "CASE-001",
+        "sscc": "616400300000111113",
+        "parentSSCC": "616400300000111112",
+        "metadata": {}
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-001",
+        "sscc": null,
+        "parentSSCC": "616400300000111113",
+        "GTIN": "61640056789012",
+        "productName": "Metformin Hydrochloride 500mg Tablets",
+        "batchNo": "BATCH-2024-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-09-15",
+        "expiryDate": "2027-09-15",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0010001",
+          "KE0010002",
+          "KE0010003"
+        ]
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-002",
+        "sscc": null,
+        "parentSSCC": "616400300000111113",
+        "GTIN": "61640056789013",
+        "productName": "Amlodipine 5mg Tablets",
+        "batchNo": "BATCH-2024-002",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-10-01",
+        "expiryDate": "2027-10-01",
+        "quantity": 5000,
+        "serialNumbers": [
+          "KE0020001",
+          "KE0020002",
+          "KE0020003"
+        ]
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: kenya-tnt-postgres
+    environment:
+      POSTGRES_DB: kenya_tnt_db
+      POSTGRES_USER: tnt_user
+      POSTGRES_PASSWORD: tnt_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./core-monolith/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tnt_user -d kenya_tnt_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kenya-tnt-network
+
+volumes:
+  postgres_data:
+
+networks:
+  kenya-tnt-network:
+    driver: bridge
+

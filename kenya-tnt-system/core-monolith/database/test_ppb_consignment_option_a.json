@@ -1,0 +1,76 @@
+{
+  "header": {
+    "eventID": "EVT-TEST-2025-001",
+    "eventType": "REGULATORY_INSTANTIATION",
+    "eventTimestamp": "2025-01-20T10:30:00Z",
+    "sourceSystem": "PPB",
+    "destinationSystem": "TNT",
+    "version": "1.0"
+  },
+  "consignment": {
+    "consignmentID": "CNS-TEST-2025-001",
+    "shipmentDate": "2025-01-15",
+    "countryOfOrigin": "IN",
+    "destinationCountry": "KE",
+    "manufacturer": {
+      "ppbID": "345345",
+      "gln": "61640056789012"
+    },
+    "mah": {
+      "ppbID": "34234324",
+      "gln": "61640056789013"
+    },
+    "registrationNo": "PPB-REG-TEST-001",
+    "items": [
+      {
+        "type": "shipment",
+        "label": "SHIP-TEST-001",
+        "sscc": "061640056789012345",
+        "parentSSCC": null,
+        "metadata": {
+          "customer": "Test Distributor Ltd",
+          "carrier": "DHL",
+          "pickupLocation": "Mumbai, India",
+          "destinationAddress": "Nairobi, Kenya"
+        }
+      },
+      {
+        "type": "package",
+        "label": "PKG-TEST-001",
+        "sscc": "061640056789012346",
+        "parentSSCC": "061640056789012345",
+        "metadata": {
+          "packageType": "pallet"
+        }
+      },
+      {
+        "type": "case",
+        "label": "CASE-TEST-001",
+        "sscc": "061640056789012347",
+        "parentSSCC": "061640056789012346",
+        "metadata": {}
+      },
+      {
+        "type": "batch",
+        "label": "BATCH-TEST-001",
+        "sscc": null,
+        "parentSSCC": "061640056789012347",
+        "GTIN": "61640056789012",
+        "productName": "Metformin 500mg Tablets",
+        "batchNo": "BATCH-TEST-2025-001",
+        "batchStatus": "Active",
+        "manufactureDate": "2024-09-16",
+        "expiryDate": "2027-09-16",
+        "quantityApproved": 1000,
+        "serialNumbers": [
+          "KE0010001",
+          "KE0010002",
+          "KE0010003",
+          "KE0010004",
+          "KE0010005"
+        ]
+      }
+    ]
+  }
+}
+

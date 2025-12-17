@@ -1,0 +1,2341 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Like } from 'typeorm';
+import { Supplier } from '../../../shared/domain/entities/supplier.entity';
+import { Premise } from '../../../shared/domain/entities/premise.entity';
+import { LogisticsProvider } from '../../../shared/domain/entities/logistics-provider.entity';
+import { PPBProduct, ProgramMapping, Manufacturer, ProductCategory } from '../../../shared/domain/entities/ppb-product.entity';
+import { PremiseQualityReport } from '../../../shared/domain/entities/premise-quality-report.entity';
+import { ProductQualityReport } from '../../../shared/domain/entities/product-quality-report.entity';
+import { UatFacility, UatFacilitiesSyncLog, UatFacilitiesQualityAudit } from '../../../shared/domain/entities/uat-facility.entity';
+import { PPBApiService } from '../../../shared/infrastructure/external/ppb-api.service';
+import { SafaricomHieApiService } from '../../../shared/infrastructure/external/safaricom-hie-api.service';
+import { QualityAlertService } from './quality-alert.service';
+import { GenericSyncService } from './generic-sync.service';
+import { GenericQualityReportService } from './generic-quality-report.service';
+import { GenericQualityHistoryService } from './generic-quality-history.service';
+import { GenericCrudService } from './generic-crud.service';
+
+@Injectable()
+export class MasterDataService {
+  private readonly logger = new Logger(MasterDataService.name);
+
+  constructor(
+    @InjectRepository(Supplier)
+    private readonly supplierRepo: Repository<Supplier>,
+    @InjectRepository(Premise)
+    public readonly premiseRepo: Repository<Premise>, // Made public for filter options endpoint
+    @InjectRepository(LogisticsProvider)
+    private readonly logisticsProviderRepo: Repository<LogisticsProvider>,
+    @InjectRepository(PPBProduct)
+    private readonly ppbProductRepo: Repository<PPBProduct>,
+    @InjectRepository(PremiseQualityReport)
+    private readonly qualityReportRepo: Repository<PremiseQualityReport>,
+    @InjectRepository(ProductQualityReport)
+    private readonly productQualityReportRepo: Repository<ProductQualityReport>,
+    @InjectRepository(UatFacility)
+    private readonly uatFacilityRepo: Repository<UatFacility>,
+    @InjectRepository(UatFacilitiesSyncLog)
+    private readonly uatFacilitySyncLogRepo: Repository<UatFacilitiesSyncLog>,
+    @InjectRepository(UatFacilitiesQualityAudit)
+    private readonly uatFacilityQualityAuditRepo: Repository<UatFacilitiesQualityAudit>,
+    private readonly ppbApiService: PPBApiService,
+    private readonly safaricomHieApiService: SafaricomHieApiService,
+    private readonly qualityAlertService: QualityAlertService,
+    // NEW: Generic services (following the config-driven pattern)
+    private readonly genericSyncService: GenericSyncService,
+    private readonly genericQualityService: GenericQualityReportService,
+    private readonly genericQualityHistoryService: GenericQualityHistoryService,
+    private readonly genericCrudService: GenericCrudService,
+  ) {}
+
+  /**
+   * Get all suppliers with pagination and search
+   * NOW USING GENERIC CRUD SERVICE
+   */
+  async getSuppliers(
+    page: number = 1,
+    limit: number = 50,
+    search?: string,
+  ): Promise<{ suppliers: Supplier[]; total: number; page: number; limit: number }> {
+    const result = await this.genericCrudService.getPaginated<Supplier>(
+      {
+        entityType: 'supplier',
+        repository: this.supplierRepo,
+        searchFields: ['legalEntityName', 'entityId', 'ppbCode'],
+        defaultOrderBy: { field: 'legalEntityName', direction: 'ASC' },
+        relations: ['premises'],
+        filterConditions: { status: 'Active' },
+      },
+      page,
+      limit,
+      search
+    );
+
+    return {
+      suppliers: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
+  }
+
+  /**
+   * Get supplier by ID
+   * NOW USING GENERIC CRUD SERVICE
+   */
+  async getSupplierById(id: number): Promise<Supplier> {
+    return this.genericCrudService.getById<Supplier>(
+      {
+        entityType: 'supplier',
+        repository: this.supplierRepo,
+        relations: ['premises'],
+      },
+      id
+    );
+  }
+
+  /**
+   * Get supplier by entity ID (organization identifier)
+   * Used to find supplier/manufacturer by user's organization field
+   */
+  async getSupplierByEntityId(entityId: string): Promise<Supplier | null> {
+    return this.supplierRepo.findOne({
+      where: { entityId },
+    });
+  }
+
+  /**
+   * Get all premises with pagination and search
+   */
+  async getPremises(
+    page: number = 1,
+    limit: number = 50,
+    search?: string,
+    supplierId?: number,
+    businessType?: string,
+    constituency?: string,
+    ward?: string,
+  ): Promise<{ premises: Premise[]; total: number; page: number; limit: number }> {
+    const skip = (page - 1) * limit;
+    const queryBuilder = this.premiseRepo
+      .createQueryBuilder('premise')
+      .leftJoinAndSelect('premise.supplier', 'supplier')
+      .where('premise.status = :status', { status: 'Active' });
+
+    if (supplierId) {
+      queryBuilder.andWhere('premise.supplierId = :supplierId', { supplierId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(premise.premiseName ILIKE :search OR premise.premiseId ILIKE :search OR premise.gln ILIKE :search OR premise.county ILIKE :search OR premise.businessType ILIKE :search OR premise.superintendentName ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (businessType) {
+      queryBuilder.andWhere('premise.businessType = :businessType', { businessType });
+    }
+
+    if (constituency) {
+      queryBuilder.andWhere('premise.constituency = :constituency', { constituency });
+    }
+
+    if (ward) {
+      queryBuilder.andWhere('premise.ward = :ward', { ward });
+    }
+
+    const [premises, total] = await queryBuilder
+      .orderBy('premise.premiseName', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      premises,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Get premise by ID
+   * NOW USING GENERIC CRUD SERVICE
+   */
+  async getPremiseById(id: number): Promise<Premise> {
+    return this.genericCrudService.getById<Premise>(
+      {
+        entityType: 'premise',
+        repository: this.premiseRepo,
+        relations: ['supplier'],
+      },
+      id
+    );
+  }
+
+  /**
+   * Get all logistics providers with pagination and search
+   * NOW USING GENERIC CRUD SERVICE
+   */
+  async getLogisticsProviders(
+    page: number = 1,
+    limit: number = 50,
+    search?: string,
+  ): Promise<{ logisticsProviders: LogisticsProvider[]; total: number; page: number; limit: number }> {
+    const result = await this.genericCrudService.getPaginated<LogisticsProvider>(
+      {
+        entityType: 'lsp',
+        repository: this.logisticsProviderRepo,
+        searchFields: ['name', 'lspId', 'ppbCode'],
+        defaultOrderBy: { field: 'name', direction: 'ASC' },
+        filterConditions: { status: 'Active' },
+      },
+      page,
+      limit,
+      search
+    );
+
+    return {
+      logisticsProviders: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
+  }
+
+  /**
+   * Get logistics provider by ID
+   * NOW USING GENERIC CRUD SERVICE
+   */
+  async getLogisticsProviderById(id: number): Promise<LogisticsProvider> {
+    return this.genericCrudService.getById<LogisticsProvider>(
+      {
+        entityType: 'lsp',
+        repository: this.logisticsProviderRepo,
+      },
+      id
+    );
+  }
+
+  /**
+   * Sync master data from PPB (for future integration)
+   * This would be called by a scheduled job or webhook from PPB
+   */
+  async syncFromPPB(data: {
+    suppliers?: any[];
+    logisticsProviders?: any[];
+  }): Promise<void> {
+    this.logger.log('Syncing master data from PPB...');
+
+    // Sync Suppliers
+    if (data.suppliers) {
+      for (const supplierData of data.suppliers) {
+        await this.syncSupplier(supplierData);
+      }
+    }
+
+    // Sync Logistics Providers
+    if (data.logisticsProviders) {
+      for (const lspData of data.logisticsProviders) {
+        await this.syncLogisticsProvider(lspData);
+      }
+    }
+
+    this.logger.log('Master data sync completed');
+  }
+
+  /**
+   * Sync supplier/manufacturer from Kafka message
+   * Public method for use by Kafka consumer
+   */
+  async syncSupplier(data: any): Promise<void> {
+    let supplier = await this.supplierRepo.findOne({
+      where: { entityId: data.entityId },
+    });
+
+    if (!supplier) {
+      supplier = this.supplierRepo.create({
+        entityId: data.entityId,
+        legalEntityName: data.legalEntityName,
+        actorType: data.actorType,
+        roles: data.roles,
+        ownershipType: data.ownershipType,
+        ppbLicenseNumber: data.identifiers?.ppbLicenseNumber,
+        ppbCode: data.identifiers?.ppbCode,
+        gs1Prefix: data.identifiers?.gs1Prefix,
+        legalEntityGLN: data.identifiers?.legalEntityGLN,
+        hqName: data.hq?.name,
+        hqGLN: data.hq?.gln,
+        // V09: Restored county/ward for analytics
+        hqCounty: data.hq?.location?.county,
+        hqWard: data.hq?.location?.ward,
+        hqCountry: data.hq?.location?.country || 'KE',
+        contactPersonName: data.contact?.contactPersonName,
+        contactPersonTitle: data.contact?.contactPersonTitle,
+        contactEmail: data.contact?.email,
+        contactPhone: data.contact?.phone,
+        contactWebsite: data.contact?.website,
+        status: 'Active',
+      });
+    } else {
+      // Update existing
+      Object.assign(supplier, {
+        legalEntityName: data.legalEntityName,
+        roles: data.roles,
+        ownershipType: data.ownershipType,
+        lastUpdated: new Date(),
+      });
+    }
+
+    await this.supplierRepo.save(supplier);
+
+    // Sync Premises
+    if (data.premises) {
+      for (const premiseData of data.premises) {
+        await this.syncPremise(supplier.id, premiseData);
+      }
+    }
+  }
+
+  /**
+   * Sync premise from Kafka message (with supplier entityId)
+   * @param supplierEntityId - Entity ID of the supplier (to find supplierId)
+   * @param premiseData - Premise data from Kafka
+   */
+  async syncPremiseByEntityId(supplierEntityId: string, premiseData: any): Promise<void> {
+    // Find supplier by entityId
+    const supplier = await this.supplierRepo.findOne({
+      where: { entityId: supplierEntityId },
+    });
+
+    if (!supplier) {
+      this.logger.warn(
+        `Supplier not found for entityId: ${supplierEntityId}. Premise sync skipped.`,
+      );
+      throw new Error(
+        `Supplier with entityId ${supplierEntityId} not found. Sync supplier first.`,
+      );
+    }
+
+    await this.syncPremise(supplier.id, premiseData);
+  }
+
+  private async syncPremise(supplierId: number, data: any): Promise<void> {
+    let premise = await this.premiseRepo.findOne({
+      where: { premiseId: data.premiseId },
+    });
+
+    if (!premise) {
+      premise = this.premiseRepo.create({
+        supplierId,
+        premiseId: data.premiseId,
+        legacyPremiseId: data.legacyPremiseId,
+        premiseName: data.premiseName,
+        gln: data.gln,
+        businessType: data.businessType,
+        premiseClassification: data.premiseClassification,
+        ownership: data.ownership,
+        superintendentName: data.superintendent?.name,
+        superintendentCadre: data.superintendent?.cadre,
+        superintendentRegistrationNumber: data.superintendent?.registrationNumber,
+        ppbLicenseNumber: data.license?.ppbLicenseNumber,
+        licenseValidUntil: data.license?.validUntil ? new Date(data.license.validUntil) : undefined,
+        licenseValidityYear: data.license?.validityYear,
+        licenseStatus: data.license?.status,
+        // V09: Restored county/ward for analytics
+        county: data.location?.county,
+        constituency: data.location?.constituency,
+        ward: data.location?.ward,
+        country: data.location?.country || 'KE',
+        status: data.status || 'Active',
+      });
+    } else {
+      // Update existing
+      Object.assign(premise, {
+        premiseName: data.premiseName,
+        gln: data.gln,
+        lastUpdated: new Date(),
+      });
+    }
+
+    await this.premiseRepo.save(premise);
+  }
+
+  private async syncLogisticsProvider(data: any): Promise<void> {
+    let lsp = await this.logisticsProviderRepo.findOne({
+      where: { lspId: data.lspId },
+    });
+
+    if (!lsp) {
+      lsp = this.logisticsProviderRepo.create({
+        lspId: data.lspId,
+        name: data.name,
+        registrationNumber: data.legalEntity?.registrationNumber,
+        permitId: data.legalEntity?.permitId,
+        licenseExpiryDate: data.legalEntity?.licenseExpiryDate ? new Date(data.legalEntity.licenseExpiryDate) : undefined,
+        status: data.legalEntity?.status || 'Active',
+        contactEmail: data.contact?.email,
+        contactPhone: data.contact?.phone,
+        contactWebsite: data.contact?.website,
+        // V09: Restored county for analytics
+        hqCounty: data.hqLocation?.county,
+        hqCountry: data.hqLocation?.country || 'KE',
+        gln: data.identifiers?.gln,
+        gs1Prefix: data.identifiers?.gs1Prefix,
+        ppbCode: data.identifiers?.ppbCode,
+      });
+    } else {
+      // Update existing
+      Object.assign(lsp, {
+        name: data.name,
+        lastUpdated: new Date(),
+      });
+    }
+
+    await this.logisticsProviderRepo.save(lsp);
+  }
+
+  /**
+   * Sync entire product catalog from Terminology API to ppb_products table
+   * NOW USING GENERIC SYNC SERVICE (config-driven)
+   */
+  async syncProductCatalog(search?: string): Promise<{
+    inserted: number;
+    updated: number;
+    errors: number;
+    total: number;
+  }> {
+    return this.genericSyncService.sync('product', search);
+  }
+
+  // Product normalization methods removed - now in master-data-sync.config.ts
+  // Used by GenericSyncService for config-driven sync
+
+  /**
+   * Get product catalog sync statistics
+   * EXCLUDES test data (isTest = true) from counts
+   */
+  /**
+   * Get product catalog sync statistics
+   * NOW USING GENERIC CRUD SERVICE (partially)
+   * EXCLUDES test data (isTest = true) from counts
+   */
+  async getProductCatalogStats(): Promise<{
+    total: number;
+    lastSynced: Date | null;
+    lastModified: Date | null;
+  }> {
+    // Use generic service for basic stats
+    const stats = await this.genericCrudService.getStats(
+      {
+        entityType: 'product',
+        repository: this.ppbProductRepo,
+        filterConditions: { isTest: false },
+      },
+      'lastSyncedAt'
+    );
+
+    // Get product-specific lastModified field
+    const lastModified = await this.ppbProductRepo.findOne({
+      where: { isTest: false },
+      order: { ppbLastModified: 'DESC' },
+      select: ['ppbLastModified'],
+    });
+
+    return {
+      total: stats.total,
+      lastSynced: stats.lastSynced,
+      lastModified: lastModified?.ppbLastModified || null,
+    };
+  }
+
+  /**
+   * Search products in catalog
+   * EXCLUDES test data (isTest = true) from results
+   */
+  async searchProducts(
+    search?: string,
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<{ products: PPBProduct[]; total: number; page: number; limit: number }> {
+    const skip = (page - 1) * limit;
+    const queryBuilder = this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.isTest = :isTest', { isTest: false });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(product.brandName ILIKE :search OR product.genericName ILIKE :search OR product.brandDisplayName ILIKE :search OR product.genericDisplayName ILIKE :search OR product.gtin ILIKE :search OR product.ppbRegistrationCode ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const [products, total] = await queryBuilder
+      .orderBy('product.brandName', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      products,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Get all products (for frontend compatibility)
+   * Returns all production products in a flat array format
+   * EXCLUDES test data (isTest = true)
+   */
+  async getAllProducts(): Promise<PPBProduct[]> {
+    return await this.ppbProductRepo.find({
+      where: { isTest: false },
+      order: { brandName: 'ASC' },
+    });
+  }
+
+  /**
+   * Get product by ID
+   */
+  async getProductById(id: number): Promise<PPBProduct> {
+    const product = await this.ppbProductRepo.findOne({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    return product;
+  }
+
+  /**
+   * Delete product (soft delete)
+   * Note: Products are synced from PPB Terminology API, so we don't actually delete them
+   * This method exists for API compatibility but products cannot be deleted
+   */
+  async deleteProduct(id: number): Promise<{ message: string }> {
+    await this.getProductById(id); // Verify product exists
+    
+    // Products are synced from PPB and cannot be deleted
+    // They will be removed on next sync if no longer in PPB catalog
+    return { message: 'Product deletion not supported. Products are synced from PPB Terminology API.' };
+  }
+
+  /**
+   * Find product by ID (for compatibility with old ProductsService.findOne)
+   * Returns product even if disabled (for internal use)
+   */
+  async findOne(id: number): Promise<PPBProduct> {
+    const product = await this.ppbProductRepo.findOne({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    return product;
+  }
+
+  /**
+   * Find product by GTIN
+   * EXCLUDES test data (isTest = true)
+   */
+  async findByGTIN(gtin: string): Promise<PPBProduct | null> {
+    return await this.ppbProductRepo.findOne({
+      where: { gtin, isTest: false },
+    });
+  }
+
+  /**
+   * Create a new product (for compatibility - products should normally be synced from PPB)
+   */
+  async create(userId: string, dto: { productName: string; brandName: string; gtin: string }): Promise<PPBProduct> {
+    // Generate a temporary etcd_product_id if not provided
+    const etcdProductId = `TEMP-${Date.now()}-${dto.gtin}`;
+    
+    const product = this.ppbProductRepo.create({
+      etcdProductId,
+      brandName: dto.brandName,
+      genericName: dto.productName,
+      brandDisplayName: dto.brandName,
+      genericDisplayName: dto.productName,
+      gtin: dto.gtin,
+      kemlIsOnKeml: false,
+      formularyIncluded: false,
+      programsMapping: [],
+      manufacturers: [],
+    });
+
+    try {
+      const saved = await this.ppbProductRepo.save(product);
+      this.logger.log(`Product created: ${saved.id} - ${saved.brandName || saved.genericName}`);
+      return saved;
+    } catch (error: any) {
+      this.logger.error(`Failed to create product: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync entire premise catalog from PPB Catalogue API
+   * Fetches all premises and persists them in the shared master data
+   */
+  /**
+   * Sync premise catalog from PPB Catalogue API
+   * NOW USING GENERIC SYNC SERVICE (config-driven)
+   */
+  async syncPremiseCatalog(customEmail?: string, customPassword?: string): Promise<{
+    inserted: number;
+    updated: number;
+    errors: number;
+    total: number;
+  }> {
+    return this.genericSyncService.sync('premise', { email: customEmail, password: customPassword });
+  }
+
+  /**
+   * Normalize PPB Catalogue API premise to Premise entity format
+   * Maps fields from PPB API response to our database schema
+   * 
+   * NOTE: PPB API does NOT provide GLN field - will be null until manually assigned
+   */
+  private normalizePPBPremise(apiPremise: any): Partial<Premise> {
+    // Generate a premiseId in our format
+    const premiseId = `PREMISE-${apiPremise.premiseid}`;
+
+    // Parse license validity date (YYYY-MM-DD format)
+    let licenseValidUntil: Date | undefined;
+    if (apiPremise.licensevalidity) {
+      try {
+        licenseValidUntil = new Date(apiPremise.licensevalidity);
+      } catch (error) {
+        this.logger.warn(`Invalid license validity date: ${apiPremise.licensevalidity}`);
+      }
+    }
+
+    return {
+      premiseId,
+      legacyPremiseId: apiPremise.premiseid,
+      premiseName: apiPremise.premisename?.trim() || 'Unknown Premise',
+      gln: apiPremise.gln || undefined, // GLN from PPB API (not currently provided)
+      businessType: apiPremise.businesstype,
+      ownership: apiPremise.ownership,
+      superintendentName: apiPremise.superintendentname,
+      superintendentCadre: apiPremise.superintendentcadre,
+      superintendentRegistrationNumber: apiPremise.superintendentregistrationno,
+      licenseValidUntil,
+      licenseValidityYear: apiPremise.validityyear,
+      // V09: Restored county/ward for analytics
+      county: apiPremise.county,
+      constituency: apiPremise.constituency,
+      ward: apiPremise.ward,
+      supplierId: undefined, // Will be set based on mapping or default
+    };
+  }
+
+  /**
+   * Get premise catalog sync statistics
+   */
+  /**
+   * Get premise catalog statistics with county distribution
+   * NOW USING GENERIC CRUD SERVICE (partially)
+   */
+  async getPremiseCatalogStats(): Promise<{
+    total: number;
+    lastSynced: Date | null;
+    byCounty: { county: string; count: number }[];
+  }> {
+    // Use generic service for basic stats
+    const stats = await this.genericCrudService.getStats(
+      {
+        entityType: 'premise',
+        repository: this.premiseRepo,
+      },
+      'lastUpdated'
+    );
+
+    // Get premise-specific county distribution
+    const byCounty = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.county', 'county')
+      .addSelect('COUNT(*)', 'count')
+      .where('premise.county IS NOT NULL')
+      .groupBy('premise.county')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    return {
+      total: stats.total,
+      lastSynced: stats.lastSynced,
+      byCounty: byCounty.map(row => ({
+        county: row.county,
+        count: parseInt(row.count, 10),
+      })),
+    };
+  }
+
+  /**
+   * Comprehensive data quality report for premises
+   * Analyzes completeness, validity, and consistency of premise data
+   * EXCLUDES test data (is_test = TRUE) to show only production data quality
+   */
+  async getPremiseDataQualityReport(): Promise<{
+    overview: {
+      totalPremises: number;
+      lastSyncDate: Date | null;
+      dataQualityScore: number; // 0-100
+    };
+    completeness: {
+      missingGLN: number;
+      missingCounty: number;
+      missingBusinessType: number;
+      missingOwnership: number;
+      missingSuperintendent: number;
+      missingLicenseInfo: number;
+      missingLocation: number; // missing county OR constituency OR ward
+      missingSupplierMapping: number; // NEW: premises without supplier ownership
+      completeRecords: number;
+      completenessPercentage: number;
+    };
+    validity: {
+      expiredLicenses: number;
+      expiringSoon: number; // within 30 days
+      validLicenses: number;
+      invalidDates: number;
+      duplicatePremiseIds: number;
+      invalidGLN: number; // GLN format validation
+    };
+    distribution: {
+      byCounty: { county: string; count: number; percentage: number }[];
+      byBusinessType: { type: string; count: number; percentage: number }[];
+      byOwnership: { ownership: string; count: number; percentage: number }[];
+      bySuperintendentCadre: { cadre: string; count: number; percentage: number }[];
+    };
+    issues: {
+      severity: 'high' | 'medium' | 'low';
+      category: string;
+      description: string;
+      count: number;
+      affectedRecords?: number[];
+    }[];
+    recommendations: string[];
+  }> {
+    this.logger.log('Generating comprehensive data quality report for premises (excluding test data)...');
+
+    // Count only production premises (exclude test data)
+    const total = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    const lastSynced = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.lastUpdated', 'lastUpdated')
+      .where('premise.isTest IS NOT TRUE')
+      .andWhere('premise.lastUpdated IS NOT NULL')
+      .orderBy('premise.lastUpdated', 'DESC')
+      .limit(1)
+      .getRawOne();
+
+    // Completeness checks - Exclude test data in all queries
+    const missingGLN = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.gln IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    const missingCounty = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.county IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    const missingBusinessType = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.businessType IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    const missingOwnership = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.ownership IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    const missingSuperintendent = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.superintendentName IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    const missingLicenseInfo = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.licenseValidUntil IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    // Missing location data (county OR constituency OR ward)
+    const missingLocation = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.county IS NULL OR premise.constituency IS NULL OR premise.ward IS NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    // Missing supplier mapping (critical for ownership tracking)
+    // Check for default supplierId=1 which indicates no real mapping
+    const missingSupplierMapping = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.supplierId = 1')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    // Complete records (all critical fields populated)
+    const completeRecords = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.gln IS NOT NULL')
+      .andWhere('premise.county IS NOT NULL')
+      .andWhere('premise.constituency IS NOT NULL')
+      .andWhere('premise.ward IS NOT NULL')
+      .andWhere('premise.businessType IS NOT NULL')
+      .andWhere('premise.ownership IS NOT NULL')
+      .andWhere('premise.superintendentName IS NOT NULL')
+      .andWhere('premise.licenseValidUntil IS NOT NULL')
+      .andWhere('premise.supplierId IS NOT NULL')
+      .andWhere('premise.supplierId != 1') // Exclude default fallback value
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    const completenessPercentage = total > 0 ? (completeRecords / total) * 100 : 0;
+
+    // Validity checks
+    // NOTE: In Kenya, all licenses expire Dec 31st each year (annual renewal cycle)
+    // This is NOT a data quality issue - it's regulatory practice
+    // We'll track expiring/expired for operational purposes but not penalize quality score
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const expiredLicenses = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.licenseValidUntil < :now', { now })
+      .andWhere('premise.licenseValidUntil IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    const expiringSoon = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.licenseValidUntil BETWEEN :now AND :thirtyDays', { 
+        now, 
+        thirtyDays: thirtyDaysFromNow 
+      })
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    const validLicenses = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.licenseValidUntil > :thirtyDays', { thirtyDays: thirtyDaysFromNow })
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+    
+    // For Kenya: All premises with a license date are considered valid 
+    // (annual renewal is regulatory practice, not data quality issue)
+    const hasLicenseDate = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.licenseValidUntil IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    // Check for duplicate premise IDs (exclude test data)
+    const duplicates = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.legacyPremiseId', 'id')
+      .addSelect('COUNT(*)', 'count')
+      .where('premise.legacyPremiseId IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .groupBy('premise.legacyPremiseId')
+      .having('COUNT(*) > 1')
+      .getRawMany();
+
+    const duplicatePremiseIds = duplicates.length;
+
+    // Invalid GLN (should start with "GLN-" or be a valid GS1 GLN) - exclude test data
+    const invalidGLN = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .where('premise.gln IS NOT NULL')
+      .andWhere("premise.gln NOT LIKE 'GLN-%'")
+      .andWhere("LENGTH(premise.gln) != 13") // GS1 GLN is 13 digits
+      .andWhere('premise.isTest IS NOT TRUE')
+      .getCount();
+
+    // Distribution by county (ALL counties, not just top 15) - exclude test data
+    const byCounty = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.county', 'county')
+      .addSelect('COUNT(*)', 'count')
+      .where('premise.county IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .groupBy('premise.county')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    // Distribution by business type - exclude test data
+    const byBusinessType = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.businessType', 'type')
+      .addSelect('COUNT(*)', 'count')
+      .where('premise.businessType IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .groupBy('premise.businessType')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    // Distribution by ownership - exclude test data
+    const byOwnership = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.ownership', 'ownership')
+      .addSelect('COUNT(*)', 'count')
+      .where('premise.ownership IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .groupBy('premise.ownership')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    // Distribution by superintendent cadre - exclude test data
+    const bySuperintendentCadre = await this.premiseRepo
+      .createQueryBuilder('premise')
+      .select('premise.superintendentCadre', 'cadre')
+      .addSelect('COUNT(*)', 'count')
+      .where('premise.superintendentCadre IS NOT NULL')
+      .andWhere('premise.isTest IS NOT TRUE')
+      .groupBy('premise.superintendentCadre')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    // Calculate timeliness score based on last sync age
+    let timelinessScore = 0;
+    let hoursSinceLastSync = 0;
+    if (lastSynced?.lastUpdated) {
+      const now = new Date();
+      const lastSyncDate = new Date(lastSynced.lastUpdated);
+      hoursSinceLastSync = (now.getTime() - lastSyncDate.getTime()) / (1000 * 60 * 60);
+      
+      // Scoring criteria (3-hour sync window configured):
+      // < 3 hours: 100% (within sync window)
+      // 3-6 hours: 90% (slightly delayed)
+      // 6-12 hours: 70% (delayed)
+      // 12-24 hours: 50% (stale)
+      // 24-48 hours: 30% (very stale)
+      // > 48 hours: 0% (critically stale)
+      if (hoursSinceLastSync < 3) {
+        timelinessScore = 100;
+      } else if (hoursSinceLastSync < 6) {
+        timelinessScore = 90;
+      } else if (hoursSinceLastSync < 12) {
+        timelinessScore = 70;
+      } else if (hoursSinceLastSync < 24) {
+        timelinessScore = 50;
+      } else if (hoursSinceLastSync < 48) {
+        timelinessScore = 30;
+      } else {
+        timelinessScore = 0;
+      }
+    }
+
+    // Calculate data quality score
+    // NOTE: Validity in Kenya context means data integrity, NOT license timing
+    // - License timing: Annual Dec 31 renewal is regulatory practice
+    // - Validity checks: Duplicates, data format, field integrity
+    const scores = {
+      completeness: completenessPercentage,
+      validity: 100 - ((duplicatePremiseIds / total) * 100) - ((invalidGLN / total) * 100), // Data integrity
+      consistency: 100, // Placeholder - can add standardization checks later
+      timeliness: timelinessScore,
+    };
+
+    const dataQualityScore = 
+      (scores.completeness * 0.4) +
+      (scores.validity * 0.3) +
+      (scores.consistency * 0.15) +
+      (scores.timeliness * 0.15);
+
+    // Identify issues
+    // NOTE: License timing excluded - annual Dec 31 renewal is normal in Kenya
+    const issues: any[] = [];
+
+    // DATA FRESHNESS - Critical for real-time tracking system
+    if (!lastSynced?.lastUpdated) {
+      issues.push({
+        severity: 'high',
+        category: 'Timeliness',
+        description: 'No sync has been performed - data is not initialized',
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 48) {
+      issues.push({
+        severity: 'high',
+        category: 'Timeliness',
+        description: `Data is critically stale - last sync was ${Math.round(hoursSinceLastSync)} hours ago (expected: every 3 hours)`,
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 24) {
+      issues.push({
+        severity: 'high',
+        category: 'Timeliness',
+        description: `Data is very stale - last sync was ${Math.round(hoursSinceLastSync)} hours ago (expected: every 3 hours)`,
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 12) {
+      issues.push({
+        severity: 'medium',
+        category: 'Timeliness',
+        description: `Data is stale - last sync was ${Math.round(hoursSinceLastSync)} hours ago (expected: every 3 hours)`,
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 6) {
+      issues.push({
+        severity: 'low',
+        category: 'Timeliness',
+        description: `Data sync delayed - last sync was ${Math.round(hoursSinceLastSync)} hours ago (expected: every 3 hours)`,
+        count: total,
+      });
+    }
+
+    // Only flag expired licenses as info (not quality issue)
+    if (expiredLicenses > 0) {
+      issues.push({
+        severity: 'low',
+        category: 'License Monitoring',
+        description: `${expiredLicenses} premises have expired licenses (requires renewal)`,
+        count: expiredLicenses,
+      });
+    }
+
+    // Flag expiring soon as info only (annual renewal pattern is normal)
+    if (expiringSoon > 0) {
+      issues.push({
+        severity: 'low',
+        category: 'License Monitoring',
+        description: `${expiringSoon} premises in annual renewal cycle (expires Dec 31)`,
+        count: expiringSoon,
+      });
+    }
+
+    if (missingGLN > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Completeness',
+        description: `${missingGLN} premises missing GLN (required for EPCIS compliance)`,
+        count: missingGLN,
+      });
+    }
+
+    if (missingSupplierMapping > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Completeness',
+        description: `${missingSupplierMapping} premises missing supplier ownership mapping`,
+        count: missingSupplierMapping,
+      });
+    }
+
+    if (missingLocation > 0) {
+      issues.push({
+        severity: 'medium',
+        category: 'Completeness',
+        description: `${missingLocation} premises missing complete location data (county/constituency/ward)`,
+        count: missingLocation,
+      });
+    }
+
+    if (missingSuperintendent > 0) {
+      issues.push({
+        severity: 'medium',
+        category: 'Completeness',
+        description: `${missingSuperintendent} premises missing superintendent information`,
+        count: missingSuperintendent,
+      });
+    }
+
+    if (duplicatePremiseIds > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Data Integrity',
+        description: `${duplicatePremiseIds} duplicate premise IDs detected`,
+        count: duplicatePremiseIds,
+      });
+    }
+
+    if (invalidGLN > 0) {
+      issues.push({
+        severity: 'medium',
+        category: 'Data Format',
+        description: `${invalidGLN} premises with invalid GLN format`,
+        count: invalidGLN,
+      });
+    }
+
+    if (missingBusinessType > 0) {
+      issues.push({
+        severity: 'low',
+        category: 'Completeness',
+        description: `${missingBusinessType} premises missing business type`,
+        count: missingBusinessType,
+      });
+    }
+
+    // Generate recommendations
+    const recommendations: string[] = [];
+
+    if (dataQualityScore < 70) {
+      recommendations.push('⚠️ URGENT: Data quality score is below 70%. Immediate action required.');
+    }
+
+    if (missingGLN > 0) {
+      recommendations.push(`Assign GLNs to ${missingGLN.toLocaleString()} premises for EPCIS compliance (coordinate with GS1 Kenya or PPB).`);
+    }
+
+    if (hoursSinceLastSync > 6) {
+      recommendations.push(`⚠️ URGENT: Sync is ${Math.round(hoursSinceLastSync)} hours old. Verify cron job is running (expected: every 3 hours).`);
+    }
+
+    if (missingSupplierMapping > 0) {
+      recommendations.push(`⚠️ CRITICAL: Map ${missingSupplierMapping.toLocaleString()} premises to their actual supplier/manufacturer owners (PPB API limitation).`);
+    }
+
+    if (missingCounty > 0) {
+      recommendations.push(`Complete county data for ${missingCounty.toLocaleString()} premises for better geographic tracking.`);
+    }
+
+    if (duplicatePremiseIds > 0) {
+      recommendations.push(`Resolve ${duplicatePremiseIds} duplicate premise IDs by merging or correcting records.`);
+    }
+
+    if (completenessPercentage < 80) {
+      recommendations.push('Contact PPB to complete missing data fields for better tracking accuracy.');
+    }
+
+    // License monitoring (informational, not quality issue due to annual renewal)
+    if (expiringSoon > 0) {
+      recommendations.push(`ℹ️ ${expiringSoon.toLocaleString()} premises in annual renewal cycle (Kenya licenses expire Dec 31 each year).`);
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push('✅ Data quality is good. Continue regular syncs to maintain quality.');
+    }
+
+    recommendations.push('Schedule regular data quality audits (every 3-6 hours) to catch issues early and maintain premise data accuracy.');
+    recommendations.push('Monitor annual license renewal cycle (Dec 31 deadline).');
+
+    this.logger.log(`Data quality report generated. Score: ${dataQualityScore.toFixed(2)}/100`);
+
+    return {
+      overview: {
+        totalPremises: total,
+        lastSyncDate: lastSynced?.lastUpdated || null,
+        dataQualityScore: Math.round(dataQualityScore * 100) / 100,
+      },
+      completeness: {
+        missingGLN,
+        missingCounty,
+        missingBusinessType,
+        missingOwnership,
+        missingSuperintendent,
+        missingLicenseInfo,
+        missingLocation,
+        missingSupplierMapping,
+        completeRecords,
+        completenessPercentage: Math.round(completenessPercentage * 100) / 100,
+      },
+      validity: {
+        expiredLicenses,
+        expiringSoon,
+        validLicenses,
+        invalidDates: 0, // Can add date validation logic if needed
+        duplicatePremiseIds,
+        invalidGLN,
+      },
+      distribution: {
+        byCounty: byCounty.map(row => ({
+          county: row.county,
+          count: parseInt(row.count, 10),
+          percentage: Math.round((parseInt(row.count, 10) / total) * 10000) / 100,
+        })),
+        byBusinessType: byBusinessType.map(row => ({
+          type: row.type || 'Unknown',
+          count: parseInt(row.count, 10),
+          percentage: Math.round((parseInt(row.count, 10) / total) * 10000) / 100,
+        })),
+        byOwnership: byOwnership.map(row => ({
+          ownership: row.ownership || 'Unknown',
+          count: parseInt(row.count, 10),
+          percentage: Math.round((parseInt(row.count, 10) / total) * 10000) / 100,
+        })),
+        bySuperintendentCadre: bySuperintendentCadre.map(row => ({
+          cadre: row.cadre || 'Unknown',
+          count: parseInt(row.count, 10),
+          percentage: Math.round((parseInt(row.count, 10) / total) * 10000) / 100,
+        })),
+      },
+      issues: issues.sort((a, b) => {
+        const severityOrder = { high: 0, medium: 1, low: 2 };
+        return severityOrder[a.severity] - severityOrder[b.severity];
+      }),
+      recommendations,
+    };
+  }
+
+  /**
+   * Handle webhook from PPB for real-time premise updates
+   * Webhook payload should contain premise data in PPB format
+   */
+  async handlePremiseWebhook(payload: any): Promise<{
+    success: boolean;
+    action: 'created' | 'updated' | 'deleted';
+    premiseId?: string;
+    message: string;
+  }> {
+    try {
+      // Validate webhook signature (if PPB provides one)
+      // const isValid = this.validateWebhookSignature(payload);
+      // if (!isValid) throw new Error('Invalid webhook signature');
+
+      const action = payload.action || 'updated';
+      const premiseData = payload.data || payload.premise;
+
+      if (!premiseData || !premiseData.premiseid) {
+        throw new Error('Invalid webhook payload: missing premise data');
+      }
+
+      this.logger.log(`Webhook received for premise ${premiseData.premiseid}: ${action}`);
+
+      if (action === 'deleted') {
+        // Soft delete - mark as inactive
+        const premise = await this.premiseRepo.findOne({
+          where: { legacyPremiseId: premiseData.premiseid },
+        });
+
+        if (premise) {
+          premise.status = 'Inactive';
+          premise.lastUpdated = new Date();
+          await this.premiseRepo.save(premise);
+
+          return {
+            success: true,
+            action: 'deleted',
+            premiseId: premise.premiseId,
+            message: `Premise ${premise.premiseId} marked as inactive`,
+          };
+        }
+
+        return {
+          success: false,
+          action: 'deleted',
+          message: `Premise ${premiseData.premiseid} not found`,
+        };
+      }
+
+      // Create or update premise
+      const normalized = this.normalizePPBPremise(premiseData);
+      const existing = await this.premiseRepo.findOne({
+        where: { legacyPremiseId: normalized.legacyPremiseId },
+      });
+
+      if (existing) {
+        // Update existing
+        Object.assign(existing, {
+          premiseName: normalized.premiseName,
+          // V09: Restored county/ward for analytics
+          county: normalized.county,
+          constituency: normalized.constituency,
+          ward: normalized.ward,
+          businessType: normalized.businessType,
+          ownership: normalized.ownership,
+          superintendentName: normalized.superintendentName,
+          superintendentCadre: normalized.superintendentCadre,
+          superintendentRegistrationNumber: normalized.superintendentRegistrationNumber,
+          licenseValidUntil: normalized.licenseValidUntil,
+          licenseValidityYear: normalized.licenseValidityYear,
+          status: 'Active',
+          lastUpdated: new Date(),
+        });
+
+        await this.premiseRepo.save(existing);
+
+        return {
+          success: true,
+          action: 'updated',
+          premiseId: existing.premiseId,
+          message: `Premise ${existing.premiseId} updated via webhook`,
+        };
+      } else {
+        // Create new
+        const newPremise = this.premiseRepo.create({
+          supplierId: normalized.supplierId || 1,
+          premiseId: normalized.premiseId,
+          legacyPremiseId: normalized.legacyPremiseId,
+          premiseName: normalized.premiseName,
+          gln: normalized.gln,
+          businessType: normalized.businessType,
+          ownership: normalized.ownership,
+          superintendentName: normalized.superintendentName,
+          superintendentCadre: normalized.superintendentCadre,
+          superintendentRegistrationNumber: normalized.superintendentRegistrationNumber,
+          licenseValidUntil: normalized.licenseValidUntil,
+          licenseValidityYear: normalized.licenseValidityYear,
+          // V09: Restored county/ward for analytics
+          county: normalized.county,
+          constituency: normalized.constituency,
+          ward: normalized.ward,
+          country: 'KE',
+          status: 'Active',
+        });
+
+        const saved = await this.premiseRepo.save(newPremise);
+
+        return {
+          success: true,
+          action: 'created',
+          premiseId: saved.premiseId,
+          message: `Premise ${saved.premiseId} created via webhook`,
+        };
+      }
+    } catch (error: any) {
+      this.logger.error('Webhook processing failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Incremental sync - only fetch and update premises changed since last sync
+   * More efficient for real-time updates
+   */
+  async incrementalPremiseSync(sinceDate?: Date): Promise<{
+    inserted: number;
+    updated: number;
+    errors: number;
+    total: number;
+    syncedFrom: Date;
+  }> {
+    this.logger.log('Starting incremental premise sync...');
+
+    // If no date provided, use last sync date
+    if (!sinceDate) {
+      const result = await this.premiseRepo
+        .createQueryBuilder('premise')
+        .select('MAX(premise.lastUpdated)', 'lastUpdated')
+        .getRawOne();
+      sinceDate = result?.lastUpdated || new Date('2020-01-01');
+    }
+
+    this.logger.log(`Fetching premises updated since: ${sinceDate.toISOString()}`);
+
+    // Note: This assumes PPB API supports filtering by date
+    // If not, we'll need to fetch all and filter client-side
+    // For now, we'll use the full sync and note this limitation
+
+    const result = await this.syncPremiseCatalog();
+
+    return {
+      ...result,
+      syncedFrom: sinceDate,
+    };
+  }
+
+  /**
+   * Save current data quality report as snapshot for historical tracking
+   * Called manually or by scheduled audit
+   */
+  async saveQualityReportSnapshot(triggeredBy: string = 'manual', notes?: string): Promise<PremiseQualityReport> {
+    try {
+      this.logger.log(`Saving quality report snapshot (triggered by: ${triggeredBy})`);
+
+      const report = await this.getPremiseDataQualityReport();
+
+      const snapshot = this.qualityReportRepo.create({
+        reportDate: new Date(),
+        totalPremises: report.overview.totalPremises,
+        dataQualityScore: report.overview.dataQualityScore,
+        missingGln: report.completeness.missingGLN,
+        missingCounty: report.completeness.missingCounty,
+        missingBusinessType: report.completeness.missingBusinessType,
+        missingOwnership: report.completeness.missingOwnership,
+        missingSuperintendent: report.completeness.missingSuperintendent,
+        missingLicenseInfo: report.completeness.missingLicenseInfo,
+        missingLocation: report.completeness.missingLocation,
+        missingSupplierMapping: report.completeness.missingSupplierMapping,
+        completeRecords: report.completeness.completeRecords,
+        completenessPercentage: report.completeness.completenessPercentage,
+        expiredLicenses: report.validity.expiredLicenses,
+        expiringSoon: report.validity.expiringSoon,
+        validLicenses: report.validity.validLicenses,
+        duplicatePremiseIds: report.validity.duplicatePremiseIds,
+        invalidGln: report.validity.invalidGLN,
+        fullReport: report,
+        triggeredBy,
+        notes,
+      });
+
+      const saved = await this.qualityReportRepo.save(snapshot);
+      this.logger.log(`Quality report snapshot saved with ID: ${saved.id}`);
+
+      // Trigger quality alerts if score is below threshold
+      await this.qualityAlertService.checkAndAlert('premise', report.overview.dataQualityScore, {
+        totalRecords: report.overview.totalPremises,
+        auditId: saved.id,
+        triggeredBy,
+        lastSync: report.overview.lastSyncDate,
+        issues: report.issues,
+      });
+
+      return saved;
+    } catch (error: any) {
+      this.logger.error('Failed to save quality report snapshot:', error.message);
+      this.logger.error('Stack:', error.stack);
+      throw new Error(`Failed to save quality report: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all historical quality report snapshots
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getQualityReportHistory(limit: number = 50): Promise<PremiseQualityReport[]> {
+    return this.genericQualityHistoryService.getHistory(
+      {
+        entityType: 'premise',
+        repository: this.qualityReportRepo,
+        dateField: 'reportDate',
+        scoreField: 'dataQualityScore',
+      },
+      limit
+    );
+  }
+
+  /**
+   * Get quality report snapshot by ID
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getQualityReportById(id: number): Promise<PremiseQualityReport> {
+    return this.genericQualityHistoryService.getById(
+      {
+        entityType: 'premise',
+        repository: this.qualityReportRepo,
+        dateField: 'reportDate',
+        scoreField: 'dataQualityScore',
+      },
+      id
+    );
+  }
+
+  /**
+   * Get quality score trend over time
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getQualityScoreTrend(days: number = 30): Promise<{
+    date: string;
+    score: number;
+  }[]> {
+    return this.genericQualityHistoryService.getScoreTrend(
+      {
+        entityType: 'premise',
+        repository: this.qualityReportRepo,
+        dateField: 'reportDate',
+        scoreField: 'dataQualityScore',
+      },
+      days
+    );
+  }
+
+  /**
+   * Comprehensive data quality report for products
+   * Analyzes completeness, validity, and consistency of product data
+   * EXCLUDES test data (isTest = TRUE) to show only production data quality
+   */
+  async getProductDataQualityReport(): Promise<{
+    overview: {
+      totalProducts: number;
+      lastSyncDate: Date | null;
+      dataQualityScore: number; // 0-100
+    };
+    completeness: {
+      missingGTIN: number;
+      missingBrandName: number;
+      missingGenericName: number;
+      missingPPBCode: number;
+      missingCategory: number;
+      missingStrength: number;
+      missingRoute: number;
+      missingForm: number;
+      missingManufacturer: number;
+      completeRecords: number;
+      completenessPercentage: number;
+    };
+    validity: {
+      duplicateGTINs: number;
+      invalidGTINFormat: number; // GTINs not 13 digits
+      duplicateProductIds: number;
+    };
+    distribution: {
+      byCategory: { category: string; count: number; percentage: number }[];
+      byKemlStatus: { onKeml: number; notOnKeml: number };
+      byLevelOfUse: { level: string; count: number; percentage: number }[];
+    };
+    issues: {
+      severity: 'high' | 'medium' | 'low';
+      category: string;
+      description: string;
+      count: number;
+    }[];
+    recommendations: string[];
+  }> {
+    this.logger.log('Generating comprehensive data quality report for products (excluding test data)...');
+
+    // Count only production products (exclude test data)
+    const total = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const lastSynced = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .select('product.lastSyncedAt', 'lastSyncedAt')
+      .where('product.isTest IS NOT TRUE')
+      .andWhere('product.lastSyncedAt IS NOT NULL')
+      .orderBy('product.lastSyncedAt', 'DESC')
+      .limit(1)
+      .getRawOne();
+
+    // Completeness checks - Exclude test data in all queries
+    const missingGTIN = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.gtin IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingBrandName = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.brandName IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingGenericName = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.genericName IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingPPBCode = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.ppbRegistrationCode IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingCategory = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.category IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingStrength = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.strengthAmount IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingRoute = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.routeDescription IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const missingForm = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.formDescription IS NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    // Check for missing manufacturer information
+    // Note: manufacturers is a JSON array field, need to check if empty or null
+    const missingManufacturer = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where("(product.manufacturers IS NULL OR product.manufacturers::text = '[]' OR product.manufacturers::text = 'null')")
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    // Complete records (all critical fields populated)
+    const completeRecords = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.gtin IS NOT NULL')
+      .andWhere('product.brandName IS NOT NULL')
+      .andWhere('product.genericName IS NOT NULL')
+      .andWhere('product.ppbRegistrationCode IS NOT NULL')
+      .andWhere('product.category IS NOT NULL')
+      .andWhere('product.strengthAmount IS NOT NULL')
+      .andWhere('product.routeDescription IS NOT NULL')
+      .andWhere('product.formDescription IS NOT NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const completenessPercentage = total > 0 ? (completeRecords / total) * 100 : 0;
+
+    // Validity checks
+    // Check for duplicate GTINs (excluding NULLs and test data)
+    const duplicates = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .select('product.gtin', 'gtin')
+      .addSelect('COUNT(*)', 'count')
+      .where('product.gtin IS NOT NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .groupBy('product.gtin')
+      .having('COUNT(*) > 1')
+      .getRawMany();
+
+    const duplicateGTINs = duplicates.length;
+
+    // Invalid GTIN format (should be 13 digits)
+    const invalidGTINFormat = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.gtin IS NOT NULL')
+      .andWhere("LENGTH(product.gtin) != 13")
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    // Check for duplicate product IDs
+    const dupProductIds = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .select('product.etcdProductId', 'id')
+      .addSelect('COUNT(*)', 'count')
+      .where('product.etcdProductId IS NOT NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .groupBy('product.etcdProductId')
+      .having('COUNT(*) > 1')
+      .getRawMany();
+
+    const duplicateProductIds = dupProductIds.length;
+
+    // Distribution by category
+    const byCategory = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .select('product.category', 'category')
+      .addSelect('COUNT(*)', 'count')
+      .where('product.category IS NOT NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .groupBy('product.category')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    // KEML status distribution
+    const onKeml = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .where('product.kemlIsOnKeml = :onKeml', { onKeml: true })
+      .andWhere('product.isTest IS NOT TRUE')
+      .getCount();
+
+    const notOnKeml = total - onKeml;
+
+    // Distribution by level of use (for KEML products only)
+    const byLevelOfUse = await this.ppbProductRepo
+      .createQueryBuilder('product')
+      .select('product.levelOfUse', 'level')
+      .addSelect('COUNT(*)', 'count')
+      .where('product.levelOfUse IS NOT NULL')
+      .andWhere('product.isTest IS NOT TRUE')
+      .groupBy('product.levelOfUse')
+      .orderBy('product.levelOfUse', 'ASC')
+      .getRawMany();
+
+    // Calculate timeliness score based on last sync age
+    let timelinessScore = 0;
+    let hoursSinceLastSync = 0;
+    if (lastSynced?.lastSyncedAt) {
+      const now = new Date();
+      const lastSyncDate = new Date(lastSynced.lastSyncedAt);
+      hoursSinceLastSync = (now.getTime() - lastSyncDate.getTime()) / (1000 * 60 * 60);
+      
+      // Scoring criteria (PPB product sync - fortnightly/every 14 days):
+      // < 14 days (336 hours): 100% (within fortnightly window)
+      // 14-21 days: 80% (slightly delayed)
+      // 21-28 days: 60% (delayed)
+      // 28-60 days: 40% (stale)
+      // > 60 days: 0% (critically stale)
+      if (hoursSinceLastSync < 336) { // 14 days
+        timelinessScore = 100;
+      } else if (hoursSinceLastSync < 504) { // 21 days
+        timelinessScore = 80;
+      } else if (hoursSinceLastSync < 672) { // 28 days
+        timelinessScore = 60;
+      } else if (hoursSinceLastSync < 1440) { // 60 days
+        timelinessScore = 40;
+      } else {
+        timelinessScore = 0;
+      }
+    }
+
+    // Calculate data quality score
+    const scores = {
+      completeness: completenessPercentage,
+      validity: 100 - ((duplicateGTINs / total) * 100) - ((invalidGTINFormat / total) * 100),
+      consistency: 100, // Placeholder
+      timeliness: timelinessScore,
+    };
+
+    const dataQualityScore =
+      (scores.completeness * 0.4) +
+      (scores.validity * 0.3) +
+      (scores.consistency * 0.15) +
+      (scores.timeliness * 0.15);
+
+    // Identify issues
+    const issues: any[] = [];
+
+    // DATA FRESHNESS - Critical for product catalog accuracy
+    if (!lastSynced?.lastSyncedAt) {
+      issues.push({
+        severity: 'high',
+        category: 'Timeliness',
+        description: 'No sync has been performed - product catalog is not initialized',
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 1440) { // 60 days
+      issues.push({
+        severity: 'high',
+        category: 'Timeliness',
+        description: `Product catalog is critically stale - last sync was ${Math.round(hoursSinceLastSync / 24)} days ago (expected: fortnightly / every 14 days)`,
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 672) { // 28 days
+      issues.push({
+        severity: 'high',
+        category: 'Timeliness',
+        description: `Product catalog is very stale - last sync was ${Math.round(hoursSinceLastSync / 24)} days ago (expected: fortnightly / every 14 days)`,
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 504) { // 21 days
+      issues.push({
+        severity: 'medium',
+        category: 'Timeliness',
+        description: `Product catalog is stale - last sync was ${Math.round(hoursSinceLastSync / 24)} days ago (expected: fortnightly / every 14 days)`,
+        count: total,
+      });
+    } else if (hoursSinceLastSync > 336) { // 14 days
+      issues.push({
+        severity: 'low',
+        category: 'Timeliness',
+        description: `Product catalog sync delayed - last sync was ${Math.round(hoursSinceLastSync / 24)} days ago (expected: fortnightly / every 14 days)`,
+        count: total,
+      });
+    }
+
+    if (missingGTIN > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Completeness',
+        description: `${missingGTIN} products missing GTIN (required for EPCIS traceability)`,
+        count: missingGTIN,
+      });
+    }
+
+    if (duplicateGTINs > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Data Integrity',
+        description: `${duplicateGTINs} duplicate GTINs detected`,
+        count: duplicateGTINs,
+      });
+    }
+
+    if (invalidGTINFormat > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Data Format',
+        description: `${invalidGTINFormat} products with invalid GTIN format (not 13 digits)`,
+        count: invalidGTINFormat,
+      });
+    }
+
+    if (missingManufacturer > 0) {
+      issues.push({
+        severity: 'high',
+        category: 'Completeness',
+        description: `${missingManufacturer} products missing manufacturer information (critical for supply chain traceability)`,
+        count: missingManufacturer,
+      });
+    }
+
+    if (missingPPBCode > 0) {
+      issues.push({
+        severity: 'medium',
+        category: 'Completeness',
+        description: `${missingPPBCode} products missing PPB registration code`,
+        count: missingPPBCode,
+      });
+    }
+
+    if (missingBrandName > 0 || missingGenericName > 0) {
+      issues.push({
+        severity: 'medium',
+        category: 'Completeness',
+        description: `${missingBrandName + missingGenericName} products missing product names`,
+        count: missingBrandName + missingGenericName,
+      });
+    }
+
+    if (missingCategory > 0) {
+      issues.push({
+        severity: 'low',
+        category: 'Completeness',
+        description: `${missingCategory} products missing category`,
+        count: missingCategory,
+      });
+    }
+
+    // Generate recommendations
+    const recommendations: string[] = [];
+
+    if (dataQualityScore < 70) {
+      recommendations.push('⚠️ URGENT: Data quality score is below 70%. Immediate action required.');
+    }
+
+    if (missingGTIN > 0) {
+      recommendations.push(`Assign GTINs to ${missingGTIN.toLocaleString()} products for EPCIS traceability (coordinate with GS1 Kenya).`);
+    }
+
+    if (duplicateGTINs > 0) {
+      recommendations.push(`Resolve ${duplicateGTINs} duplicate GTINs by assigning unique identifiers.`);
+    }
+
+    if (invalidGTINFormat > 0) {
+      recommendations.push(`Fix ${invalidGTINFormat} products with invalid GTIN format (should be 13 digits).`);
+    }
+
+    if (missingManufacturer > 0) {
+      recommendations.push(`⚠️ HIGH PRIORITY: Add manufacturer information for ${missingManufacturer.toLocaleString()} products to enable complete supply chain traceability.`);
+    }
+
+    if (completenessPercentage < 80) {
+      recommendations.push('Contact PPB to complete missing data fields for better product tracking.');
+    }
+
+    if (hoursSinceLastSync > 6) {
+      recommendations.push(`⚠️ URGENT: Product sync is ${Math.round(hoursSinceLastSync)} hours old. Verify sync schedule is running (expected: every 3 hours).`);
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push('✅ Data quality is good. Continue regular syncs to maintain quality.');
+    }
+
+    recommendations.push('Schedule regular data quality audits (every 3-6 hours) to catch issues early and maintain catalog accuracy.');
+
+    this.logger.log(`Product data quality report generated. Score: ${dataQualityScore.toFixed(2)}/100`);
+
+    return {
+      overview: {
+        totalProducts: total,
+        lastSyncDate: lastSynced?.lastSyncedAt || null,
+        dataQualityScore: Math.round(dataQualityScore * 100) / 100,
+      },
+      completeness: {
+        missingGTIN,
+        missingBrandName,
+        missingGenericName,
+        missingPPBCode,
+        missingCategory,
+        missingStrength,
+        missingRoute,
+        missingForm,
+        missingManufacturer,
+        completeRecords,
+        completenessPercentage: Math.round(completenessPercentage * 100) / 100,
+      },
+      validity: {
+        duplicateGTINs,
+        invalidGTINFormat,
+        duplicateProductIds,
+      },
+      distribution: {
+        byCategory: byCategory.map(row => ({
+          category: row.category || 'Unknown',
+          count: parseInt(row.count, 10),
+          percentage: Math.round((parseInt(row.count, 10) / total) * 10000) / 100,
+        })),
+        byKemlStatus: { onKeml, notOnKeml },
+        byLevelOfUse: byLevelOfUse.map(row => ({
+          level: row.level || 'Unknown',
+          count: parseInt(row.count, 10),
+          percentage: Math.round((parseInt(row.count, 10) / total) * 10000) / 100,
+        })),
+      },
+      issues: issues.sort((a, b) => {
+        const severityOrder = { high: 0, medium: 1, low: 2 };
+        return severityOrder[a.severity] - severityOrder[b.severity];
+      }),
+      recommendations,
+    };
+  }
+
+  /**
+   * Save current product data quality report as snapshot for historical tracking
+   * Called manually or by scheduled audit
+   */
+  async saveProductQualitySnapshot(triggeredBy: string = 'manual', notes?: string): Promise<ProductQualityReport> {
+    try {
+      this.logger.log(`Saving product quality report snapshot (triggered by: ${triggeredBy})`);
+
+      const report = await this.getProductDataQualityReport();
+
+      const snapshot = this.productQualityReportRepo.create({
+        reportDate: new Date(),
+        totalProducts: report.overview.totalProducts,
+        dataQualityScore: report.overview.dataQualityScore,
+        missingGtin: report.completeness.missingGTIN,
+        missingBrandName: report.completeness.missingBrandName,
+        missingGenericName: report.completeness.missingGenericName,
+        missingPpbCode: report.completeness.missingPPBCode,
+        missingCategory: report.completeness.missingCategory,
+        missingStrength: report.completeness.missingStrength,
+        missingRoute: report.completeness.missingRoute,
+        missingForm: report.completeness.missingForm,
+        missingManufacturer: report.completeness.missingManufacturer,
+        completeRecords: report.completeness.completeRecords,
+        completenessPercentage: report.completeness.completenessPercentage,
+        duplicateGtins: report.validity.duplicateGTINs,
+        invalidGtinFormat: report.validity.invalidGTINFormat,
+        duplicateProductIds: report.validity.duplicateProductIds,
+        fullReport: report,
+        triggeredBy,
+        notes,
+      });
+
+      await this.productQualityReportRepo.save(snapshot);
+
+      this.logger.log(`Product quality report snapshot saved with ID: ${snapshot.id}`);
+      
+      // Trigger quality alerts if score is below threshold
+      await this.qualityAlertService.checkAndAlert('product', report.overview.dataQualityScore, {
+        totalRecords: report.overview.totalProducts,
+        auditId: snapshot.id,
+        triggeredBy,
+        lastSync: report.overview.lastSyncDate,
+        issues: report.issues,
+      });
+      
+      return snapshot;
+    } catch (error) {
+      this.logger.error('Failed to save product quality report snapshot:', error);
+      throw new Error(`Failed to save quality report snapshot: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all historical product quality report snapshots
+   */
+  /**
+   * Get product quality report history
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getProductQualityReportHistory(limit: number = 50): Promise<ProductQualityReport[]> {
+    return this.genericQualityHistoryService.getHistory(
+      {
+        entityType: 'product',
+        repository: this.productQualityReportRepo,
+        dateField: 'reportDate',
+        scoreField: 'dataQualityScore',
+      },
+      limit
+    );
+  }
+
+  /**
+   * Get product quality report snapshot by ID
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getProductQualityReportById(id: number): Promise<ProductQualityReport> {
+    return this.genericQualityHistoryService.getById(
+      {
+        entityType: 'product',
+        repository: this.productQualityReportRepo,
+        dateField: 'reportDate',
+        scoreField: 'dataQualityScore',
+      },
+      id
+    );
+  }
+
+  /**
+   * Get product quality score trend over time
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getProductQualityScoreTrend(days: number = 30): Promise<{
+    date: string;
+    score: number;
+  }[]> {
+    return this.genericQualityHistoryService.getScoreTrend(
+      {
+        entityType: 'product',
+        repository: this.productQualityReportRepo,
+        dateField: 'reportDate',
+        scoreField: 'dataQualityScore',
+      },
+      days
+    );
+  }
+
+  // ==================== UAT FACILITIES (Safaricom HIE) ====================
+
+  /**
+   * Sync facilities from Safaricom HIE API (incremental sync)
+   * Fetches facilities updated since last sync timestamp
+   */
+  /**
+   * Sync UAT facilities from Safaricom HIE API
+   * NOW USING GENERIC SYNC SERVICE with incremental sync + logging
+   */
+  async syncUatFacilities(): Promise<{
+    success: boolean;
+    inserted: number;
+    updated: number;
+    errors: number;
+    total: number;
+    lastSyncedAt: Date;
+  }> {
+    return this.genericSyncService.sync('facility', null, 'manual');
+  }
+
+  // UAT facility upsert and sync timestamp methods removed
+  // Now handled by GenericSyncService with config-driven field mappings
+
+  /**
+   * Get all UAT facilities with pagination and filters
+   */
+  async getUatFacilities(
+    page: number = 1,
+    limit: number = 50,
+    search?: string,
+    county?: string,
+    facilityType?: string,
+    ownership?: string,
+  ): Promise<{ facilities: UatFacility[]; total: number; page: number; limit: number }> {
+    const skip = (page - 1) * limit;
+    const queryBuilder = this.uatFacilityRepo
+      .createQueryBuilder('facility')
+      .where('facility.isEnabled = :enabled', { enabled: true });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(facility.facilityName ILIKE :search OR facility.facilityCode ILIKE :search OR facility.mflCode ILIKE :search OR facility.county ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    if (county) {
+      queryBuilder.andWhere('facility.county = :county', { county });
+    }
+
+    if (facilityType) {
+      queryBuilder.andWhere('facility.facilityType = :facilityType', { facilityType });
+    }
+
+    if (ownership) {
+      queryBuilder.andWhere('facility.ownership = :ownership', { ownership });
+    }
+
+    const [facilities, total] = await queryBuilder
+      .orderBy('facility.facilityName', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return { facilities, total, page, limit };
+  }
+
+  /**
+   * Get UAT facility statistics
+   */
+  /**
+   * Get UAT facility statistics with distribution analysis
+   * NOW USING GENERIC CRUD SERVICE (partially) + custom aggregations
+   */
+  async getUatFacilityStats(): Promise<any> {
+    // Use generic service for basic stats
+    const stats = await this.genericCrudService.getStats(
+      {
+        entityType: 'facility',
+        repository: this.uatFacilityRepo,
+        filterConditions: { isEnabled: true },
+      },
+      'lastSyncedAt'
+    );
+
+    // Facility-specific aggregations
+    const [byType, byOwnership, byCounty, operational, withGLN] = await Promise.all([
+      // By facility type
+      this.uatFacilityRepo
+        .createQueryBuilder('facility')
+        .select('facility.facilityType', 'type')
+        .addSelect('COUNT(*)', 'count')
+        .where('facility.isEnabled = true')
+        .groupBy('facility.facilityType')
+        .getRawMany(),
+      
+      // By ownership
+      this.uatFacilityRepo
+        .createQueryBuilder('facility')
+        .select('facility.ownership', 'ownership')
+        .addSelect('COUNT(*)', 'count')
+        .where('facility.isEnabled = true')
+        .groupBy('facility.ownership')
+        .getRawMany(),
+      
+      // By county (top 10)
+      this.uatFacilityRepo
+        .createQueryBuilder('facility')
+        .select('facility.county', 'county')
+        .addSelect('COUNT(*)', 'count')
+        .where('facility.isEnabled = true')
+        .groupBy('facility.county')
+        .orderBy('count', 'DESC')
+        .limit(10)
+        .getRawMany(),
+      
+      // Operational count
+      this.uatFacilityRepo.count({
+        where: { isEnabled: true, operationalStatus: 'Active' },
+      }),
+      
+      // GLN coverage
+      this.uatFacilityRepo
+        .createQueryBuilder('facility')
+        .where('facility.isEnabled = true')
+        .andWhere('facility.gln IS NOT NULL')
+        .getCount(),
+    ]);
+
+    return {
+      total: stats.total,
+      byType: byType.reduce((acc, curr) => {
+        acc[curr.type || 'Unknown'] = parseInt(curr.count);
+        return acc;
+      }, {}),
+      byOwnership: byOwnership.reduce((acc, curr) => {
+        acc[curr.ownership || 'Unknown'] = parseInt(curr.count);
+        return acc;
+      }, {}),
+      byCounty: byCounty.reduce((acc, curr) => {
+        acc[curr.county || 'Unknown'] = parseInt(curr.count);
+        return acc;
+      }, {}),
+      operational,
+      nonOperational: stats.total - operational,
+      withGLN,
+      withoutGLN: stats.total - withGLN,
+      lastSync: stats.lastSynced,
+    };
+  }
+
+  /**
+   * Generate UAT facility data quality report
+   */
+  async generateUatFacilityDataQualityReport(): Promise<any> {
+    const total = await this.uatFacilityRepo.count({ where: { isEnabled: true } });
+
+    // Completeness metrics
+    const missingGln = await this.uatFacilityRepo.count({
+      where: { isEnabled: true, gln: null },
+    });
+
+    const missingMflCode = await this.uatFacilityRepo.count({
+      where: { isEnabled: true, mflCode: null },
+    });
+
+    const missingCounty = await this.uatFacilityRepo.count({
+      where: { isEnabled: true, county: null },
+    });
+
+    const missingFacilityType = await this.uatFacilityRepo.count({
+      where: { isEnabled: true, facilityType: null },
+    });
+
+    const missingOwnership = await this.uatFacilityRepo.count({
+      where: { isEnabled: true, ownership: null },
+    });
+
+    // Validity metrics
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+    const expiredLicenses = await this.uatFacilityRepo
+      .createQueryBuilder('facility')
+      .where('facility.isEnabled = true')
+      .andWhere('facility.licenseValidUntil < :now', { now })
+      .getCount();
+
+    const expiringSoon = await this.uatFacilityRepo
+      .createQueryBuilder('facility')
+      .where('facility.isEnabled = true')
+      .andWhere('facility.licenseValidUntil >= :now', { now })
+      .andWhere('facility.licenseValidUntil <= :future', { future: thirtyDaysFromNow })
+      .getCount();
+
+    // Duplicate facility codes (should be 0 due to unique constraint)
+    const duplicates = await this.uatFacilityRepo
+      .createQueryBuilder('facility')
+      .select('facility.facilityCode', 'code')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('facility.facilityCode')
+      .having('COUNT(*) > 1')
+      .getRawMany();
+
+    // Calculate quality scores
+    const completenessScore = ((total - missingGln - missingMflCode - missingCounty) / (total * 3)) * 100;
+    const validityScore = ((total - expiredLicenses - duplicates.length) / total) * 100;
+    const lastSync = await this.getUatFacilityLastSyncTimestamp();
+    const hoursSinceSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60);
+    const timelinessScore = hoursSinceSync < 3 ? 100 : hoursSinceSync < 6 ? 85 : hoursSinceSync < 24 ? 70 : 50;
+
+    const overallQualityScore = (
+      completenessScore * 0.4 +
+      validityScore * 0.3 +
+      90 * 0.15 + // Consistency (assumed 90%)
+      timelinessScore * 0.15
+    );
+
+    return {
+      overview: {
+        totalFacilities: total,
+        lastSync,
+        qualityScore: parseFloat(overallQualityScore.toFixed(2)),
+      },
+      completeness: {
+        missingGLN: missingGln,
+        missingMflCode,
+        missingCounty,
+        missingFacilityType,
+        missingOwnership,
+      },
+      validity: {
+        expiredLicenses,
+        expiringSoon,
+        duplicateFacilityCodes: duplicates.length,
+      },
+      scores: {
+        completeness: parseFloat(completenessScore.toFixed(2)),
+        validity: parseFloat(validityScore.toFixed(2)),
+        timeliness: parseFloat(timelinessScore.toFixed(2)),
+        overall: parseFloat(overallQualityScore.toFixed(2)),
+      },
+    };
+  }
+
+  /**
+   * Save current UAT facility data quality report as snapshot for historical tracking
+   */
+  async saveUatFacilityQualityAudit(triggeredBy: string = 'manual', notes?: string): Promise<UatFacilitiesQualityAudit> {
+    try {
+      this.logger.log(`Saving UAT facility quality audit snapshot (triggered by: ${triggeredBy})`);
+
+      const report = await this.generateUatFacilityDataQualityReport();
+
+      const audit = this.uatFacilityQualityAuditRepo.create({
+        auditDate: new Date(),
+        totalFacilities: report.overview.totalFacilities,
+        activeFacilities: report.overview.totalFacilities, // TODO: Add active count
+        inactiveFacilities: 0, // TODO: Add inactive count
+        missingGln: report.completeness.missingGLN,
+        missingMflCode: report.completeness.missingMflCode,
+        missingCounty: report.completeness.missingCounty,
+        missingFacilityType: report.completeness.missingFacilityType,
+        missingOwnership: report.completeness.missingOwnership,
+        missingContactInfo: 0, // TODO: Calculate
+        expiredLicenses: report.validity.expiredLicenses,
+        expiringSoon: report.validity.expiringSoon,
+        duplicateFacilityCodes: report.validity.duplicateFacilityCodes,
+        invalidCoordinates: 0, // TODO: Calculate
+        completenessScore: report.scores.completeness,
+        validityScore: report.scores.validity,
+        consistencyScore: 90, // Assumed
+        timelinessScore: report.scores.timeliness,
+        overallQualityScore: report.scores.overall,
+      });
+
+      await this.uatFacilityQualityAuditRepo.save(audit);
+
+      this.logger.log(`UAT facility quality audit saved with ID: ${audit.id}`);
+      
+      // Trigger quality alerts if score is below threshold
+      await this.qualityAlertService.checkAndAlert('facility', report.scores.overall, {
+        totalRecords: report.overview.totalFacilities,
+        auditId: audit.id,
+        triggeredBy,
+        lastSync: report.overview.lastSyncDate,
+        issues: report.issues,
+      });
+      
+      return audit;
+    } catch (error) {
+      this.logger.error('Failed to save UAT facility quality audit:', error);
+      throw new Error(`Failed to save quality audit: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all historical UAT facility quality audit snapshots
+   */
+  /**
+   * Get UAT facility quality audit history
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getUatFacilityQualityHistory(limit: number = 50): Promise<UatFacilitiesQualityAudit[]> {
+    return this.genericQualityHistoryService.getHistory(
+      {
+        entityType: 'facility',
+        repository: this.uatFacilityQualityAuditRepo,
+        dateField: 'auditDate',
+        scoreField: 'overallQualityScore',
+      },
+      limit
+    );
+  }
+
+  /**
+   * Get UAT facility quality audit snapshot by ID
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getUatFacilityQualityHistoryById(id: number): Promise<UatFacilitiesQualityAudit> {
+    return this.genericQualityHistoryService.getById(
+      {
+        entityType: 'facility',
+        repository: this.uatFacilityQualityAuditRepo,
+        dateField: 'auditDate',
+        scoreField: 'overallQualityScore',
+      },
+      id
+    );
+  }
+
+  /**
+   * Get UAT facility quality score trend over time
+   * NOW USING GENERIC QUALITY HISTORY SERVICE
+   */
+  async getUatFacilityQualityScoreTrend(days: number = 30): Promise<{
+    date: string;
+    score: number;
+  }[]> {
+    return this.genericQualityHistoryService.getScoreTrend(
+      {
+        entityType: 'facility',
+        repository: this.uatFacilityQualityAuditRepo,
+        dateField: 'auditDate',
+        scoreField: 'overallQualityScore',
+      },
+      days
+    );
+  }
+}
+
+

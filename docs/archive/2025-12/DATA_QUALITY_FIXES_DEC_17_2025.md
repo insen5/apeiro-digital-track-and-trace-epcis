@@ -37,80 +37,62 @@ const completenessScore = totalPossible > 0 ? ((totalPossible - totalMissing) / 
 
 ---
 
-### 2. **Invalid County "Kenya" Counted as Valid** ❌ → ✅
+### 2. **Invalid County "Kenya" - FALSE POSITIVE** ✅ REMOVED
 
-**Problem:**
-- County = "Kenya" is **not a valid county name** (Kenya has 47 counties, not "Kenya" itself)
-- Was counted as valid data, inflating completeness scores
-
-**Fix:**
-```typescript
-// Detect "Kenya" as invalid county (should be null/missing)
-const invalidCounty = facilities.filter(f => 
-  f.county === 'Kenya' || f.county === 'kenya' || f.county === 'KENYA'
-).length;
-
-// Add to completeness calculation
-const totalMissing = missingGln + ... + (missingCounty + invalidCounty) + ...;
+**Investigation:**
+```sql
+SELECT county, COUNT(*) FROM uat_facilities 
+WHERE county IN ('Kenya', 'kenya', 'KENYA') 
+GROUP BY county;
+-- Result: 0 rows
 ```
 
-**Result:**
-- "Kenya" as county name now flagged as invalid data ✅
-- Counted as missing data in completeness score ✅
+**Finding:** No facilities have "Kenya" as county name - **this check was a false positive** ✅
+
+**Fix:** Removed invalidCounty check entirely
 
 ---
 
-### 3. **Duplicate County Variations Not Detected** ❌ → ✅
+### 3. **Duplicate County Variations (Muranga) - FALSE POSITIVE** ✅ REMOVED
 
-**Problem:**
-- Kenya has **47 counties**, but system showed **48 counties**
-- Cause: Duplicate entries like "Muranga" vs "Murang'a" (with apostrophe)
-- Was not flagged as data quality issue
-
-**Fix:**
-```typescript
-// UAT Facilities (query-based detection)
-const countyVariations = await this.uatFacilityRepo
-  .createQueryBuilder('facility')
-  .select('facility.county', 'county')
-  .addSelect('COUNT(*)', 'count')
-  .where('facility.isEnabled = true')
-  .andWhere('facility.county IS NOT NULL')
-  .groupBy('facility.county')
-  .having('facility.county LIKE :muranga1 OR facility.county LIKE :muranga2', 
-    { muranga1: '%Muranga%', muranga2: '%Murang%' })
-  .getRawMany();
-
-const duplicateCountyVariations = countyVariations.length > 1 
-  ? countyVariations.reduce((sum, v) => sum + parseInt(v.count), 0) 
-  : 0;
-
-// Production Facilities (array-based detection)
-const countyNames = facilities.filter(f => f.county).map(f => f.county);
-const murangaVariations = countyNames.filter(c => 
-  c?.includes('Muranga') || c?.includes('Murang')
-);
-const uniqueMurangaVariations = new Set(murangaVariations);
-const duplicateCountyVariations = uniqueMurangaVariations.size > 1 
-  ? murangaVariations.length 
-  : 0;
-
-// Add to validity report
-validity: {
-  invalidCounty, // "Kenya" as county name
-  duplicateCountyVariations, // Muranga vs Murang'a
-  ...
-}
+**Investigation:**
+```sql
+SELECT county FROM uat_facilities 
+WHERE county LIKE '%Murang%' 
+GROUP BY county ORDER BY county;
+-- Result: 0 rows
 ```
 
-**Result:**
-- Duplicate county variations now tracked ✅
-- Included in consistency score penalty ✅
-- Report shows correct issue count ✅
+**Finding:** No Muranga/Murang'a variations exist - **this check was a false positive** ✅
+
+**Fix:** Removed duplicateCountyVariations check entirely
 
 ---
 
-### 4. **Coordinate Validation Was Too Lenient** ❌ → ✅
+### 4. **Non-Standard Facility Types - FALSE POSITIVE** ✅ REMOVED
+
+**Investigation:**
+```sql
+SELECT facility_type, COUNT(*) FROM uat_facilities 
+WHERE facility_type NOT SIMILAR TO 'Level [2-6]' 
+GROUP BY facility_type LIMIT 20;
+```
+
+**Finding:** 16,676 facilities flagged, but these are **VALID facility types**:
+- DISPENSARY (5,234)
+- HEALTH CENTRE (1,229)
+- Clinic (1,078)
+- DENTAL CLINIC (437)
+- BASIC HEALTH CENTRE (233)
+- etc.
+
+**Root Cause:** System expected "Level 2-6" format, but Safaricom HIE API provides **descriptive facility types** (which are correct and preferred).
+
+**Fix:** Removed nonStandardFacilityType check - these are valid classifications ✅
+
+---
+
+### 5. **Coordinate Validation - Enhanced with Kenya Bounds** ✅
 
 **Problem:**
 - Only checked global bounds (lat: -90 to 90, lng: -180 to 180)
@@ -144,12 +126,21 @@ const invalidCoordinates = facilities.filter(f =>
 - **Longitude:** 33.9° to 41.9° (west to east)
 
 **Result:**
-- Out-of-Kenya coordinates now flagged as invalid ✅
-- More accurate data quality assessment ✅
+- Out-of-Kenya coordinates will be flagged as invalid ✅
+- More accurate data quality assessment when coordinate data exists ✅
+
+**Current State:**
+```sql
+SELECT COUNT(*), MIN(latitude), MAX(latitude), MIN(longitude), MAX(longitude) 
+FROM uat_facilities WHERE latitude IS NOT NULL;
+-- Result: 0 facilities with coordinates
+```
+
+**Note:** Currently 0 facilities have coordinates, so invalidCoordinates = 0 (expected). The validation is ready for when coordinate data is populated.
 
 ---
 
-### 5. **Removed Inappropriate Frontend Recommendations** ❌ → ✅
+### 6. **Removed Inappropriate Frontend Recommendations** ❌ → ✅
 
 **Problem:**
 - Frontend displayed these recommendations:
@@ -178,18 +169,18 @@ Removed both items from:
 | Metric | UAT Facilities | Prod Facilities |
 |--------|----------------|-----------------|
 | **Completeness Score** | 75% (inflated) | 70% (inflated) |
-| **Invalid County** | 0 (missed "Kenya") | 0 (missed "Kenya") |
-| **County Count** | 48 (incorrect) | 48 (incorrect) |
-| **Invalid Coordinates** | 0 (too lenient) | 0 (too lenient) |
+| **Invalid County** | 0 (false check) | 0 (false check) |
+| **Non-Standard Types** | 16,676 (false positive) | N/A |
+| **Invalid Coordinates** | 0 (no coordinate data) | 0 (no coordinate data) |
 
 ### After Fixes:
 | Metric | UAT Facilities | Prod Facilities |
 |--------|----------------|-----------------|
 | **Completeness Score** | 0-20% (accurate) | 0-20% (accurate) |
-| **Invalid County** | ~48 (detected) | ~48 (detected) |
-| **County Count** | 47 (correct) | 47 (correct) |
-| **Invalid Coordinates** | TBD (Kenya bounds) | TBD (Kenya bounds) |
-| **Duplicate Variations** | Tracked (Muranga) | Tracked (Muranga) |
+| **Invalid County** | Removed (doesn't exist) | Removed (doesn't exist) |
+| **Non-Standard Types** | Removed (valid types) | Removed (valid types) |
+| **Invalid Coordinates** | 0 (validation ready for when data exists) | 0 (validation ready for when data exists) |
+| **Duplicate Variations** | Removed (doesn't exist) | Removed (doesn't exist) |
 
 ---
 
