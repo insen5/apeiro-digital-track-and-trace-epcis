@@ -94,7 +94,7 @@ export class FacilityIntegrationController {
     return {
       success: true,
       message: 'Event processed successfully',
-      eventId: dto.eventId,
+      eventId: dto.event_id,
     };
   }
 
@@ -145,7 +145,7 @@ export class FacilityIntegrationController {
     return {
       success: true,
       message: 'Event processed successfully',
-      eventId: dto.eventId,
+      eventId: dto.event_id,
     };
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import GenericQualityAuditTab from '@/components/shared/GenericQualityAuditTab';
+import ImprovedQualityAuditTab from '@/components/shared/ImprovedQualityAuditTab';
 
 /**
  * Facility UAT Audit History Tab
@@ -8,7 +8,7 @@ import GenericQualityAuditTab from '@/components/shared/GenericQualityAuditTab';
  */
 export default function AuditHistoryTab() {
   return (
-    <GenericQualityAuditTab
+    <ImprovedQualityAuditTab
       entityType="facility"
       apiBasePath="http://localhost:4000/api/master-data/uat-facilities"
       entityDisplayName="UAT Facility"

@@ -43,12 +43,12 @@ export class ProductDestructionService {
       });
     }
     if (productId) {
-      queryBuilder.andWhere('destruction.productId = :productId', {
+      queryBuilder.andWhere('destruction.product_id = :productId', {
         productId,
       });
     }
     if (batchId) {
-      queryBuilder.andWhere('destruction.batchId = :batchId', { batchId });
+      queryBuilder.andWhere('destruction.batch_id = :batchId', { batchId });
     }
     if (destructionReason) {
       queryBuilder.andWhere('destruction.destructionReason = :reason', {
@@ -181,17 +181,17 @@ export class ProductDestructionService {
     justification: string;
     scheduledDate?: Date;
   }): Promise<ProductDestruction> {
-    this.logger.log(`Initiating destruction for batch ${dto.batchId}, quantity ${dto.quantity}`);
+    this.logger.log(`Initiating destruction for batch ${dto.batch_id}, quantity ${dto.quantity}`);
 
     // Validate batch exists and has sufficient quantity
-    const batch = await this.batchRepo.findOne({ where: { id: dto.batchId } });
+    const batch = await this.batchRepo.findOne({ where: { id: dto.batch_id } });
     if (!batch) {
-      throw new NotFoundException(`Batch ${dto.batchId} not found`);
+      throw new NotFoundException(`Batch ${dto.batch_id} not found`);
     }
 
     if (batch.qty < dto.quantity) {
       throw new BadRequestException(
-        `Insufficient quantity in batch ${dto.batchId}. Available: ${batch.qty}, Requested: ${dto.quantity}`
+        `Insufficient quantity in batch ${dto.batch_id}. Available: ${batch.qty}, Requested: ${dto.quantity}`
       );
     }
 
@@ -201,8 +201,8 @@ export class ProductDestructionService {
 
     // Create destruction request
     const destruction = this.destructionRepo.create({
-      productId: dto.productId,
-      batchId: dto.batchId,
+      productId: dto.product_id,
+      batchId: dto.batch_id,
       sgtin: dto.sgtin,
       quantity: dto.quantity,
       destructionReason: dto.destructionReason,
@@ -302,12 +302,12 @@ export class ProductDestructionService {
 
     // Update batch inventory (remove destroyed quantity)
     await this.batchRepo.decrement(
-      { id: destruction.batchId },
+      { id: destruction.batch_id },
       'qty',
       destruction.quantity
     );
 
-    this.logger.log(`Destruction ${destructionId} completed by ${userId}, removed ${destruction.quantity} units from batch ${destruction.batchId}`);
+    this.logger.log(`Destruction ${destructionId} completed by ${userId}, removed ${destruction.quantity} units from batch ${destruction.batch_id}`);
 
     // TODO: Generate EPCIS event for destruction
     // TODO: Update product status to DESTROYED

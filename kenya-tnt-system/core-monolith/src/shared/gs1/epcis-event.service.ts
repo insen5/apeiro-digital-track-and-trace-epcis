@@ -189,7 +189,7 @@ export class EPCISEventService {
         sensorElementList: event.sensorElementList,
         errorDeclaration: event.errorDeclaration,
         // Actor context (P0 - Critical for L5 TNT)
-        actorType: options?.actorType,
+        actorType: options?.actor_type,
         actorUserId: options?.actorUserId,
         actorGLN: options?.actorGLN,
         actorOrganization: options?.actorOrganization,
@@ -330,7 +330,7 @@ export class EPCISEventService {
       sensorElementList: event.sensorElementList,
       errorDeclaration: event.errorDeclaration,
       // Actor context (P0 - Critical for L5 TNT)
-      actorType: options?.actorType,
+      actorType: options?.actor_type,
       actorUserId: options?.actorUserId,
       actorGLN: options?.actorGLN,
       actorOrganization: options?.actorOrganization,
@@ -385,15 +385,15 @@ export class EPCISEventService {
     sourceEntityType?: string;
     sourceEntityId?: number;
   }): Promise<void> {
-    this.logger.log(`[DB] saveEventToNormalizedTables called for event: ${summary.eventId}`);
+    this.logger.log(`[DB] saveEventToNormalizedTables called for event: ${summary.event_id}`);
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.MAX_RETRY_ATTEMPTS; attempt++) {
       try {
-        this.logger.log(`[DB] Attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS} for event: ${summary.eventId}`);
+        this.logger.log(`[DB] Attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS} for event: ${summary.event_id}`);
         
         // Use raw SQL insert to bypass TypeORM column mapping issues completely
-        this.logger.log(`[DB] Inserting EPCIS event: ${summary.eventId}, type: ${summary.eventType}`);
+        this.logger.log(`[DB] Inserting EPCIS event: ${summary.event_id}, type: ${summary.event_type}`);
         let insertResult: any;
         try {
           // Use raw SQL to completely bypass TypeORM's entity mapping
@@ -410,8 +410,8 @@ export class EPCISEventService {
           `;
           
           const params = [
-            summary.eventId,
-            summary.eventType,
+            summary.event_id,
+            summary.event_type,
             summary.parentId,
             summary.bizStep,
             summary.disposition,
@@ -427,7 +427,7 @@ export class EPCISEventService {
               : null,
             summary.errorDeclaration?.reason,
             summary.errorDeclaration?.correctiveEventIDs,
-            summary.actorType,
+            summary.actor_type,
             summary.actorUserId,
             summary.actorGLN,
             summary.actorOrganization,
@@ -438,7 +438,7 @@ export class EPCISEventService {
           insertResult = await this.dataSource.query(sql, params);
           this.logger.log(`[DB] Insert successful. ID: ${insertResult[0]?.id}`);
         } catch (insertError: any) {
-          this.logger.error(`[DB] Failed to insert event ${summary.eventId}:`, insertError?.message);
+          this.logger.error(`[DB] Failed to insert event ${summary.event_id}:`, insertError?.message);
           this.logger.error(`[DB] Insert error stack:`, insertError?.stack);
           throw insertError; // Re-throw to trigger retry
         }
@@ -447,19 +447,19 @@ export class EPCISEventService {
         const savedEventId = insertResult[0]?.id;
         const savedEvent = {
           id: savedEventId,
-          eventId: summary.eventId,
+          eventId: summary.event_id,
         } as any;
-        this.logger.log(`[DB] Saved event ID: ${savedEvent.id}, eventId: ${savedEvent.eventId}`);
+        this.logger.log(`[DB] Saved event ID: ${savedEvent.id}, eventId: ${savedEvent.event_id}`);
 
         // Create EPC records in junction table
         this.logger.log(`[DEBUG] Saving EPCs - summary.childEPCs count: ${summary.childEPCs?.length || 0}`);
         if (summary.childEPCs && summary.childEPCs.length > 0) {
-          this.logger.log(`[DEBUG] Creating ${summary.childEPCs.length} EPC entities for event ${savedEvent.eventId}`);
+          this.logger.log(`[DEBUG] Creating ${summary.childEPCs.length} EPC entities for event ${savedEvent.event_id}`);
           const epcEntities = summary.childEPCs.map((epc) => {
             const epcType = this.detectEPCType(epc);
             this.logger.log(`[DEBUG] EPC: ${epc}, type: ${epcType}`);
             return this.eventEpcRepo.create({
-              eventId: savedEvent.eventId,
+              eventId: savedEvent.event_id,
               epc,
               epcType,
             });
@@ -468,14 +468,14 @@ export class EPCISEventService {
           const savedEpcs = await this.eventEpcRepo.save(epcEntities);
           this.logger.log(`[DEBUG] Successfully saved ${savedEpcs.length} EPCs to epcis_event_epcs`);
         } else {
-          this.logger.warn(`[WARNING] No childEPCs to save for event ${savedEvent.eventId}!`);
+          this.logger.warn(`[WARNING] No childEPCs to save for event ${savedEvent.event_id}!`);
         }
 
         // Create business transaction records
         if (summary.bizTransactionList && summary.bizTransactionList.length > 0) {
           const bizTransactionEntities = summary.bizTransactionList.map((bt) =>
             this.bizTransactionRepo.create({
-              eventId: savedEvent.eventId,
+              eventId: savedEvent.event_id,
               transactionType: bt.type,
               transactionId: bt.bizTransaction,
             }),
@@ -487,7 +487,7 @@ export class EPCISEventService {
         if (summary.quantityList && summary.quantityList.length > 0) {
           const quantityEntities = summary.quantityList.map((q) =>
             this.quantityRepo.create({
-              eventId: savedEvent.eventId,
+              eventId: savedEvent.event_id,
               epcClass: q.epcClass,
               quantity: q.quantity,
               unitOfMeasure: q.uom,
@@ -500,7 +500,7 @@ export class EPCISEventService {
         if (summary.sourceList && summary.sourceList.length > 0) {
           const sourceEntities = summary.sourceList.map((s) =>
             this.sourceRepo.create({
-              eventId: savedEvent.eventId,
+              eventId: savedEvent.event_id,
               sourceType: s.type,
               sourceId: s.id,
             }),
@@ -512,7 +512,7 @@ export class EPCISEventService {
         if (summary.destinationList && summary.destinationList.length > 0) {
           const destinationEntities = summary.destinationList.map((d) =>
             this.destinationRepo.create({
-              eventId: savedEvent.eventId,
+              eventId: savedEvent.event_id,
               destinationType: d.type,
               destinationId: d.id,
             }),
@@ -524,7 +524,7 @@ export class EPCISEventService {
         if (summary.sensorElementList && summary.sensorElementList.length > 0) {
           const sensorEntities = summary.sensorElementList.map((s) =>
             this.sensorRepo.create({
-              eventId: savedEvent.eventId,
+              eventId: savedEvent.event_id,
               sensorType: s.type,
               deviceId: s.deviceID,
               deviceMetadata: s.deviceMetadata,
@@ -552,7 +552,7 @@ export class EPCISEventService {
         }
 
         this.logger.log(
-          `Event saved successfully: ${summary.eventId} (attempt ${attempt})`,
+          `Event saved successfully: ${summary.event_id} (attempt ${attempt})`,
         );
         return; // Success, exit retry loop
       } catch (error: any) {
@@ -561,14 +561,14 @@ export class EPCISEventService {
         // Check if it's a duplicate key error (race condition)
         if (error?.code === '23505' || error?.message?.includes('duplicate')) {
           this.logger.debug(
-            `Event already exists (duplicate key): ${summary.eventId}`,
+            `Event already exists (duplicate key): ${summary.event_id}`,
           );
           return; // Not an error, just a race condition
         }
 
         // Log warning but continue retrying
         this.logger.warn(
-          `Failed to save event (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS}): ${summary.eventId}`,
+          `Failed to save event (attempt ${attempt}/${this.MAX_RETRY_ATTEMPTS}): ${summary.event_id}`,
           error?.message,
         );
 
@@ -582,7 +582,7 @@ export class EPCISEventService {
 
     // All retries failed - log error but don't throw
     this.logger.error(
-      `Failed to save event after ${this.MAX_RETRY_ATTEMPTS} attempts: ${summary.eventId}`,
+      `Failed to save event after ${this.MAX_RETRY_ATTEMPTS} attempts: ${summary.event_id}`,
       lastError?.message,
       lastError?.stack,
     );
@@ -796,10 +796,10 @@ export class EPCISEventService {
         action: 'OBSERVE',
         bizStep: 'urn:epcglobal:cbv:bizstep:shipping',
         disposition: 'urn:epcglobal:cbv:disp:in_transit',
-        destinationList: options?.destinationGLN ? [
+        destinationList: options?.destination_gln ? [
           {
             type: 'urn:epcglobal:cbv:sdt:location',
-            id: options.destinationGLN,
+            id: options.destination_gln,
           }
         ] : undefined,
         bizTransactionList: options?.referenceDocumentNumber ? [

@@ -13,20 +13,20 @@ import { User } from './user.entity';
 import { Party } from './party.entity';
 
 @Entity('batches')
-@Unique(['batchno'])
+@Unique(['batch_no'])
 export class Batch extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  productId: number;
+  product_id: number;
 
   @ManyToOne(() => PPBProduct)
-  @JoinColumn({ name: 'productId' })
+  @JoinColumn({ name: 'product_id' })
   product: PPBProduct;
 
   @Column()
-  batchno: string;
+  batch_no: string;
 
   @Column({ type: 'date' })
   expiry: Date;
@@ -35,54 +35,54 @@ export class Batch extends BaseEntity {
   qty: number;
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
-  sentQty: number;
+  sent_qty: number;
 
   @Column({ default: true })
-  isEnabled: boolean;
+  is_enabled: boolean;
 
   @Column({ type: 'uuid' })
-  userId: string;
+  user_id: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   // Manufacturer party relation (V07: follows V04's unified party model)
   @Column({ name: 'manufacturer_party_id', nullable: true })
   @Index()
-  manufacturerPartyId?: number;
+  manufacturer_party_id?: number;
 
   @ManyToOne(() => Party, { nullable: true })
   @JoinColumn({ name: 'manufacturer_party_id' })
-  manufacturerParty?: Party;
+  manufacturer_party?: Party;
 
   // Manufacturing site SGLN (from ppb_batches, migrated in V03)
   @Column({ name: 'manufacturing_site_sgln', type: 'varchar', length: 100, nullable: true })
   @Index()
-  manufacturingSiteSgln?: string;
+  manufacturing_site_sgln?: string;
 
   @Column({ default: false })
-  earlyWarningNotified: boolean;
+  early_warning_notified: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
-  earlyWarningDate: Date;
+  early_warning_date: Date;
 
   @Column({ default: false })
-  secondaryNotified: boolean;
+  secondary_notified: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
-  secondaryDate: Date;
+  secondary_date: Date;
 
   @Column({ default: false })
-  finalNotified: boolean;
+  final_notified: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
-  finalDate: Date;
+  final_date: Date;
 
   @Column({ default: false })
-  postExpiryNotified: boolean;
+  post_expiry_notified: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
-  postExpiryDate: Date;
+  post_expiry_date: Date;
 }
 

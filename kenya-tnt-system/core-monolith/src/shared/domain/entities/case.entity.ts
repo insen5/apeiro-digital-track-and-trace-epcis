@@ -13,8 +13,8 @@ import { CasesProducts } from './cases-products.entity';
 import { User } from './user.entity';
 
 @Entity('case')
-@Unique(['userId', 'label'])
-@Unique(['userId', 'eventId'])
+@Unique(['user_id', 'label'])
+@Unique(['user_id', 'event_id'])
 export class Case extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -22,11 +22,11 @@ export class Case extends BaseEntity {
   @Column()
   label: string;
 
-  @Column({ name: 'packageId' })
-  packageId: number;
+  @Column()
+  package_id: number;
 
   @ManyToOne(() => Package, (pkg) => pkg.cases)
-  @JoinColumn({ name: 'packageId' })
+  @JoinColumn({ name: 'package_id' })
   package: Package;
 
   @OneToMany(() => CasesProducts, (cp) => cp.case, {
@@ -34,23 +34,23 @@ export class Case extends BaseEntity {
   })
   products: CasesProducts[];
 
-  @Column({ name: 'userId', type: 'uuid' })
-  userId: string;
+  @Column({ type: 'uuid' })
+  user_id: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ name: 'eventId', nullable: true })
-  eventId?: string;
+  @Column({ nullable: true })
+  event_id?: string;
 
-  @Column({ name: 'isDispatched', default: false })
-  isDispatched: boolean;
+  @Column({ default: false })
+  is_dispatched: boolean;
 
   @Column({ nullable: true, name: 'sscc_barcode' })
-  ssccBarcode?: string;
+  sscc_barcode?: string;
 
   @Column({ nullable: true, name: 'sscc_generated_at', type: 'timestamp' })
-  ssccGeneratedAt?: Date;
+  sscc_generated_at?: Date;
 }
 

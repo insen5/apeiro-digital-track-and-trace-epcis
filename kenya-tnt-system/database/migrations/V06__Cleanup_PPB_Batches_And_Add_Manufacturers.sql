@@ -134,3 +134,7 @@ COMMIT;
 -- SELECT COUNT(*) as batches_with_manufacturer FROM batches WHERE manufacturer_id IS NOT NULL;
 -- SELECT COUNT(*) as ppb_batches_columns FROM information_schema.columns WHERE table_name = 'ppb_batches';
 -- Expected ppb_batches columns: ~17 (down from 30+)
+
+
+
+

@@ -55,7 +55,7 @@ export class CoordinatesDto {
   })
   @IsNumber()
   @IsOptional()
-  accuracyMeters?: number;
+  accuracy_meters?: number;
 }
 
 /**
@@ -69,17 +69,17 @@ export class LocationDto {
   })
   @IsString()
   @IsOptional()
-  facilityGln?: string;
+  facility_gln?: string;
 
   @ApiProperty({
     oneOf: [
-      { type: 'object', properties: { latitude: { type: 'number' }, longitude: { type: 'number' }, accuracyMeters: { type: 'number' } } },
+      { type: 'object', properties: { latitude: { type: 'number' }, longitude: { type: 'number' }, accuracy_meters: { type: 'number' } } },
       { type: 'string', example: '-1.0303,36.68687' },
     ],
     description: 'GPS coordinates - can be object with latitude/longitude or comma-separated string "lat,lng" or "lat,lng,accuracy"',
     required: false,
     examples: [
-      { coordinates: { latitude: -1.2860, longitude: 36.8220, accuracyMeters: 7.2 } },
+      { coordinates: { latitude: -1.2860, longitude: 36.8220, accuracy_meters: 7.2 } },
       { coordinates: '-1.0303,36.68687' },
       { coordinates: '-1.0303,36.68687,7.2' },
       { coordinates: null },
@@ -95,7 +95,7 @@ export class LocationDto {
   })
   @IsDateString()
   @IsOptional()
-  capturedAt?: string;
+  captured_at?: string;
 }
 
 /**
@@ -138,14 +138,14 @@ export class LMISItemDto {
     description: 'Batch/Lot number',
   })
   @IsString()
-  batchNumber: string;
+  batch_number: string;
 
   @ApiProperty({
     example: '2026-02-15',
     description: 'Expiry date',
   })
   @IsDateString()
-  expiryDate: string;
+  expiry_date: string;
 
   @ApiProperty({
     type: IdentifiersDto,
@@ -172,7 +172,7 @@ export class LMISItemDto {
   })
   @IsNumber()
   @IsOptional()
-  systemQuantity?: number;
+  system_quantity?: number;
 
   @ApiProperty({
     example: 197,
@@ -181,7 +181,7 @@ export class LMISItemDto {
   })
   @IsNumber()
   @IsOptional()
-  physicalQuantity?: number;
+  physical_quantity?: number;
 }
 
 /**
@@ -200,14 +200,14 @@ export class AdjustmentItemDto {
     description: 'Batch/Lot number',
   })
   @IsString()
-  batchNumber: string;
+  batch_number: string;
 
   @ApiProperty({
     example: '2026-02-15',
     description: 'Expiry date',
   })
   @IsDateString()
-  expiryDate: string;
+  expiry_date: string;
 
   @ApiProperty({
     type: IdentifiersDto,
@@ -222,7 +222,7 @@ export class AdjustmentItemDto {
     description: 'Quantity change (negative = loss, positive = gain)',
   })
   @IsNumber()
-  quantityChange: number;
+  quantity_change: number;
 }
 
 /**
@@ -234,14 +234,14 @@ export class ShipmentDto {
     description: 'Shipment identifier',
   })
   @IsString()
-  shipmentId: string;
+  shipment_id: string;
 
   @ApiProperty({
     example: '2024-12-19T09:15:00Z',
     description: 'Timestamp when shipment was received',
   })
   @IsDateString()
-  receivedAt: string;
+  received_at: string;
 }
 
 /**
@@ -302,14 +302,14 @@ export class DispenseEventDto extends BaseLMISEventDto {
     description: 'Batch number',
   })
   @IsString()
-  batchNumber: string;
+  batch_number: string;
 
   @ApiProperty({
     example: '2026-01-15',
     description: 'Expiry date',
   })
   @IsDateString()
-  expiryDate: string;
+  expiry_date: string;
 
   @ApiProperty({
     type: IdentifiersDto,
@@ -332,7 +332,7 @@ export class DispenseEventDto extends BaseLMISEventDto {
     description: 'Dispensation identifier',
   })
   @IsString()
-  dispensationId: string;
+  dispensation_id: string;
 }
 
 /**
@@ -350,7 +350,7 @@ export class ReceiveEventDto extends BaseLMISEventDto {
     description: 'Goods Receipt Note (GRN) identifier',
   })
   @IsString()
-  grnId: string;
+  grn_id: string;
 
   @ApiProperty({
     type: ShipmentDto,
@@ -401,7 +401,7 @@ export class AdjustEventDto extends BaseLMISEventDto {
     description: 'Local LMIS reference ID for adjustment',
   })
   @IsString()
-  referenceId: string;
+  reference_id: string;
 }
 
 /**
@@ -424,7 +424,7 @@ export class StockCountEventDto {
 
   @ApiProperty({
     type: LocationDto,
-    description: 'Location (must include facilityGln)',
+    description: 'Location (must include facility_gln)',
   })
   @ValidateNested()
   @Type(() => LocationDto)
@@ -435,11 +435,11 @@ export class StockCountEventDto {
     description: 'Stock count session identifier',
   })
   @IsString()
-  countSessionId: string;
+  count_session_id: string;
 
   @ApiProperty({
     type: [LMISItemDto],
-    description: 'Items counted (must include systemQuantity and physicalQuantity)',
+    description: 'Items counted (must include system_quantity and physical_quantity)',
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -462,7 +462,7 @@ export class ReturnEventDto extends BaseLMISEventDto {
     description: 'Return identifier',
   })
   @IsString()
-  returnId: string;
+  return_id: string;
 
   @ApiProperty({
     example: 'supplier_return',
@@ -501,7 +501,7 @@ export class RecallEventDto {
 
   @ApiProperty({
     type: LocationDto,
-    description: 'Location (must include facilityGln)',
+    description: 'Location (must include facility_gln)',
   })
   @ValidateNested()
   @Type(() => LocationDto)
@@ -512,14 +512,14 @@ export class RecallEventDto {
     description: 'Recall notice identifier',
   })
   @IsString()
-  recallNoticeId: string;
+  recall_notice_id: string;
 
   @ApiProperty({
     example: 'Class I',
     description: 'Recall class',
   })
   @IsString()
-  recallClass: string;
+  recall_class: string;
 
   @ApiProperty({
     example: 'regulatory_recall',

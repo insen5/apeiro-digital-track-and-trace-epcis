@@ -5,7 +5,7 @@ export class ForwardShipmentDto {
   @ApiProperty({ description: 'Received shipment ID to forward' })
   @IsNumber()
   @IsNotEmpty()
-  receivedShipmentId: number;
+  received_shipment_id: number;
 
   @ApiProperty()
   @IsString()
@@ -15,22 +15,22 @@ export class ForwardShipmentDto {
   @ApiProperty()
   @IsDateString()
   @IsNotEmpty()
-  pickupDate: string;
+  pickup_date: string;
 
   @ApiProperty()
   @IsDateString()
   @IsNotEmpty()
-  expectedDeliveryDate: string;
+  expected_delivery_date: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  pickupLocation: string;
+  pickup_location: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  destinationAddress: string;
+  destination_address: string;
 
   @ApiProperty()
   @IsString()
@@ -40,6 +40,6 @@ export class ForwardShipmentDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  customerId?: string;
+  customer_id?: string;
 }
 

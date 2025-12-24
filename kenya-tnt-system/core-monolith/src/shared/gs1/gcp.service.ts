@@ -100,9 +100,9 @@ export class GCPService {
     if (supplier) {
       result = {
         prefix: dto.prefix,
-        companyName: supplier.legalEntityName,
-        entityId: supplier.entityId,
-        entityType: supplier.actorType,
+        company_name: supplier.legalEntityName,
+        entity_id: supplier.entityId,
+        entity_type: supplier.actor_type,
         gln: supplier.legalEntityGLN || supplier.hqGLN || undefined,
         contactEmail: supplier.contactEmail || undefined,
         contactPhone: supplier.contactPhone || undefined,
@@ -118,9 +118,9 @@ export class GCPService {
       if (logisticsProvider) {
         result = {
           prefix: dto.prefix,
-          companyName: logisticsProvider.name,
-          entityId: logisticsProvider.lspId,
-          entityType: 'logistics_provider',
+          company_name: logisticsProvider.name,
+          entity_id: logisticsProvider.lspId,
+          entity_type: 'logistics_provider',
           gln: logisticsProvider.gln || undefined,
           contactEmail: logisticsProvider.contactEmail || undefined,
           contactPhone: logisticsProvider.contactPhone || undefined,

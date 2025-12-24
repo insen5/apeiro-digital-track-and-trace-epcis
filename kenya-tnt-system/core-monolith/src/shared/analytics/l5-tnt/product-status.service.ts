@@ -35,26 +35,26 @@ export class ProductStatusService {
 
     // Get previous status if product/batch exists
     let previousStatus: string | undefined;
-    if (dto.productId || dto.batchId || dto.sgtin) {
+    if (dto.product_id || dto.batch_id || dto.sgtin) {
       const previous = await this.productStatusRepo.findOne({
         where: [
-          dto.productId ? { productId: dto.productId } : {},
-          dto.batchId ? { batchId: dto.batchId } : {},
+          dto.product_id ? { product_id: dto.product_id } : {},
+          dto.batch_id ? { batch_id: dto.batch_id } : {},
           dto.sgtin ? { sgtin: dto.sgtin } : {},
         ],
-        order: { statusDate: 'DESC' },
+        order: { status_date: 'DESC' },
       });
       previousStatus = previous?.status;
     }
 
     const productStatus = this.productStatusRepo.create({
-      productId: dto.productId,
-      batchId: dto.batchId,
+      product_id: dto.product_id,
+      batch_id: dto.batch_id,
       sgtin: dto.sgtin,
       status: dto.status,
-      previousStatus,
-      actorUserId: userId,
-      actorType: dto.actorType || 'manufacturer',
+      previous_status: previousStatus,
+      actor_user_id: userId,
+      actor_type: dto.actor_type || 'manufacturer',
       notes: dto.notes,
     });
 
@@ -70,14 +70,14 @@ export class ProductStatusService {
     sgtin?: string,
   ): Promise<ProductStatus[]> {
     const where: any = {};
-    if (productId) where.productId = productId;
-    if (batchId) where.batchId = batchId;
+    if (productId) where.product_id = productId;
+    if (batchId) where.batch_id = batchId;
     if (sgtin) where.sgtin = sgtin;
 
     return this.productStatusRepo.find({
       where,
       relations: ['actor'],
-      order: { statusDate: 'DESC' },
+      order: { status_date: 'DESC' },
     });
   }
 
@@ -90,14 +90,14 @@ export class ProductStatusService {
     sgtin?: string,
   ): Promise<ProductStatus | null> {
     const where: any = {};
-    if (productId) where.productId = productId;
-    if (batchId) where.batchId = batchId;
+    if (productId) where.product_id = productId;
+    if (batchId) where.batch_id = batchId;
     if (sgtin) where.sgtin = sgtin;
 
     return this.productStatusRepo.findOne({
       where,
       relations: ['actor'],
-      order: { statusDate: 'DESC' },
+      order: { status_date: 'DESC' },
     });
   }
 
@@ -120,12 +120,12 @@ export class ProductStatusService {
     }
 
     // Validate status transition if previous status exists
-    const current = await this.getCurrentStatus(dto.productId, dto.batchId, dto.sgtin);
+    const current = await this.getCurrentStatus(dto.product_id, dto.batch_id, dto.sgtin);
     if (current) {
       this.validateStatusTransition(current.status, dto.status);
     }
 
-    return this.create(userId, dto);
+    return this.create(user_id, dto);
   }
 
   /**
@@ -141,10 +141,10 @@ export class ProductStatusService {
 
     for (const dto of updates) {
       try {
-        const status = await this.updateStatus(userId, dto);
+        const status = await this.updateStatus(user_id, dto);
         results.push(status);
       } catch (error) {
-        this.logger.error(`Failed to update status for product ${dto.productId || dto.batchId || dto.sgtin}:`, error.message);
+        this.logger.error(`Failed to update status for product ${dto.product_id || dto.batch_id || dto.sgtin}:`, error.message);
         // Continue with other updates
       }
     }

@@ -8,8 +8,8 @@ export interface CreateRecallDto {
   batchId: number;
   reason: string;
   transporter: string;
-  pickupLocation: string;
-  pickupDate: Date;
+  pickup_location: string;
+  pickup_date: Date;
   deliveryLocation: string;
   deliveryDate: Date;
 }
@@ -36,11 +36,11 @@ export class RecallService {
   async create(dto: CreateRecallDto): Promise<RecallRequest> {
     // Verify batch exists
     const batch = await this.batchRepo.findOne({
-      where: { id: dto.batchId },
+      where: { id: dto.batch_id },
     });
 
     if (!batch) {
-      throw new NotFoundException(`Batch with ID ${dto.batchId} not found`);
+      throw new NotFoundException(`Batch with ID ${dto.batch_id} not found`);
     }
 
     const recall = this.recallRepo.create({
@@ -49,7 +49,7 @@ export class RecallService {
     });
 
     const saved = await this.recallRepo.save(recall);
-    this.logger.log(`Recall request created: ${saved.id} for batch ${dto.batchId}`);
+    this.logger.log(`Recall request created: ${saved.id} for batch ${dto.batch_id}`);
     return saved;
   }
 

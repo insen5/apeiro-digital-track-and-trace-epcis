@@ -17,84 +17,84 @@ export class Consignment {
   id: number;
 
   @Column({ unique: true })
-  eventID: string;
+  event_id: string;
 
   @Column()
-  eventType: string;
+  event_type: string;
 
   @Column({ type: 'timestamp' })
-  eventTimestamp: Date;
+  event_timestamp: Date;
 
   @Column()
-  sourceSystem: string;
+  source_system: string;
 
   @Column()
-  destinationSystem: string;
+  destination_system: string;
 
   @Column()
-  consignmentID: string;
+  consignment_id: string;
 
   @Column()
-  manufacturerPPBID: string;
+  manufacturer_ppb_id: string;
 
   @Column()
-  MAHPPBID: string;
+  mah_ppb_id: string;
 
   @Column({ nullable: true })
-  manufacturerGLN?: string;
+  manufacturer_gln?: string;
 
   @Column({ nullable: true })
-  MAHGLN?: string;
+  mah_gln?: string;
 
   @Column()
-  registrationNo: string;
+  registration_no: string;
 
   @Column({ type: 'date' })
-  shipmentDate: Date;
+  shipment_date: Date;
 
   @Column()
-  countryOfOrigin: string;
+  country_of_origin: string;
 
   @Column()
-  destinationCountry: string;
+  destination_country: string;
 
   // Importer party details
   @Column({ nullable: true })
-  importerPartyName?: string;
+  importer_party_name?: string;
 
   @Column({ nullable: true })
-  importerPartyGLN?: string;
+  importer_party_gln?: string;
 
   @Column({ nullable: true })
-  importerPartyCountry?: string;
+  importer_party_country?: string;
 
   // Destination party details
   @Column({ nullable: true })
-  destinationPartyName?: string;
+  destination_party_name?: string;
 
   @Column({ nullable: true })
-  destinationPartyGLN?: string;
+  destination_party_gln?: string;
 
   @Column({ nullable: true })
-  destinationLocationLabel?: string;
+  destination_location_label?: string;
 
   @Column({ type: 'decimal', precision: 15, scale: 2 })
-  totalQuantity: number;
+  total_quantity: number;
 
   @Column({ type: 'uuid' })
-  userId: string;
+  user_id: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @OneToMany(() => ConsignmentBatch, (cb) => cb.consignment)
   consignmentBatches: ConsignmentBatch[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: Date;
 }
 

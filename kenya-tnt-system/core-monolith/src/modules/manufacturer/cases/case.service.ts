@@ -50,9 +50,9 @@ export class CaseService {
     packageId: number,
     dto: CreateCaseDto,
   ): Promise<Case> {
-    const batchIds = dto.products.map((p) => p.batchId);
+    const batchIds = dto.products.map((p) => p.batch_id);
     const batches = await this.batchRepo.find({
-      where: { id: In(batchIds), userId, isEnabled: true },
+      where: { id: In(batchIds), user_id, is_enabled: true },
     });
 
     if (batches.length !== batchIds.length) {
@@ -61,17 +61,17 @@ export class CaseService {
 
     // Validate quantities - can do math because qty is NUMERIC!
     for (const product of dto.products) {
-      const batch = batches.find((b) => b.id === product.batchId);
+      const batch = batches.find((b) => b.id === product.batch_id);
       if (!batch) {
         throw new NotFoundException(
-          `Batch with ID ${product.batchId} not found`,
+          `Batch with ID ${product.batch_id} not found`,
         );
       }
 
-      const availableQty = Number(batch.qty) - Number(batch.sentQty);
+      const availableQty = Number(batch.qty) - Number(batch.sent_qty);
       if (availableQty < product.qty) {
         throw new BadRequestException(
-          `Not enough quantity in batch ${batch.batchno}. Available: ${availableQty}, requested: ${product.qty}`,
+          `Not enough quantity in batch ${batch.batch_no}. Available: ${availableQty}, requested: ${product.qty}`,
         );
       }
     }
@@ -79,22 +79,22 @@ export class CaseService {
     // Create case
     const newCase = this.caseRepo.create({
       label: dto.label,
-      packageId,
-      userId,
-      isDispatched: false,
+      package_id: packageId,
+      user_id: userId,
+      is_dispatched: false,
     });
 
     const savedCase = await this.caseRepo.save(newCase);
 
     // Create case-products relationships
     const caseProducts = dto.products.map((p, index) => {
-      const batch = batches.find((b) => b.id === p.batchId);
+      const batch = batches.find((b) => b.id === p.batch_id);
       return this.casesProductsRepo.create({
-        caseId: savedCase.id,
-        productId: p.productId,
-        batchId: p.batchId,
+        case_id: savedCase.id,
+        product_id: p.product_id,
+        batch_id: p.batch_id,
         qty: p.qty, // NUMERIC type
-        fromNumber: index + 1,
+        from_number: index + 1,
         count: 1,
       });
     });
@@ -103,16 +103,16 @@ export class CaseService {
 
     // Update batch sentQty
     for (const product of dto.products) {
-      const batch = batches.find((b) => b.id === product.batchId);
+      const batch = batches.find((b) => b.id === product.batch_id);
       if (batch) {
-        batch.sentQty = Number(batch.sentQty) + product.qty;
+        batch.sent_qty = Number(batch.sent_qty) + product.qty;
         await this.batchRepo.save(batch);
       }
     }
 
     // Create EPCIS AggregationEvent using GS1 Service
     const batchEPCs = batches.map((b) =>
-      this.gs1Service.formatBatchNumberAsEPCURI(b.batchno),
+      this.gs1Service.formatBatchNumberAsEPCURI(b.batch_no),
     );
     const caseEPC = `https://example.com/cases/${savedCase.label.replace(/\s+/g, '')}`;
 
@@ -123,19 +123,19 @@ export class CaseService {
       // Build quantity list from products
       const quantityList = await Promise.all(
         dto.products.map(async (product) => {
-          const batch = batches.find((b) => b.id === product.batchId);
+          const batch = batches.find((b) => b.id === product.batch_id);
           if (!batch) return null;
 
           // Get product GTIN from master data
           try {
-            const productData = await this.masterDataService.findOne(product.productId);
+            const productData = await this.masterDataService.findOne(product.product_id);
             if (!productData?.gtin) return null;
 
-            const epcClass = `urn:epc:class:lgtin:${productData.gtin}.${batch.batchno}`;
+            const epcClass = `urn:epc:class:lgtin:${productData.gtin}.${batch.batch_no}`;
             return createQuantity(epcClass, product.qty, UnitOfMeasure.EACH);
           } catch (error) {
             // If product not found, skip this quantity entry
-            this.logger.warn(`Product ${product.productId} not found, skipping quantity entry`);
+            this.logger.warn(`Product ${product.product_id} not found, skipping quantity entry`);
             return null;
           }
         }),
@@ -148,19 +148,19 @@ export class CaseService {
           bizStep: 'packing',
           disposition: 'in_progress',
           action: 'ADD', // Explicitly set
-          quantityList: quantityList.length > 0 ? quantityList : undefined,
-          bizTransactionList: [createBizTransaction('CASE', `CASE-${savedCase.id}`)],
+          quantity_list: quantityList.length > 0 ? quantityList : undefined,
+          biz_transaction_list: [createBizTransaction('CASE', `CASE-${savedCase.id}`)],
           // Actor context (P0 - Critical for L5 TNT)
-          actorType: 'manufacturer',
-          actorUserId: userId,
-          actorGLN: user?.glnNumber,
-          actorOrganization: user?.organization,
-          sourceEntityType: 'case',
-          sourceEntityId: savedCase.id,
+          actor_type: 'manufacturer',
+          actor_user_id: userId,
+          actor_gln: user?.gln_number,
+          actor_organization: user?.organization,
+          source_entity_type: 'case',
+          source_entity_id: savedCase.id,
         },
       );
 
-      savedCase.eventId = eventId;
+      savedCase.event_id = eventId;
       await this.caseRepo.save(savedCase);
     } catch (error: any) {
       this.logger.error(
@@ -178,8 +178,8 @@ export class CaseService {
    * Get all cases for a user
    */
   async findAll(userId: string): Promise<Case[]> {
-    return this.caseRepo.find({
-      where: { userId },
+      return this.caseRepo.find({
+        where: { user_id: userId },
       relations: ['products', 'products.batch', 'products.product'],
       order: { id: 'DESC' },
     });
@@ -188,7 +188,7 @@ export class CaseService {
   /**
    * Get case by ID
    */
-  async findOne(id: number, userId: string): Promise<Case> {
+  async findOne(id: number, user_id: string): Promise<Case> {
     const caseEntity = await this.caseRepo.findOne({
       where: { id, userId },
       relations: ['products', 'products.batch', 'products.product'],
@@ -207,7 +207,7 @@ export class CaseService {
    */
   async assignSSCC(
     id: number,
-    userId: string,
+    user_id: string,
     sscc?: string,
   ): Promise<Case> {
     const caseEntity = await this.caseRepo.findOne({
@@ -218,24 +218,24 @@ export class CaseService {
       throw new NotFoundException(`Case with ID ${id} not found`);
     }
 
-    if (caseEntity.ssccBarcode) {
+    if (caseEntity.sscc_barcode) {
       throw new BadRequestException(
-        `Case ${id} already has an SSCC: ${caseEntity.ssccBarcode}`,
+        `Case ${id} already has an SSCC: ${caseEntity.sscc_barcode}`,
       );
     }
 
     // Get user's organization to retrieve GS1 prefix
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    let companyPrefix: string | undefined;
+    let company_prefix: string | undefined;
 
     if (user?.organization) {
       const supplier = await this.masterDataService.getSupplierByEntityId(
         user.organization,
       );
       if (supplier?.gs1Prefix) {
-        companyPrefix = supplier.gs1Prefix;
+        company_prefix = supplier.gs1Prefix;
         this.logger.log(
-          `Using GS1 prefix ${companyPrefix} for organization ${user.organization}`,
+          `Using GS1 prefix ${company_prefix} for organization ${user.organization}`,
         );
       } else {
         this.logger.warn(
@@ -248,7 +248,7 @@ export class CaseService {
     const finalSSCC =
       sscc ||
       (await this.gs1Service.generateSSCC(
-        companyPrefix ? { companyPrefix } : undefined,
+        company_prefix ? { company_prefix } : undefined,
       ));
 
     // Validate SSCC format
@@ -258,7 +258,7 @@ export class CaseService {
 
     // Check if SSCC already exists
     const existingCase = await this.caseRepo.findOne({
-      where: { ssccBarcode: finalSSCC },
+      where: { sscc_barcode: finalSSCC },
     });
     if (existingCase) {
       throw new BadRequestException(
@@ -266,8 +266,8 @@ export class CaseService {
       );
     }
 
-    caseEntity.ssccBarcode = finalSSCC;
-    caseEntity.ssccGeneratedAt = new Date();
+    caseEntity.sscc_barcode = finalSSCC;
+    caseEntity.sscc_generated_at = new Date();
     await this.caseRepo.save(caseEntity);
 
     this.logger.log(`SSCC ${finalSSCC} assigned to case ${id}`);

@@ -29,12 +29,12 @@ export class AnalyticsService {
    */
   async getShipmentStats(): Promise<any> {
     const [total, dispatched, pending] = await Promise.all([
-      this.shipmentRepo.count({ where: { isDeleted: false } }),
+      this.shipmentRepo.count({ where: { is_deleted: false } }),
       this.shipmentRepo.count({
-        where: { isDispatched: true, isDeleted: false },
+        where: { is_dispatched: true, is_deleted: false },
       }),
       this.shipmentRepo.count({
-        where: { isDispatched: false, isDeleted: false },
+        where: { is_dispatched: false, is_deleted: false },
       }),
     ]);
 
@@ -57,19 +57,19 @@ export class AnalyticsService {
       this.batchRepo.count({
         where: {
           expiry: Between(now, thirtyDays),
-          isEnabled: true,
+          is_enabled: true,
         },
       }),
       this.batchRepo.count({
         where: {
           expiry: Between(thirtyDays, sixtyDays),
-          isEnabled: true,
+          is_enabled: true,
         },
       }),
       this.batchRepo.count({
         where: {
           expiry: LessThan(now),
-          isEnabled: true,
+          is_enabled: true,
         },
       }),
     ]);

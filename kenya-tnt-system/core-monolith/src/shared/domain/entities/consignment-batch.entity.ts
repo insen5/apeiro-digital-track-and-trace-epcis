@@ -14,24 +14,24 @@ export class ConsignmentBatch {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'consignmentId' })
-  consignmentId: number;
+  @Column()
+  consignment_id: number;
 
   @ManyToOne(() => Consignment, (consignment) => consignment.consignmentBatches)
-  @JoinColumn({ name: 'consignmentId' })
+  @JoinColumn({ name: 'consignment_id' })
   consignment: Consignment;
 
-  @Column({ name: 'batchId' })
-  batchId: number;
+  @Column()
+  batch_id: number;
 
   @ManyToOne(() => Batch)
-  @JoinColumn({ name: 'batchId' })
+  @JoinColumn({ name: 'batch_id' })
   batch: Batch;
 
-  @Column({ name: 'sscc', nullable: true, length: 18 })
+  @Column({ nullable: true, length: 18 })
   sscc?: string;
 
-  @CreateDateColumn({ name: 'createdAt' })
-  createdAt: Date;
+  @CreateDateColumn()
+  created_at: Date;
 }
 

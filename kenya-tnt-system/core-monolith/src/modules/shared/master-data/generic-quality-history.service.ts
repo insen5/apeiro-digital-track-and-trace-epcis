@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
  */
 
 export interface QualityHistoryConfig {
-  entityType: string;
+  entity_type: string;
   repository: Repository<any>;
   dateField: string; // 'reportDate' or 'auditDate'
   scoreField: string; // 'dataQualityScore' or 'overallQualityScore'

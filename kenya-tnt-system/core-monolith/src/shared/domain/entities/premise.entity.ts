@@ -17,11 +17,11 @@ export class Premise extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ name: 'supplierId' })
   supplierId: number;
 
   @ManyToOne(() => Supplier, (supplier) => supplier.premises)
-  @JoinColumn({ name: 'supplier_id' })
+  @JoinColumn({ name: 'supplierId' })
   supplier: Supplier;
 
   @Column({ name: 'premise_id' })

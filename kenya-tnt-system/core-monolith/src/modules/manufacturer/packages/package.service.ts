@@ -43,11 +43,11 @@ export class PackageService {
     dto: CreatePackageDto,
   ): Promise<Package> {
     const caseEntities = await this.caseRepo.find({
-      where: { id: In(dto.caseIds), userId },
+      where: { id: In(dto.case_ids), user_id: userId },
       relations: ['package'],
     });
 
-    if (caseEntities.length !== dto.caseIds.length) {
+    if (caseEntities.length !== dto.case_ids.length) {
       throw new NotFoundException('One or more cases not found');
     }
 
@@ -63,9 +63,9 @@ export class PackageService {
     // Create package
     const pkg = this.packageRepo.create({
       label: dto.label,
-      shipmentId,
-      userId,
-      isDispatched: false,
+      shipment_id: shipmentId,
+      user_id: userId,
+      is_dispatched: false,
       cases: caseEntities,
     });
 
@@ -73,8 +73,8 @@ export class PackageService {
 
     // Update cases to reference this package
     for (const c of caseEntities) {
-      c.packageId = savedPackage.id;
-      c.isDispatched = true;
+      c.package_id = savedPackage.id;
+      c.is_dispatched = true;
       await this.caseRepo.save(c);
     }
 
@@ -95,16 +95,16 @@ export class PackageService {
           bizStep: 'packing',
           disposition: 'in_progress',
           // Actor context (P0 - Critical for L5 TNT)
-          actorType: 'manufacturer',
-          actorUserId: userId,
-          actorGLN: user?.glnNumber,
-          actorOrganization: user?.organization,
-          sourceEntityType: 'package',
-          sourceEntityId: savedPackage.id,
+          actor_type: 'manufacturer',
+          actor_user_id: userId,
+          actor_gln: user?.gln_number,
+          actor_organization: user?.organization,
+          source_entity_type: 'package',
+          source_entity_id: savedPackage.id,
         },
       );
 
-      savedPackage.eventId = eventId;
+      savedPackage.event_id = eventId;
       await this.packageRepo.save(savedPackage);
     } catch (error: any) {
       this.logger.error(
@@ -121,8 +121,8 @@ export class PackageService {
    * Get all packages for a user
    */
   async findAll(userId: string): Promise<Package[]> {
-    return this.packageRepo.find({
-      where: { userId },
+      return this.packageRepo.find({
+        where: { user_id: userId },
       relations: ['cases', 'cases.products', 'cases.products.batch'],
       order: { id: 'DESC' },
     });
@@ -131,7 +131,7 @@ export class PackageService {
   /**
    * Get package by ID
    */
-  async findOne(id: number, userId: string): Promise<Package> {
+  async findOne(id: number, user_id: string): Promise<Package> {
     const pkg = await this.packageRepo.findOne({
       where: { id, userId },
       relations: ['cases', 'cases.products', 'cases.products.batch'],
@@ -150,7 +150,7 @@ export class PackageService {
    */
   async assignSSCC(
     id: number,
-    userId: string,
+    user_id: string,
     sscc?: string,
   ): Promise<Package> {
     const pkg = await this.packageRepo.findOne({
@@ -161,24 +161,24 @@ export class PackageService {
       throw new NotFoundException(`Package with ID ${id} not found`);
     }
 
-    if (pkg.ssccBarcode) {
+    if (pkg.sscc_barcode) {
       throw new BadRequestException(
-        `Package ${id} already has an SSCC: ${pkg.ssccBarcode}`,
+        `Package ${id} already has an SSCC: ${pkg.sscc_barcode}`,
       );
     }
 
     // Get user's organization to retrieve GS1 prefix
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    let companyPrefix: string | undefined;
+    let company_prefix: string | undefined;
 
     if (user?.organization) {
       const supplier = await this.masterDataService.getSupplierByEntityId(
         user.organization,
       );
       if (supplier?.gs1Prefix) {
-        companyPrefix = supplier.gs1Prefix;
+        company_prefix = supplier.gs1Prefix;
         this.logger.log(
-          `Using GS1 prefix ${companyPrefix} for organization ${user.organization}`,
+          `Using GS1 prefix ${company_prefix} for organization ${user.organization}`,
         );
       } else {
         this.logger.warn(
@@ -191,7 +191,7 @@ export class PackageService {
     const finalSSCC =
       sscc ||
       (await this.gs1Service.generateSSCC(
-        companyPrefix ? { companyPrefix } : undefined,
+        company_prefix ? { company_prefix } : undefined,
       ));
 
     // Validate SSCC format
@@ -201,7 +201,7 @@ export class PackageService {
 
     // Check if SSCC already exists
     const existingPackage = await this.packageRepo.findOne({
-      where: { ssccBarcode: finalSSCC },
+      where: { sscc_barcode: finalSSCC },
     });
     if (existingPackage) {
       throw new BadRequestException(
@@ -209,8 +209,8 @@ export class PackageService {
       );
     }
 
-    pkg.ssccBarcode = finalSSCC;
-    pkg.ssccGeneratedAt = new Date();
+    pkg.sscc_barcode = finalSSCC;
+    pkg.sscc_generated_at = new Date();
     await this.packageRepo.save(pkg);
 
     this.logger.log(`SSCC ${finalSSCC} assigned to package ${id}`);

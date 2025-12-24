@@ -13,22 +13,22 @@ export class BatchNotificationSettings {
   id: number;
 
   @Column('uuid')
-  userId: string;
+  user_id: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({ default: false })
-  earlyWarningEnabled: boolean;
+  early_warning_enabled: boolean;
 
   @Column({ default: false })
-  secondaryWarningEnabled: boolean;
+  secondary_warning_enabled: boolean;
 
   @Column({ default: false })
-  finalWarningEnabled: boolean;
+  final_warning_enabled: boolean;
 
   @Column({ default: false })
-  postExpiryWarningEnabled: boolean;
+  post_expiry_warning_enabled: boolean;
 }
 

@@ -44,3 +44,7 @@ export class Party extends BaseEntity {
   @Column({ name: 'created_at', type: 'timestamp', default: () => 'NOW()' })
   createdAt: Date;
 }
+
+
+
+

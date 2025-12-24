@@ -20,13 +20,13 @@ export class Supplier extends BaseEntity {
   id: number;
 
   @Column({ name: 'entity_id' })
-  entityId: string; // e.g., "SUP-001"
+  entity_id: string; // e.g., "SUP-001"
 
   @Column({ name: 'legal_entity_name' })
   legalEntityName: string;
 
   @Column({ name: 'actor_type', default: 'supplier' })
-  actorType: string;
+  actor_type: string;
 
   // Roles moved to supplier_roles table in V07
   @OneToMany(() => SupplierRole, (role) => role.supplier)

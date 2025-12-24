@@ -27,18 +27,18 @@ export class User extends BaseEntity {
   role: UserRole;
 
   @Column()
-  roleId: number;
+  role_id: number;
 
   @Column({ nullable: true })
-  glnNumber: string;
+  gln_number: string;
 
   @Column()
   organization: string;
 
   @Column({ default: false })
-  isDeleted: boolean;
+  is_deleted: boolean;
 
   @Column({ nullable: true })
-  refreshToken?: string;
+  refresh_token?: string;
 }
 

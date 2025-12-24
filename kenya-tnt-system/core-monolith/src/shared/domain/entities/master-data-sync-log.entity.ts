@@ -21,7 +21,7 @@ export class MasterDataSyncLog {
   id: number;
 
   @Column({ name: 'entity_type', type: 'varchar', length: 50 })
-  entityType: 'product' | 'premise' | 'facility' | 'facility_prod' | 'practitioner' | 'supplier' | 'logistics_provider';
+  entity_type: 'product' | 'premise' | 'facility' | 'facility_prod' | 'practitioner' | 'supplier' | 'logistics_provider';
 
   @Column({ name: 'sync_started_at', type: 'timestamp' })
   syncStartedAt: Date;

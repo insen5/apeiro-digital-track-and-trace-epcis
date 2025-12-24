@@ -1,9 +1,6 @@
 node_modules/
 dist/
 build/
-.env
-.env.local
-.env.*.local
 *.log
 .DS_Store
 coverage/
@@ -14,3 +11,24 @@ coverage/
 .vscode/
 .idea/
 
+# Environment files (never commit - Docker Compose manages these!)
+.env
+.env.*
+!.env.*.template
+
+# Environment files
+.env
+.env.development
+.env.staging
+.env.production
+.env.local
+
+# Security - Private keys and certificates (NEVER commit!)
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+*.crt
+*.csr

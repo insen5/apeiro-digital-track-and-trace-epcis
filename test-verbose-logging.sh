@@ -99,3 +99,7 @@ echo "  ✅ Facility ID and API key (masked)"
 echo "  ✅ Error stack traces (if any)"
 echo "  ✅ Request ID for tracing"
 echo ""
+
+
+
+

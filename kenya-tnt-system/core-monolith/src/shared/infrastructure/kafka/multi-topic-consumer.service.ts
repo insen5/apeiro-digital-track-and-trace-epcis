@@ -224,7 +224,7 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
       // Use MasterDataService to sync manufacturer (as supplier with actor_type='manufacturer')
       await this.masterDataService.syncSupplier({
         ...manufacturerData,
-        actorType: 'manufacturer', // Ensure it's marked as manufacturer
+        actor_type: 'manufacturer', // Ensure it's marked as manufacturer
       });
 
       this.logger.log(
@@ -263,7 +263,7 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
       );
 
       this.logger.log(
-        `Processed premise: ${premiseData.premiseId || premiseData.premise_name || 'unknown'}`,
+        `Processed premise: ${premiseData.premise_id || premiseData.premise_name || 'unknown'}`,
       );
     } catch (error) {
       this.logger.error(
@@ -295,7 +295,7 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
       await this.consignmentService.importFromPPB(systemUserId, consignmentData as ImportPPBConsignmentDto);
       
       this.logger.log(
-        `Processed PPB consignment instantiation: ${consignmentData.consignment.consignmentID || 'unknown'}`,
+        `Processed PPB consignment instantiation: ${consignmentData.consignment.consignment_id || 'unknown'}`,
       );
     } catch (error) {
       this.logger.error(
@@ -319,7 +319,7 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
       // Use MasterDataService to sync supplier
       await this.masterDataService.syncSupplier({
         ...supplierData,
-        actorType: supplierData.actorType || 'supplier',
+        actor_type: supplierData.actor_type || 'supplier',
       });
 
       this.logger.log(
@@ -349,9 +349,9 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
 
     // Transform from Debezium format
     return {
-      entityId: message.entity_id || message.entityId,
+      entity_id: message.entity_id || message.entityId,
       legalEntityName: message.legal_entity_name || message.legalEntityName,
-      actorType: 'manufacturer',
+      actor_type: 'manufacturer',
       roles: message.roles || [],
       ownershipType: message.ownership_type || message.ownershipType,
       identifiers: {
@@ -389,13 +389,13 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
    */
   private transformPremiseMessage(message: any): any {
     // If already in expected format, return as-is
-    if (message.premiseId || message.premise_name) {
+    if (message.premise_id || message.premise_name) {
       return message;
     }
 
     // Transform from Debezium format
     return {
-      premiseId: message.premise_id || message.premiseId,
+      premise_id: message.premise_id || message.premise_id,
       legacyPremiseId: message.legacy_premise_id || message.legacyPremiseId,
       premiseName: message.premise_name || message.premiseName,
       gln: message.gln,
@@ -440,7 +440,7 @@ export class MultiTopicConsumerService implements OnModuleInit, OnModuleDestroy 
     const transformed = this.transformManufacturerMessage(message);
     return {
       ...transformed,
-      actorType: message.actor_type || message.actorType || 'supplier',
+      actor_type: message.actor_type || message.actor_type || 'supplier',
     };
   }
 }

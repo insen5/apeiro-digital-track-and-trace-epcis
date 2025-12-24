@@ -11,29 +11,29 @@ import { Batch } from './batch.entity';
 import { Consignment } from './consignment.entity';
 
 @Entity('serial_numbers')
-@Unique(['batchId', 'serialNumber'])
+@Unique(['batch_id', 'serial_number'])
 export class SerialNumber {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  batchId: number;
+  batch_id: number;
 
   @ManyToOne(() => Batch)
-  @JoinColumn({ name: 'batchId' })
+  @JoinColumn({ name: 'batch_id' })
   batch: Batch;
 
   @Column({ nullable: true })
-  consignmentId?: number;
+  consignment_id?: number;
 
   @ManyToOne(() => Consignment, { nullable: true })
-  @JoinColumn({ name: 'consignmentId' })
+  @JoinColumn({ name: 'consignment_id' })
   consignment?: Consignment;
 
   @Column()
-  serialNumber: string;
+  serial_number: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 }
 

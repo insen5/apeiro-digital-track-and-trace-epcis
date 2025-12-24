@@ -1,18 +1,18 @@
 // GS1 DTOs
 
 export interface GenerateSSCCDto {
-  companyPrefix?: string; // Optional: GS1 company prefix (if available)
+  company_prefix?: string; // Optional: GS1 company prefix (if available)
 }
 
 export interface GenerateSGTINDto {
   gtin: string; // Global Trade Item Number (14 digits)
-  serialNumber: string; // Serial number
-  companyPrefix?: string; // Optional: GS1 company prefix
+  serial_number: string; // Serial number
+  company_prefix?: string; // Optional: GS1 company prefix
 }
 
 export interface GenerateBatchNumberDto {
-  productId: number;
-  userId: string;
+  product_id: number;
+  user_id: string;
   prefix?: string; // Optional: Custom prefix
 }
 
@@ -36,23 +36,23 @@ export interface ValidateGCPDto {
 
 export interface LookupGCPDto {
   prefix: string; // Company prefix to lookup
-  forceRefresh?: boolean; // If true, bypass cache and refresh from database
+  force_refresh?: boolean; // If true, bypass cache and refresh from database
 }
 
 export interface GCPLookupResult {
   prefix: string;
-  companyName: string;
-  entityId: string;
-  entityType: string; // 'supplier', 'manufacturer', 'logistics_provider', etc.
+  company_name: string;
+  entity_id: string;
+  entity_type: string; // 'supplier', 'manufacturer', 'logistics_provider', etc.
   gln?: string;
-  contactEmail?: string;
-  contactPhone?: string;
+  contact_email?: string;
+  contact_phone?: string;
   status: string;
   source: 'supplier' | 'logistics_provider';
 }
 
 export interface ExtractGCPFromIdentifierDto {
   identifier: string; // GTIN, GLN, SSCC, or SGTIN (EPC URI format)
-  prefixLength: number; // Expected prefix length (6-12 digits)
+  prefix_length: number; // Expected prefix length (6-12 digits)
 }
 

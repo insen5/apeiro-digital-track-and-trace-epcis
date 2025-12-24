@@ -75,7 +75,7 @@ export class SGTINService {
    *
    * Note: Company prefix length is variable (6-12 digits). If not provided,
    * we attempt to extract it from GTIN, but this requires knowing the prefix length.
-   * For accurate SGTIN generation, always provide the companyPrefix.
+   * For accurate SGTIN generation, always provide the company_prefix.
    *
    * @param dto GTIN, serial number, and optional company prefix
    * @returns SGTIN EPC URI
@@ -86,19 +86,19 @@ export class SGTINService {
     }
 
     // Serial number must be provided
-    if (!dto.serialNumber || dto.serialNumber.trim() === '') {
+    if (!dto.serial_number || dto.serial_number.trim() === '') {
       throw new Error('Serial number is required for SGTIN');
     }
 
     // Normalize GTIN to 14 digits (pad with zeros if needed)
     const normalizedGTIN = dto.gtin.padStart(14, '0');
 
-    let companyPrefix: string;
+    let company_prefix: string;
     let itemRef: string;
 
-    if (dto.companyPrefix) {
+    if (dto.company_prefix) {
       // Use provided company prefix (preferred method)
-      const prefixLength = dto.companyPrefix.length;
+      const prefixLength = dto.company_prefix.length;
 
       if (prefixLength < 6 || prefixLength > 12) {
         throw new Error(
@@ -113,13 +113,13 @@ export class SGTINService {
       const extractedPrefix = normalizedGTIN.substring(1, 1 + prefixLength);
 
       // Verify extracted prefix matches provided prefix
-      if (extractedPrefix !== dto.companyPrefix) {
+      if (extractedPrefix !== dto.company_prefix) {
         this.logger.warn(
-          `GTIN prefix mismatch: provided ${dto.companyPrefix}, extracted ${extractedPrefix}. Using provided prefix.`,
+          `GTIN prefix mismatch: provided ${dto.company_prefix}, extracted ${extractedPrefix}. Using provided prefix.`,
         );
       }
 
-      companyPrefix = dto.companyPrefix;
+      company_prefix = dto.company_prefix;
 
       // Item reference is the remaining digits between prefix and check digit
       // For GTIN-14: Indicator (1) + Prefix (prefixLength) + ItemRef (remaining) + CheckDigit (1)
@@ -133,7 +133,7 @@ export class SGTINService {
       itemRef = normalizedGTIN.substring(1 + prefixLength, 13);
     } else {
       // Fallback: Try to extract prefix (assumes common prefix lengths)
-      // This is not ideal - should provide companyPrefix when available
+      // This is not ideal - should provide company_prefix when available
       this.logger.warn(
         'No company prefix provided for SGTIN generation. Attempting extraction (may be inaccurate).',
       );
@@ -142,12 +142,12 @@ export class SGTINService {
       // Try 8 digits first (most common in our system)
       const assumedPrefixLength = 8;
       const indicatorDigit = normalizedGTIN.substring(0, 1);
-      companyPrefix = normalizedGTIN.substring(1, 1 + assumedPrefixLength);
+      company_prefix = normalizedGTIN.substring(1, 1 + assumedPrefixLength);
       const itemRefLength = 12 - assumedPrefixLength;
       itemRef = normalizedGTIN.substring(1 + assumedPrefixLength, 13);
 
       this.logger.warn(
-        `Using assumed prefix length of ${assumedPrefixLength} digits. For accuracy, provide companyPrefix.`,
+        `Using assumed prefix length of ${assumedPrefixLength} digits. For accuracy, provide company_prefix.`,
       );
     }
 
@@ -158,10 +158,10 @@ export class SGTINService {
       );
     }
 
-    const sgtin = `urn:epc:id:sgtin:${companyPrefix}.${itemRef}.${dto.serialNumber}`;
+    const sgtin = `urn:epc:id:sgtin:${company_prefix}.${itemRef}.${dto.serial_number}`;
 
     this.logger.log(
-      `Generated SGTIN: ${sgtin} (Company Prefix: ${companyPrefix}, Item Ref: ${itemRef})`,
+      `Generated SGTIN: ${sgtin} (Company Prefix: ${company_prefix}, Item Ref: ${itemRef})`,
     );
     return sgtin;
   }
@@ -184,10 +184,10 @@ export class SGTINService {
       return false;
     }
 
-    const [companyPrefix, itemRef, serialNumber] = parts;
+    const [company_prefix, itemRef, serialNumber] = parts;
 
     // Validate company prefix (6-12 digits)
-    if (!/^\d{6,12}$/.test(companyPrefix)) {
+    if (!/^\d{6,12}$/.test(company_prefix)) {
       return false;
     }
 
@@ -202,7 +202,7 @@ export class SGTINService {
     }
 
     // Validate total length: prefix + itemRef should be <= 12 (for GTIN-14)
-    if (companyPrefix.length + itemRef.length > 12) {
+    if (company_prefix.length + itemRef.length > 12) {
       return false;
     }
 
@@ -213,7 +213,7 @@ export class SGTINService {
    * Parse SGTIN EPC URI to extract components
    */
   parseSGTIN(sgtin: string): {
-    companyPrefix: string;
+    company_prefix: string;
     itemRef: string;
     serialNumber: string;
   } {
@@ -227,7 +227,7 @@ export class SGTINService {
     }
 
     return {
-      companyPrefix: parts[0],
+      company_prefix: parts[0],
       itemRef: parts[1],
       serialNumber: parts[2],
     };

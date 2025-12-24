@@ -420,7 +420,7 @@ export default function GenericQualityAuditTab({
                           {issue.severity} Priority - {issue.category}
                         </span>
                         <span className="text-sm font-bold">
-                          {issue.count.toLocaleString()} ({issue.percentage?.toFixed(2)}%)
+                          {(issue.count ?? 0).toLocaleString()} ({(issue.percentage ?? 0).toFixed(2)}%)
                         </span>
                       </div>
                       <p className="text-sm font-medium mb-2">{issue.description}</p>
@@ -520,3 +520,7 @@ export default function GenericQualityAuditTab({
     </div>
   );
 }
+
+
+
+

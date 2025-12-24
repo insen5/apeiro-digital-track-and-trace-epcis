@@ -62,8 +62,8 @@ export class GS1Service {
     return this.ssccService.validateSSCC(sscc);
   }
 
-  formatSSCCAsEPCURI(sscc: string, companyPrefix?: string): string {
-    return this.ssccService.formatAsEPCURI(sscc, companyPrefix);
+  formatSSCCAsEPCURI(sscc: string, company_prefix?: string): string {
+    return this.ssccService.formatAsEPCURI(sscc, company_prefix);
   }
 
   // SGTIN Methods
@@ -103,24 +103,24 @@ export class GS1Service {
       bizLocation?: { id: string };
       action?: 'ADD' | 'DELETE' | 'OBSERVE';
       // EPCIS standard fields (1.2 and 2.0)
-      bizTransactionList?: BizTransaction[];
-      quantityList?: QuantityElement[];
-      sourceList?: SourceDestination[];
-      destinationList?: SourceDestination[];
-      sensorElementList?: SensorElement[];
-      errorDeclaration?: ErrorDeclaration;
-      eventTimeZoneOffset?: string;
+      biz_transaction_list?: BizTransaction[];
+      quantity_list?: QuantityElement[];
+      source_list?: SourceDestination[];
+      destination_list?: SourceDestination[];
+      sensor_element_list?: SensorElement[];
+      error_declaration?: ErrorDeclaration;
+      event_time_zone_offset?: string;
       // Location coordinates
       latitude?: number;
       longitude?: number;
-      accuracyMeters?: number;
+      accuracy_meters?: number;
       // Actor context
-      actorType?: string;
-      actorUserId?: string;
-      actorGLN?: string;
-      actorOrganization?: string;
-      sourceEntityType?: string;
-      sourceEntityId?: number;
+      actor_type?: string;
+      actor_user_id?: string;
+      actor_gln?: string;
+      actor_organization?: string;
+      source_entity_type?: string;
+      source_entity_id?: number;
       // EPCIS 2.0 - ILMD (Instance/Lot Master Data)
       ilmd?: Record<string, any>;
       // EPCIS 2.0 - Extensions
@@ -143,24 +143,24 @@ export class GS1Service {
       bizLocation?: { id: string };
       action?: 'ADD' | 'DELETE' | 'OBSERVE';
       // EPCIS standard fields (1.2 and 2.0)
-      bizTransactionList?: BizTransaction[];
-      quantityList?: QuantityElement[];
-      sourceList?: SourceDestination[];
-      destinationList?: SourceDestination[];
-      sensorElementList?: SensorElement[];
-      errorDeclaration?: ErrorDeclaration;
-      eventTimeZoneOffset?: string;
+      biz_transaction_list?: BizTransaction[];
+      quantity_list?: QuantityElement[];
+      source_list?: SourceDestination[];
+      destination_list?: SourceDestination[];
+      sensor_element_list?: SensorElement[];
+      error_declaration?: ErrorDeclaration;
+      event_time_zone_offset?: string;
       // Location coordinates
       latitude?: number;
       longitude?: number;
-      accuracyMeters?: number;
+      accuracy_meters?: number;
       // Actor context
-      actorType?: string;
-      actorUserId?: string;
-      actorGLN?: string;
-      actorOrganization?: string;
-      sourceEntityType?: string;
-      sourceEntityId?: number;
+      actor_type?: string;
+      actor_user_id?: string;
+      actor_gln?: string;
+      actor_organization?: string;
+      source_entity_type?: string;
+      source_entity_id?: number;
       // EPCIS 2.0 - ILMD (Instance/Lot Master Data)
       ilmd?: Record<string, any>;
       // EPCIS 2.0 - Extensions
@@ -191,16 +191,16 @@ export class GS1Service {
     return this.glnService.validateGLN(gln);
   }
 
-  generateGLN(companyPrefix: string, locationReference?: number | string): string {
-    return this.glnService.generateGLN(companyPrefix, locationReference);
+  generateGLN(company_prefix: string, locationReference?: number | string): string {
+    return this.glnService.generateGLN(company_prefix, locationReference);
   }
 
-  generateHQGLN(companyPrefix: string): string {
-    return this.glnService.generateHQGLN(companyPrefix);
+  generateHQGLN(company_prefix: string): string {
+    return this.glnService.generateHQGLN(company_prefix);
   }
 
-  generateLocationGLN(companyPrefix: string, locationNumber: number): string {
-    return this.glnService.generateLocationGLN(companyPrefix, locationNumber);
+  generateLocationGLN(company_prefix: string, locationNumber: number): string {
+    return this.glnService.generateLocationGLN(company_prefix, locationNumber);
   }
 
   // Validation Methods

@@ -78,7 +78,7 @@ export class MasterDataService {
   ): Promise<{ suppliers: Supplier[]; total: number; page: number; limit: number }> {
     const result = await this.genericCrudService.getPaginated<Supplier>(
       {
-        entityType: 'supplier',
+        entity_type: 'supplier',
         repository: this.supplierRepo,
         searchFields: ['legalEntityName', 'entityId', 'ppbCode'],
         defaultOrderBy: { field: 'legalEntityName', direction: 'ASC' },
@@ -105,7 +105,7 @@ export class MasterDataService {
   async getSupplierById(id: number): Promise<Supplier> {
     return this.genericCrudService.getById<Supplier>(
       {
-        entityType: 'supplier',
+        entity_type: 'supplier',
         repository: this.supplierRepo,
       relations: ['premises'],
       },
@@ -117,7 +117,7 @@ export class MasterDataService {
    * Get supplier by entity ID (organization identifier)
    * Used to find supplier/manufacturer by user's organization field
    */
-  async getSupplierByEntityId(entityId: string): Promise<Supplier | null> {
+  async getSupplierByEntityId(entity_id: string): Promise<Supplier | null> {
     return this.supplierRepo.findOne({
       where: { entityId },
     });
@@ -147,7 +147,7 @@ export class MasterDataService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(premise.premiseName ILIKE :search OR premise.premiseId ILIKE :search OR premise.gln ILIKE :search OR premise.county ILIKE :search OR premise.businessType ILIKE :search OR premise.superintendentName ILIKE :search)',
+        '(premise.premiseName ILIKE :search OR premise.premise_id ILIKE :search OR premise.gln ILIKE :search OR premise.county ILIKE :search OR premise.businessType ILIKE :search OR premise.superintendentName ILIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -185,7 +185,7 @@ export class MasterDataService {
   async getPremiseById(id: number): Promise<Premise> {
     return this.genericCrudService.getById<Premise>(
       {
-        entityType: 'premise',
+        entity_type: 'premise',
         repository: this.premiseRepo,
       relations: ['supplier'],
       },
@@ -204,7 +204,7 @@ export class MasterDataService {
   ): Promise<{ logisticsProviders: LogisticsProvider[]; total: number; page: number; limit: number }> {
     const result = await this.genericCrudService.getPaginated<LogisticsProvider>(
       {
-        entityType: 'lsp',
+        entity_type: 'lsp',
         repository: this.logisticsProviderRepo,
         searchFields: ['name', 'lspId', 'ppbCode'],
         defaultOrderBy: { field: 'name', direction: 'ASC' },
@@ -230,7 +230,7 @@ export class MasterDataService {
   async getLogisticsProviderById(id: number): Promise<LogisticsProvider> {
     return this.genericCrudService.getById<LogisticsProvider>(
       {
-        entityType: 'lsp',
+        entity_type: 'lsp',
         repository: this.logisticsProviderRepo,
       },
       id
@@ -270,14 +270,14 @@ export class MasterDataService {
    */
   async syncSupplier(data: any): Promise<void> {
     let supplier = await this.supplierRepo.findOne({
-      where: { entityId: data.entityId },
+      where: { entity_id: data.entityId },
     });
 
     if (!supplier) {
       supplier = this.supplierRepo.create({
-        entityId: data.entityId,
+        entity_id: data.entityId,
         legalEntityName: data.legalEntityName,
-        actorType: data.actorType,
+        actor_type: data.actor_type,
         roles: data.roles,
         ownershipType: data.ownershipType,
         ppbLicenseNumber: data.identifiers?.ppbLicenseNumber,
@@ -325,12 +325,12 @@ export class MasterDataService {
   async syncPremiseByEntityId(supplierEntityId: string, premiseData: any): Promise<void> {
     // Find supplier by entityId
     const supplier = await this.supplierRepo.findOne({
-      where: { entityId: supplierEntityId },
+      where: { entity_id: supplierEntityId },
     });
 
     if (!supplier) {
       this.logger.warn(
-        `Supplier not found for entityId: ${supplierEntityId}. Premise sync skipped.`,
+        `Supplier not found for entity_id: ${supplierEntityId}. Premise sync skipped.`,
       );
       throw new Error(
         `Supplier with entityId ${supplierEntityId} not found. Sync supplier first.`,
@@ -340,15 +340,15 @@ export class MasterDataService {
     await this.syncPremise(supplier.id, premiseData);
   }
 
-  private async syncPremise(supplierId: number, data: any): Promise<void> {
+  private async syncPremise(supplier_id: number, data: any): Promise<void> {
     let premise = await this.premiseRepo.findOne({
-      where: { premiseId: data.premiseId },
+      where: { premise_id: data.premise_id },
     });
 
     if (!premise) {
       premise = this.premiseRepo.create({
         supplierId,
-        premiseId: data.premiseId,
+        premise_id: data.premise_id,
         legacyPremiseId: data.legacyPremiseId,
         premiseName: data.premiseName,
         gln: data.gln,
@@ -448,7 +448,7 @@ export class MasterDataService {
     // Use generic service for basic stats
     const stats = await this.genericCrudService.getStats(
       {
-        entityType: 'product',
+        entity_type: 'product',
         repository: this.ppbProductRepo,
         filterConditions: { isTest: false },
       },
@@ -653,7 +653,7 @@ export class MasterDataService {
       county: apiPremise.county,
       constituency: apiPremise.constituency,
       ward: apiPremise.ward,
-      supplierId: undefined, // Will be set based on mapping or default
+      supplier_id: undefined, // Will be set based on mapping or default
     };
   }
 
@@ -672,7 +672,7 @@ export class MasterDataService {
     // Use generic service for basic stats
     const stats = await this.genericCrudService.getStats(
       {
-        entityType: 'premise',
+        entity_type: 'premise',
         repository: this.premiseRepo,
       },
       'lastUpdated'
@@ -752,12 +752,14 @@ export class MasterDataService {
         completenessPercentage: genericReport.completeness.completenessPercentage,
       },
       validity: {
-        expiredLicenses: genericReport.validity.expiredLicenses,
-        expiringSoon: genericReport.validity.expiringSoon,
-        validLicenses: genericReport.validity.validLicenses,
-        invalidDates: genericReport.validity.invalidDates,
         duplicatePremiseIds: genericReport.validity.duplicatePremiseIds,
         invalidGLN: genericReport.validity.invalidGln,
+      },
+      monitoring: {
+        // Operational monitoring metrics (NOT affecting quality score)
+        expiredLicenses: genericReport.monitoring?.expiredLicenses || 0,
+        expiringSoon: genericReport.monitoring?.expiringSoon || 0,
+        validLicenses: genericReport.monitoring?.validLicenses || 0,
       },
       distribution: {
         byCounty: addPercentages(genericReport.distribution.byCounty || []),
@@ -774,6 +776,7 @@ export class MasterDataService {
           cadre: item.value, // Map 'value' to 'cadre'
         })),
       },
+      scores: genericReport.scores, // NEW: Dimension percentage scores (0-100%)
       issues: genericReport.issues,
       recommendations: genericReport.recommendations,
     };
@@ -817,8 +820,8 @@ export class MasterDataService {
           return {
             success: true,
             action: 'deleted',
-            premiseId: premise.premiseId,
-            message: `Premise ${premise.premiseId} marked as inactive`,
+            premise_id: premise.premise_id,
+            message: `Premise ${premise.premise_id} marked as inactive`,
           };
         }
 
@@ -859,14 +862,14 @@ export class MasterDataService {
         return {
           success: true,
           action: 'updated',
-          premiseId: existing.premiseId,
-          message: `Premise ${existing.premiseId} updated via webhook`,
+          premise_id: existing.premise_id,
+          message: `Premise ${existing.premise_id} updated via webhook`,
         };
       } else {
         // Create new
         const newPremise = this.premiseRepo.create({
-          supplierId: normalized.supplierId || 1,
-          premiseId: normalized.premiseId,
+          supplier_id: normalized.supplierId || 1,
+          premise_id: normalized.premise_id,
           legacyPremiseId: normalized.legacyPremiseId,
           premiseName: normalized.premiseName,
           gln: normalized.gln,
@@ -890,8 +893,8 @@ export class MasterDataService {
         return {
           success: true,
           action: 'created',
-          premiseId: saved.premiseId,
-          message: `Premise ${saved.premiseId} created via webhook`,
+          premise_id: saved.premise_id,
+          message: `Premise ${saved.premise_id} created via webhook`,
         };
       }
     } catch (error: any) {
@@ -960,9 +963,9 @@ export class MasterDataService {
         missingSupplierMapping: report.completeness.missingSupplierMapping || 0,
         completeRecords: report.completeness.completeRecords || 0,
         completenessPercentage: report.completeness.completenessPercentage || 0,
-        expiredLicenses: report.validity.expiredLicenses || 0,
-        expiringSoon: report.validity.expiringSoon || 0,
-        validLicenses: report.validity.validLicenses || 0,
+        expiredLicenses: report.monitoring?.expiredLicenses || 0,
+        expiringSoon: report.monitoring?.expiringSoon || 0,
+        validLicenses: report.monitoring?.validLicenses || 0,
         duplicatePremiseIds: report.validity.duplicatePremiseIds || 0,
         invalidGln: report.validity.invalidGLN || 0,
         fullReport: report,
@@ -997,7 +1000,7 @@ export class MasterDataService {
   async getQualityReportHistory(limit: number = 50): Promise<PremiseQualityReport[]> {
     return this.genericQualityHistoryService.getHistory(
       {
-        entityType: 'premise',
+        entity_type: 'premise',
         repository: this.qualityReportRepo,
         dateField: 'reportDate',
         scoreField: 'dataQualityScore',
@@ -1013,7 +1016,7 @@ export class MasterDataService {
   async getQualityReportById(id: number): Promise<PremiseQualityReport> {
     return this.genericQualityHistoryService.getById(
       {
-        entityType: 'premise',
+        entity_type: 'premise',
         repository: this.qualityReportRepo,
         dateField: 'reportDate',
         scoreField: 'dataQualityScore',
@@ -1032,7 +1035,7 @@ export class MasterDataService {
   }[]> {
     return this.genericQualityHistoryService.getScoreTrend(
       {
-        entityType: 'premise',
+        entity_type: 'premise',
         repository: this.qualityReportRepo,
         dateField: 'reportDate',
         scoreField: 'dataQualityScore',
@@ -1114,7 +1117,7 @@ export class MasterDataService {
   async getProductQualityReportHistory(limit: number = 50): Promise<ProductQualityReport[]> {
     return this.genericQualityHistoryService.getHistory(
       {
-        entityType: 'product',
+        entity_type: 'product',
         repository: this.productQualityReportRepo,
         dateField: 'reportDate',
         scoreField: 'dataQualityScore',
@@ -1130,7 +1133,7 @@ export class MasterDataService {
   async getProductQualityReportById(id: number): Promise<ProductQualityReport> {
     return this.genericQualityHistoryService.getById(
       {
-        entityType: 'product',
+        entity_type: 'product',
         repository: this.productQualityReportRepo,
         dateField: 'reportDate',
         scoreField: 'dataQualityScore',
@@ -1149,7 +1152,7 @@ export class MasterDataService {
   }[]> {
     return this.genericQualityHistoryService.getScoreTrend(
       {
-        entityType: 'product',
+        entity_type: 'product',
         repository: this.productQualityReportRepo,
         dateField: 'reportDate',
         scoreField: 'dataQualityScore',
@@ -1228,7 +1231,7 @@ export class MasterDataService {
     const skip = (page - 1) * limit;
     const queryBuilder = this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = :enabled', { enabled: true });
+      .where('facility.is_enabled = :enabled', { enabled: true });
 
     if (search) {
       queryBuilder.andWhere(
@@ -1269,9 +1272,9 @@ export class MasterDataService {
     // Use generic service for basic stats
     const stats = await this.genericCrudService.getStats(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.uatFacilityRepo,
-        filterConditions: { isEnabled: true },
+        filterConditions: { is_enabled: true },
       },
       'lastSyncedAt'
     );
@@ -1283,7 +1286,7 @@ export class MasterDataService {
       .createQueryBuilder('facility')
       .select('facility.facilityType', 'type')
       .addSelect('COUNT(*)', 'count')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .groupBy('facility.facilityType')
         .getRawMany(),
 
@@ -1292,7 +1295,7 @@ export class MasterDataService {
       .createQueryBuilder('facility')
       .select('facility.ownership', 'ownership')
       .addSelect('COUNT(*)', 'count')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .groupBy('facility.ownership')
         .getRawMany(),
 
@@ -1301,32 +1304,41 @@ export class MasterDataService {
       .createQueryBuilder('facility')
       .select('facility.county', 'county')
       .addSelect('COUNT(*)', 'count')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .groupBy('facility.county')
       .orderBy('count', 'DESC')
       .limit(10)
         .getRawMany(),
 
     // By KEPH level
-      this.uatFacilityRepo
-      .createQueryBuilder('facility')
-      .select('facility.kephLevel', 'kephLevel')
-      .addSelect('COUNT(*)', 'count')
-      .where('facility.isEnabled = true')
-      .andWhere('facility.kephLevel IS NOT NULL')
-      .groupBy('facility.kephLevel')
-      .orderBy('kephLevel', 'ASC')
-        .getRawMany(),
+      (async () => {
+        try {
+          const result = await this.uatFacilityRepo
+            .createQueryBuilder('facility')
+            .select('facility.keph_level', 'kephLevel')  // Use database column name directly
+            .addSelect('COUNT(*)', 'count')
+            .where('facility.is_enabled = true')
+            .andWhere('facility.keph_level IS NOT NULL')  // Use database column name
+            .groupBy('facility.keph_level')  // Use database column name
+            .orderBy('kephLevel', 'ASC')
+            .getRawMany();
+          
+          return result;
+        } catch (error) {
+          this.logger.error(`Failed to query byKephLevel: ${error.message}`);
+          return [];  // Return empty array on error so other stats can still load
+        }
+      })(),
 
       // Operational count
       this.uatFacilityRepo.count({
-      where: { isEnabled: true, operationalStatus: 'Active' },
+      where: { is_enabled: true, operationalStatus: 'Active' },
       }),
 
     // GLN coverage
       this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('facility.gln IS NOT NULL')
         .getCount(),
     ]);
@@ -1361,42 +1373,42 @@ export class MasterDataService {
    * Generate UAT facility data quality report
    */
   async generateUatFacilityDataQualityReport(): Promise<any> {
-    const total = await this.uatFacilityRepo.count({ where: { isEnabled: true } });
+    const total = await this.uatFacilityRepo.count({ where: { is_enabled: true } });
 
     // Completeness metrics
     const missingGln = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, gln: null },
+      where: { is_enabled: true, gln: null },
     });
 
     const missingMflCode = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, mflCode: null },
+      where: { is_enabled: true, mflCode: null },
     });
 
     const missingCounty = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, county: null },
+      where: { is_enabled: true, county: null },
     });
 
     const missingFacilityType = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, facilityType: null },
+      where: { is_enabled: true, facilityType: null },
     });
 
     const missingOwnership = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, ownership: null },
+      where: { is_enabled: true, ownership: null },
     });
 
     // Check for missing geolocation coordinates (critical for facility mapping)
     const missingLatitude = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, latitude: null },
+      where: { is_enabled: true, latitude: null },
     });
 
     const missingLongitude = await this.uatFacilityRepo.count({
-      where: { isEnabled: true, longitude: null },
+      where: { is_enabled: true, longitude: null },
     });
 
     // Missing coordinates (either lat or lng is null)
     const missingCoordinates = await this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('(facility.latitude IS NULL OR facility.longitude IS NULL)')
       .getCount();
 
@@ -1407,13 +1419,13 @@ export class MasterDataService {
 
     const expiredLicenses = await this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('facility.licenseValidUntil < :now', { now })
       .getCount();
 
     const expiringSoon = await this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('facility.licenseValidUntil >= :now', { now })
       .andWhere('facility.licenseValidUntil <= :future', { future: thirtyDaysFromNow })
       .getCount();
@@ -1432,7 +1444,7 @@ export class MasterDataService {
     // Also check for global out-of-range
     const invalidCoordinates = await this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere(
         '((facility.latitude IS NOT NULL AND (facility.latitude < -90 OR facility.latitude > 90 OR facility.latitude < -4.7 OR facility.latitude > 5.0)) OR ' +
         '(facility.longitude IS NOT NULL AND (facility.longitude < -180 OR facility.longitude > 180 OR facility.longitude < 33.9 OR facility.longitude > 41.9)))'
@@ -1450,7 +1462,7 @@ export class MasterDataService {
       .select('UPPER(facility.county)', 'county_upper')
       .addSelect('facility.county', 'county_original')
       .addSelect('COUNT(*)', 'count')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('facility.county IS NOT NULL')
       .andWhere('UPPER(facility.county) LIKE :muranga', { muranga: '%MURANG%' })
       .groupBy('facility.county')
@@ -1463,7 +1475,7 @@ export class MasterDataService {
     
     const unknownOwnership = await this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('(facility.ownership = :unknown OR facility.ownership IS NULL)', { unknown: 'Unknown' })
       .getCount();
 
@@ -1471,7 +1483,7 @@ export class MasterDataService {
     // Critical fields: GLN, MFL Code, County, Coordinates (lat AND lng), Ownership
     const completeRecords = await this.uatFacilityRepo
       .createQueryBuilder('facility')
-      .where('facility.isEnabled = true')
+      .where('facility.is_enabled = true')
       .andWhere('facility.gln IS NOT NULL')
       .andWhere('facility.mflCode IS NOT NULL')
       .andWhere('facility.county IS NOT NULL')
@@ -1492,7 +1504,7 @@ export class MasterDataService {
     const totalPossible = total * totalRequiredFields;
     const completenessScore = totalPossible > 0 ? ((totalPossible - totalMissing) / totalPossible) * 100 : 0;
     
-    const validityScore = total > 0 ? ((total - expiredLicenses - duplicates.length - invalidCoordinates) / total) * 100 : 0;
+    const validityScore = total > 0 ? ((total - duplicates.length - invalidCoordinates) / total) * 100 : 0;
     
     // Get last sync timestamp
     const lastSyncRecord = await this.uatFacilityRepo
@@ -1537,10 +1549,14 @@ export class MasterDataService {
         completenessPercentage: parseFloat(completenessPercentage.toFixed(2)), // Record-level completeness (strict)
       },
       validity: {
-        expiredLicenses,
-        expiringSoon,
         duplicateFacilityCodes: duplicates.length,
         invalidCoordinates, // Out-of-range coordinates (Kenya bounds: lat -4.7 to 5.0, lng 33.9 to 41.9)
+      },
+      monitoring: {
+        // Operational monitoring metrics (NOT affecting quality score)
+        expiredLicenses,
+        expiringSoon,
+        validLicenses: total - expiredLicenses - expiringSoon, // Calculate valid licenses
       },
       consistency: {
         duplicateCountyVariations, // e.g., "MURANGA" vs "MURANG'A" (48 counties instead of 47)
@@ -1579,8 +1595,8 @@ export class MasterDataService {
         missingLatitude: report.completeness.missingLatitude,
         missingLongitude: report.completeness.missingLongitude,
         completeRecords: report.completeness.completeRecords,
-        expiredLicenses: report.validity.expiredLicenses,
-        expiringSoon: report.validity.expiringSoon,
+        expiredLicenses: report.monitoring.expiredLicenses,
+        expiringSoon: report.monitoring.expiringSoon,
         duplicateFacilityCodes: report.validity.duplicateFacilityCodes,
         invalidCoordinates: report.validity.invalidCoordinates || 0,
         completenessScore: report.scores.completeness,
@@ -1621,7 +1637,7 @@ export class MasterDataService {
   async getUatFacilityQualityHistory(limit: number = 50): Promise<UatFacilitiesQualityAudit[]> {
     return this.genericQualityHistoryService.getHistory(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.uatFacilityQualityAuditRepo,
         dateField: 'auditDate',
         scoreField: 'overallQualityScore',
@@ -1637,7 +1653,7 @@ export class MasterDataService {
   async getUatFacilityQualityHistoryById(id: number): Promise<UatFacilitiesQualityAudit> {
     return this.genericQualityHistoryService.getById(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.uatFacilityQualityAuditRepo,
         dateField: 'auditDate',
         scoreField: 'overallQualityScore',
@@ -1656,7 +1672,7 @@ export class MasterDataService {
   }[]> {
     return this.genericQualityHistoryService.getScoreTrend(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.uatFacilityQualityAuditRepo,
         dateField: 'auditDate',
         scoreField: 'overallQualityScore',
@@ -1670,7 +1686,7 @@ export class MasterDataService {
    * Used by frontend SyncStatus component
    */
   async getSyncHistory(
-    entityType: 'product' | 'premise' | 'facility' | 'facility_prod' | 'practitioner',
+    entity_type: 'product' | 'premise' | 'facility' | 'facility_prod' | 'practitioner',
     limit: number = 10
   ): Promise<MasterDataSyncLog[]> {
     return this.masterDataSyncLogRepo.find({
@@ -1686,7 +1702,7 @@ export class MasterDataService {
    * Used by frontend GenericQualityAuditTab component
    */
   async getEnrichedQualityAuditData(
-    entityType: 'product' | 'premise' | 'facility' | 'facility_prod' | 'practitioner',
+    entity_type: 'product' | 'premise' | 'facility' | 'facility_prod' | 'practitioner',
     days: number = 30
   ) {
     // Get the appropriate repository for the entity type
@@ -1745,7 +1761,7 @@ export class MasterDataService {
     
     const result = await this.genericCrudService.getPaginated<ProdFacility>(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.prodFacilityRepo,
         searchFields: ['facilityName', 'facilityCode', 'mflCode', 'kmhflCode'],
         filterConditions: {
@@ -1855,10 +1871,13 @@ export class MasterDataService {
           missingLongitude: 0,
         },
         validity: {
-          expiredLicenses: 0,
-          expiringSoon: 0,
           duplicateFacilityCodes: 0,
           invalidCoordinates: 0,
+        },
+        monitoring: {
+          expiredLicenses: 0,
+          expiringSoon: 0,
+          validLicenses: 0,
         },
         scores: {
           completeness: null,
@@ -1948,7 +1967,7 @@ export class MasterDataService {
     const totalPossible = total * totalRequiredFields;
     const completenessScore = totalPossible > 0 ? ((totalPossible - totalMissing) / totalPossible) * 100 : 0;
     
-    const validityScore = total > 0 ? ((total - expiredLicenses - duplicateFacilityCodes - invalidCoordinates) / total) * 100 : 0;
+    const validityScore = total > 0 ? ((total - duplicateFacilityCodes - invalidCoordinates) / total) * 100 : 0;
     
     // Consistency score - ONLY penalize data inconsistency issues, NOT missing data
     // Duplicate county variations (MURANGA vs MURANG'A) = data inconsistency
@@ -1985,10 +2004,14 @@ export class MasterDataService {
         completenessPercentage: parseFloat(completenessPercentage.toFixed(2)), // Record-level completeness (strict)
       },
       validity: {
-        expiredLicenses,
-        expiringSoon,
         duplicateFacilityCodes,
         invalidCoordinates, // Out-of-range coordinates (Kenya bounds: lat -4.7 to 5.0, lng 33.9 to 41.9)
+      },
+      monitoring: {
+        // Operational monitoring metrics (NOT affecting quality score)
+        expiredLicenses,
+        expiringSoon,
+        validLicenses: total - expiredLicenses - expiringSoon, // Calculate valid licenses
       },
       consistency: {
         duplicateCountyVariations, // e.g., "MURANGA" vs "MURANG'A" (48 counties instead of 47)
@@ -2009,8 +2032,8 @@ export class MasterDataService {
   async saveProdFacilityQualityAudit(report: any, triggeredBy: string = 'manual', notes?: string): Promise<ProdFacilitiesQualityAudit> {
     const audit = this.prodFacilityQualityAuditRepo.create({
       totalFacilities: report.overview.totalFacilities,
-      activeFacilities: report.overview.totalFacilities - (report.validity?.expiredLicenses || 0),
-      inactiveFacilities: report.validity?.expiredLicenses || 0,
+      activeFacilities: report.overview.totalFacilities - (report.monitoring?.expiredLicenses || 0),
+      inactiveFacilities: report.monitoring?.expiredLicenses || 0,
       missingGln: report.completeness.missingGLN,
       missingMflCode: report.completeness.missingMflCode,
       missingCounty: report.completeness.missingCounty,
@@ -2021,8 +2044,8 @@ export class MasterDataService {
       missingLatitude: report.completeness.missingLatitude,
       missingLongitude: report.completeness.missingLongitude,
       completeRecords: report.completeness.completeRecords,
-      expiredLicenses: report.validity.expiredLicenses,
-      expiringSoon: report.validity.expiringSoon,
+      expiredLicenses: report.monitoring.expiredLicenses,
+      expiringSoon: report.monitoring.expiringSoon,
       duplicateFacilityCodes: report.validity.duplicateFacilityCodes,
       invalidCoordinates: report.validity.invalidCoordinates,
       completenessScore: report.scores.completeness,
@@ -2044,7 +2067,7 @@ export class MasterDataService {
   async getProdFacilityQualityHistory(limit: number = 50): Promise<ProdFacilitiesQualityAudit[]> {
     return this.genericQualityHistoryService.getHistory(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.prodFacilityQualityAuditRepo,
         dateField: 'auditDate',
         scoreField: 'overallQualityScore',
@@ -2059,7 +2082,7 @@ export class MasterDataService {
   async getProdFacilityQualityHistoryById(id: number): Promise<ProdFacilitiesQualityAudit> {
     return this.genericQualityHistoryService.getById(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.prodFacilityQualityAuditRepo,
         dateField: 'auditDate',
         scoreField: 'overallQualityScore',
@@ -2077,7 +2100,7 @@ export class MasterDataService {
   }[]> {
     return this.genericQualityHistoryService.getScoreTrend(
       {
-        entityType: 'facility',
+        entity_type: 'facility',
         repository: this.prodFacilityQualityAuditRepo,
         dateField: 'auditDate',
         scoreField: 'overallQualityScore',
@@ -2103,7 +2126,7 @@ export class MasterDataService {
   ): Promise<{ practitioners: PPBPractitioner[]; total: number; page: number; limit: number }> {
     const result = await this.genericCrudService.getPaginated<PPBPractitioner>(
       {
-        entityType: 'practitioner',
+        entity_type: 'practitioner',
         repository: this.ppbPractitionerRepo,
         searchFields: ['fullName', 'registrationNumber', 'email', 'phoneNumber'],
         defaultOrderBy: { field: 'fullName', direction: 'ASC' },
@@ -2133,7 +2156,7 @@ export class MasterDataService {
   async getPractitionerById(id: number): Promise<PPBPractitioner> {
     return this.genericCrudService.getById<PPBPractitioner>(
       {
-        entityType: 'practitioner',
+        entity_type: 'practitioner',
         repository: this.ppbPractitionerRepo,
       },
       id
@@ -2307,7 +2330,7 @@ export class MasterDataService {
       regulatoryBody: apiData.regulator || apiData.regulatoryBody || apiData.regulatory_body || 'PPB',
       councilRegistrationDate: apiData.registrationdate ? new Date(apiData.registrationdate) : (apiData.councilRegistrationDate ? new Date(apiData.councilRegistrationDate) : undefined),
       status: apiData.status || 'Active',
-      isEnabled: apiData.isEnabled !== false,
+      isEnabled: apiData.is_enabled !== false,
       isTest: false,
       sourceSystem: 'PPB_CATALOGUE',
       rawData: apiData, // Store original response
@@ -2500,9 +2523,9 @@ export class MasterDataService {
       missingAddress: report.completeness.missingAddress,
       completeRecords: report.completeness.completeRecords,
       completenessPercentage: report.completeness.completenessPercentage,
-      expiredLicenses: report.validity.expiredLicenses,
-      expiringSoon: report.validity.expiringSoon,
-      validLicenses: report.validity.validLicenses,
+      expiredLicenses: report.monitoring.expiredLicenses,
+      expiringSoon: report.monitoring.expiringSoon,
+      validLicenses: report.monitoring.validLicenses,
       duplicateRegistrationNumbers: report.validity.duplicateRegistrationNumbers,
       invalidEmail: report.validity.invalidEmail,
       fullReport: report,

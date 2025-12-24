@@ -54,10 +54,10 @@ export class ProductReturnsService {
       });
     }
     if (productId) {
-      queryBuilder.andWhere('return.productId = :productId', { productId });
+      queryBuilder.andWhere('return.product_id = :productId', { productId });
     }
     if (batchId) {
-      queryBuilder.andWhere('return.batchId = :batchId', { batchId });
+      queryBuilder.andWhere('return.batch_id = :batchId', { batchId });
     }
     if (returnType) {
       queryBuilder.andWhere('return.returnType = :returnType', { returnType });
@@ -200,15 +200,15 @@ export class ProductReturnsService {
     sgtin?: string;
     quantity: number;
     qualityCheck: 'ACCEPTABLE' | 'DAMAGED' | 'EXPIRED';
-    fromActorUserId: string;
+    from_actor_user_id: string;
     notes?: string;
   }): Promise<ProductReturns> {
-    this.logger.log(`Creating return receipt for batch ${dto.batchId} from user ${dto.fromActorUserId}`);
+    this.logger.log(`Creating return receipt for batch ${dto.batch_id} from user ${dto.fromActorUserId}`);
 
     // Validate batch exists
-    const batch = await this.batchRepo.findOne({ where: { id: dto.batchId } });
+    const batch = await this.batchRepo.findOne({ where: { id: dto.batch_id } });
     if (!batch) {
-      throw new NotFoundException(`Batch ${dto.batchId} not found`);
+      throw new NotFoundException(`Batch ${dto.batch_id} not found`);
     }
 
     // Determine return reason based on quality check
@@ -219,14 +219,14 @@ export class ProductReturnsService {
     // Create return receipt
     const returnReceipt = this.returnsRepo.create({
       returnType: 'RETURN_RECEIVING',
-      productId: dto.productId,
-      batchId: dto.batchId,
+      productId: dto.product_id,
+      batchId: dto.batch_id,
       sgtin: dto.sgtin,
       quantity: dto.quantity,
       returnReason,
-      fromActorUserId: dto.fromActorUserId,
-      toActorUserId: userId, // Current user is receiving
-      referenceDocumentNumber: dto.referenceDocumentNumber,
+      from_actor_user_id: dto.fromActorUserId,
+      to_actor_user_id: userId, // Current user is receiving
+      reference_document_number: dto.referenceDocumentNumber,
       returnDate: new Date(),
       status: dto.qualityCheck === 'ACCEPTABLE' ? 'PROCESSED' : 'PENDING', // Auto-process acceptable returns
       notes: dto.notes,
@@ -237,11 +237,11 @@ export class ProductReturnsService {
     // Update batch inventory if return is acceptable
     if (dto.qualityCheck === 'ACCEPTABLE') {
       await this.batchRepo.increment(
-        { id: dto.batchId },
+        { id: dto.batch_id },
         'qty',
         dto.quantity
       );
-      this.logger.log(`Added ${dto.quantity} units back to batch ${dto.batchId} inventory`);
+      this.logger.log(`Added ${dto.quantity} units back to batch ${dto.batch_id} inventory`);
     }
 
     this.logger.log(`Return receipt created: ID ${saved.id}`);
@@ -263,35 +263,35 @@ export class ProductReturnsService {
     productId: number;
     sgtin?: string;
     quantity: number;
-    returnReason: 'DEFECTIVE' | 'EXPIRED' | 'OVERSTOCK' | 'CUSTOMER_RETURN';
-    toActorUserId: string;
+    return_reason: 'DEFECTIVE' | 'EXPIRED' | 'OVERSTOCK' | 'CUSTOMER_RETURN';
+    to_actor_user_id: string;
     notes?: string;
   }): Promise<ProductReturns> {
-    this.logger.log(`Creating return shipment for batch ${dto.batchId} to user ${dto.toActorUserId}`);
+    this.logger.log(`Creating return shipment for batch ${dto.batch_id} to user ${dto.toActorUserId}`);
 
     // Validate batch exists and has sufficient quantity
-    const batch = await this.batchRepo.findOne({ where: { id: dto.batchId } });
+    const batch = await this.batchRepo.findOne({ where: { id: dto.batch_id } });
     if (!batch) {
-      throw new NotFoundException(`Batch ${dto.batchId} not found`);
+      throw new NotFoundException(`Batch ${dto.batch_id} not found`);
     }
 
     if (batch.qty < dto.quantity) {
       throw new BadRequestException(
-        `Insufficient quantity in batch ${dto.batchId}. Available: ${batch.qty}, Requested: ${dto.quantity}`
+        `Insufficient quantity in batch ${dto.batch_id}. Available: ${batch.qty}, Requested: ${dto.quantity}`
       );
     }
 
     // Create return shipment
     const returnShipment = this.returnsRepo.create({
       returnType: 'RETURN_SHIPPING',
-      productId: dto.productId,
-      batchId: dto.batchId,
+      productId: dto.product_id,
+      batchId: dto.batch_id,
       sgtin: dto.sgtin,
       quantity: dto.quantity,
-      returnReason: dto.returnReason,
-      fromActorUserId: userId, // Current user is shipping
-      toActorUserId: dto.toActorUserId,
-      referenceDocumentNumber: dto.referenceDocumentNumber,
+      return_reason: dto.returnReason,
+      from_actor_user_id: userId, // Current user is shipping
+      to_actor_user_id: dto.toActorUserId,
+      reference_document_number: dto.referenceDocumentNumber,
       returnDate: new Date(),
       status: 'PENDING', // Awaiting receipt by recipient
       notes: dto.notes,
@@ -301,19 +301,19 @@ export class ProductReturnsService {
 
     // Update batch inventory (deduct quantity)
     await this.batchRepo.decrement(
-      { id: dto.batchId },
+      { id: dto.batch_id },
       'qty',
       dto.quantity
     );
 
     // Also update sentQty
     await this.batchRepo.increment(
-      { id: dto.batchId },
+      { id: dto.batch_id },
       'sentQty',
       dto.quantity
     );
 
-    this.logger.log(`Return shipment created: ID ${saved.id}, removed ${dto.quantity} units from batch ${dto.batchId}`);
+    this.logger.log(`Return shipment created: ID ${saved.id}, removed ${dto.quantity} units from batch ${dto.batch_id}`);
 
     // TODO: Generate new SSCC for return shipment
     // TODO: Generate EPCIS event for return shipping
@@ -346,11 +346,11 @@ export class ProductReturnsService {
     if (decision === 'REJECTED' && returnRecord.returnType === 'RETURN_RECEIVING') {
       // Remove the quantity that was added back
       await this.batchRepo.decrement(
-        { id: returnRecord.batchId },
+        { id: returnRecord.batch_id },
         'qty',
         returnRecord.quantity
       );
-      this.logger.log(`Rejected return ${returnId}, removed ${returnRecord.quantity} units from batch ${returnRecord.batchId}`);
+      this.logger.log(`Rejected return ${returnId}, removed ${returnRecord.quantity} units from batch ${returnRecord.batch_id}`);
     }
 
     return await this.returnsRepo.save(returnRecord);

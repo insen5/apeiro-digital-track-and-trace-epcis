@@ -432,3 +432,7 @@ COMMIT;
 -- FROM premises 
 -- WHERE is_test = TRUE 
 -- ORDER BY premise_id;
+
+
+
+

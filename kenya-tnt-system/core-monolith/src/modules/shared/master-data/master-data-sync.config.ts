@@ -4,7 +4,7 @@
  */
 
 export interface MasterDataSyncConfig {
-  entityType: string;
+  entity_type: string;
   tableName: string;
   batchSize: number;
   uniqueField: string; // Field to check for existing records
@@ -42,7 +42,7 @@ export interface MasterDataSyncConfig {
 
 export const MASTER_DATA_SYNC_CONFIGS: Record<string, MasterDataSyncConfig> = {
   product: {
-    entityType: 'product',
+    entity_type: 'product',
     tableName: 'ppb_products',
     batchSize: 50,
     uniqueField: 'etcdProductId',
@@ -110,7 +110,7 @@ export const MASTER_DATA_SYNC_CONFIGS: Record<string, MasterDataSyncConfig> = {
           for (const manufacturer of api.manufacturers) {
             if (manufacturer.entityId || manufacturer.name) {
               manufacturers.push({
-                entityId: manufacturer.entityId,
+                entity_id: manufacturer.entityId,
                 name: manufacturer.name,
               });
             }
@@ -132,7 +132,7 @@ export const MASTER_DATA_SYNC_CONFIGS: Record<string, MasterDataSyncConfig> = {
   },
   
   premise: {
-    entityType: 'premise',
+    entity_type: 'premise',
     tableName: 'premises',
     batchSize: 50,
     uniqueField: 'legacyPremiseId',
@@ -181,7 +181,7 @@ export const MASTER_DATA_SYNC_CONFIGS: Record<string, MasterDataSyncConfig> = {
   },
   
   facility: {
-    entityType: 'facility',
+    entity_type: 'facility',
     tableName: 'uat_facilities',
     batchSize: 50,
     uniqueField: 'facilityCode',
@@ -305,7 +305,7 @@ export const MASTER_DATA_SYNC_CONFIGS: Record<string, MasterDataSyncConfig> = {
   },
   
   facility_prod: {
-    entityType: 'facility_prod',
+    entity_type: 'facility_prod',
     tableName: 'prod_facilities',
     batchSize: 50,
     uniqueField: 'facilityCode',
@@ -431,7 +431,7 @@ export const MASTER_DATA_SYNC_CONFIGS: Record<string, MasterDataSyncConfig> = {
 };
 
 // Helper functions (like getAlertSeverity in quality-alert.config.ts)
-export function getSyncConfig(entityType: string): MasterDataSyncConfig {
+export function getSyncConfig(entity_type: string): MasterDataSyncConfig {
   const config = MASTER_DATA_SYNC_CONFIGS[entityType];
   if (!config) {
     throw new Error(`Unknown entity type for sync: ${entityType}`);

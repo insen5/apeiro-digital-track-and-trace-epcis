@@ -23,10 +23,10 @@ export class PPBActivityLog {
   action: string;
 
   @Column({ nullable: true })
-  entityType: string;
+  entity_type: string;
 
   @Column({ nullable: true })
-  entityId: number;
+  entity_id: number;
 
   @Column('jsonb', { nullable: true })
   details: Record<string, any>;

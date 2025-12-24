@@ -107,14 +107,14 @@ import { MasterDataSyncLog } from '../../domain/entities/master-data-sync-log.en
             GS1HelpContent,
             MasterDataSyncLog,
           ],
-        synchronize: true, // Enable for development - auto-create tables
+        synchronize: configService.get<boolean>('DB_SYNCHRONIZE', false),
         // namingStrategy: Removed SnakeNamingStrategy - database uses camelCase columns
         logging: configService.get<boolean>('DB_LOGGING', false),
         migrations: ['dist/migrations/*.js'],
         migrationsRun: false,
         extra: {
           max: 20, // Connection pool size
-          connectionTimeoutMillis: 2000,
+          connectionTimeoutMillis: 30000, // 30 seconds (was 2s - too short!)
         },
         // Allow app to start even if DB connection fails (for preview)
         retryAttempts: 1,

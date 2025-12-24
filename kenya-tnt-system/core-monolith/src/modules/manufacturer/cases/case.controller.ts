@@ -16,9 +16,9 @@ export class ManufacturerCaseController {
 
   @Post()
   @ApiOperation({ summary: 'Create a case by aggregating batches' })
-  create(@Body() body: CreateCaseDto & { packageId: number }, @Req() req: any) {
+  create(@Body() body: CreateCaseDto & { package_id: number }, @Req() req: any) {
     const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
-    return this.caseService.create(userId, body.packageId, body);
+    return this.caseService.create(userId, body.package_id, body);
   }
 
   @Get()
@@ -36,7 +36,7 @@ export class ManufacturerCaseController {
     @Req() req: any,
   ) {
     const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
-    return this.caseService.assignSSCC(+id, userId, dto.sscc);
+    return this.caseService.assignSSCC(+id, user_id, dto.sscc);
   }
 
   @Get(':id')

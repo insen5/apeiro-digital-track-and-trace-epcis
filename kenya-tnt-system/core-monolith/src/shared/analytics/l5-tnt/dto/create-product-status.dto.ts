@@ -15,12 +15,12 @@ export class CreateProductStatusDto {
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
-  productId?: number;
+  product_id?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
-  batchId?: number;
+  batch_id?: number;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -34,7 +34,7 @@ export class CreateProductStatusDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  actorType?: string;
+  actor_type?: string;
 
   @ApiProperty({ required: false })
   @IsString()

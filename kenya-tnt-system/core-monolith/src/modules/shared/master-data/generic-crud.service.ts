@@ -8,7 +8,7 @@ import { Repository, FindOptionsWhere, ILike } from 'typeorm';
  */
 
 export interface CrudConfig {
-  entityType: string;
+  entity_type: string;
   repository: Repository<any>;
   searchFields?: string[]; // Fields to search in (e.g., ['name', 'code'])
   defaultOrderBy?: { field: string; direction: 'ASC' | 'DESC' };

@@ -1,0 +1,210 @@
+version: '3.8'
+
+# This compose file runs TNT system alongside FLMIS (no port conflicts)
+# FLMIS uses: 5432 (postgres), 8080 (backend)
+# TNT uses: 5433 (postgres), 4000 (backend), 8084 (epcis), 3002 (frontend)
+
+services:
+  # ============================================
+  # POSTGRES DATABASE (Kenya TNT) - PORT 5433
+  # ============================================
+  postgres:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: kenya-tnt-postgres
+    environment:
+      POSTGRES_DB: kenya_tnt_db
+      POSTGRES_USER: tnt_user
+      POSTGRES_PASSWORD: tnt_password
+    ports:
+      - "5433:5432"  # External 5433 to avoid conflict with FLMIS
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./core-monolith/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tnt_user -d kenya_tnt_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tnt-network
+    restart: unless-stopped
+
+  # ============================================
+  # OPENSEARCH (EPCIS Event Store)
+  # ============================================
+  opensearch:
+    image: docker.io/opensearchproject/opensearch:2.19.2
+    container_name: opensearch-node
+    environment:
+      - cluster.name=openepcis-cluster
+      - node.name=opensearch-node
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - tnt-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # ZOOKEEPER (Kafka dependency)
+  # ============================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    networks:
+      - tnt-network
+    restart: unless-stopped
+
+  # ============================================
+  # KAFKA (EPCIS Event Streaming)
+  # ============================================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - tnt-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # OPENEPCIS REST API - PORT 8084
+  # ============================================
+  epcis-service:
+    image: ghcr.io/openepcis/openepcis-quarkus-rest-api-ce:stable
+    container_name: epcis-service
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - QUARKUS_OPENSEARCH_HOSTS=opensearch:9200
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - STORAGE_LOCAL_PATH=/data/openepcis
+    volumes:
+      - epcis_data:/data/openepcis
+    ports:
+      - "8084:8080"  # External 8084 to avoid conflict with FLMIS backend
+    networks:
+      - tnt-network
+    restart: unless-stopped
+
+  # ============================================
+  # KENYA TNT BACKEND (Core Monolith) - PORT 4000
+  # ============================================
+  backend:
+    build:
+      context: ./core-monolith
+      dockerfile: Dockerfile
+    container_name: kenya-tnt-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      epcis-service:
+        condition: service_started
+    environment:
+      # Database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=tnt_user
+      - DB_PASSWORD=tnt_password
+      - DB_DATABASE=kenya_tnt_db
+      
+      # Application
+      - NODE_ENV=production
+      - PORT=4000
+      
+      # EPCIS Service
+      - EPCIS_URL=http://epcis-service:8080
+      
+      # JWT
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=7d
+      
+      # GS1
+      - GS1_COMPANY_PREFIX=8886001
+    ports:
+      - "4000:4000"
+    networks:
+      - tnt-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # KENYA TNT FRONTEND - PORT 3002
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kenya-tnt-frontend
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
+      - PORT=3002
+    ports:
+      - "3002:3002"
+    networks:
+      - tnt-network
+    restart: unless-stopped
+
+networks:
+  tnt-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  opensearch_data:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+  epcis_data:

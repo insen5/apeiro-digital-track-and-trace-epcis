@@ -492,7 +492,7 @@ export class PPBBatchValidationService {
         }
 
         // Check manufacturer type
-        if (manufacturer.actorType !== 'manufacturer') {
+        if (manufacturer.actor_type !== 'manufacturer') {
           result.errors.push({
             field: 'parties.manufacturer',
             code: 'MANUFACTURER_INVALID_TYPE',
@@ -810,11 +810,11 @@ export class PPBBatchValidationService {
     // If it's EPC URI format: urn:epc:id:sgln:CompanyPrefix.LocationRef.CheckDigit
     const sglnMatch = glnOrEPC.match(/urn:epc:id:sgln:(\d+)\.(\d+)\.(\d+)/);
     if (sglnMatch) {
-      const companyPrefix = sglnMatch[1];
+      const company_prefix = sglnMatch[1];
       const locationRef = sglnMatch[2];
       const checkDigit = sglnMatch[3];
       // Reconstruct 13-digit GLN
-      const base = (companyPrefix + locationRef).padStart(12, '0');
+      const base = (company_prefix + locationRef).padStart(12, '0');
       return base + checkDigit;
     }
 
@@ -829,10 +829,10 @@ export class PPBBatchValidationService {
 
     const match = sgln.match(/urn:epc:id:sgln:(\d+)\.(\d+)\.(\d+)/);
     if (match) {
-      const companyPrefix = match[1];
+      const company_prefix = match[1];
       const locationRef = match[2];
       const checkDigit = match[3];
-      const base = (companyPrefix + locationRef).padStart(12, '0');
+      const base = (company_prefix + locationRef).padStart(12, '0');
       return base + checkDigit;
     }
 

@@ -189,3 +189,7 @@ GRANT USAGE, SELECT ON SEQUENCE uat_facilities_sync_log_id_seq TO tnt_user;
 GRANT USAGE, SELECT ON SEQUENCE uat_facilities_quality_audit_id_seq TO tnt_user;
 
 -- Migration completed
+
+
+
+

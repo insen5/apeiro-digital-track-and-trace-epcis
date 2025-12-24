@@ -22,3 +22,7 @@ find app -name "*.tsx" -type f -exec sed -i '' '
 ' {} \;
 
 echo "Type fixes applied!"
+
+
+
+

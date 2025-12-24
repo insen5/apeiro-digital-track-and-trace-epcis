@@ -90,11 +90,11 @@ export class FacilityIntegrationService {
    * Creates EPCIS AggregationEvent with bizStep='receiving'
    */
   async handleProductReceived(dto: ReceivedEventDto): Promise<void> {
-    this.logger.log(`Processing received event: ${dto.eventId}`);
+    this.logger.log(`Processing received event: ${dto.event_id}`);
 
     // Validate and transform products
     const childEPCs: string[] = [];
-    const parentSSCC = dto.shipmentSSCC;
+    const parentSSCC = dto.shipment_sscc;
 
     for (const product of dto.products) {
       // Validate GTIN exists in catalog
@@ -106,18 +106,18 @@ export class FacilityIntegrationService {
       }
 
       // Build child EPCs based on what's provided
-      if (product.serialNumbers && product.serialNumbers.length > 0) {
+      if (product.serial_numbers && product.serial_numbers.length > 0) {
         // Unit-level tracking: Create SGTINs for serial numbers
-        for (const serial of product.serialNumbers) {
+        for (const serial of product.serial_numbers) {
           const sgtin = this.gs1Service.generateSGTIN({
             gtin: product.gtin,
-            serialNumber: serial,
+            serial_number: serial,
           });
           childEPCs.push(`urn:epc:id:sgtin:${sgtin}`);
         }
-      } else if (product.batchNo) {
+      } else if (product.batch_no) {
         // Batch-level tracking: Use batch EPC
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(product.batchNo);
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(product.batch_no);
         childEPCs.push(batchEPC);
       } else if (product.sscc) {
         // Container-level tracking: Use SSCC
@@ -144,21 +144,21 @@ export class FacilityIntegrationService {
       parentID = this.gs1Service.formatSSCCAsEPCURI(parentSSCC);
     } else {
       // Fallback to facility location
-      parentID = `https://example.com/facilities/${dto.facilityGLN}`;
+      parentID = `https://example.com/facilities/${dto.facility_gln}`;
     }
 
     // Build read point and business location
-    const readPoint = dto.readPoint
-      ? { id: `https://example.com/readpoints/${dto.readPoint}` }
-      : { id: `https://example.com/facilities/${dto.facilityGLN}` };
+    const readPoint = dto.read_point
+      ? { id: `https://example.com/readpoints/${dto.read_point}` }
+      : { id: `https://example.com/facilities/${dto.facility_gln}` };
 
-    const bizLocation = dto.bizLocation
-      ? { id: `https://example.com/locations/${dto.bizLocation}` }
-      : { id: `https://example.com/facilities/${dto.facilityGLN}` };
+    const bizLocation = dto.biz_location
+      ? { id: `https://example.com/locations/${dto.biz_location}` }
+      : { id: `https://example.com/facilities/${dto.facility_gln}` };
 
     // Build source/destination lists using facility GLN
     const destinationList = [
-      createSourceDestination(SourceDestinationType.LOCATION, this.formatGLNAsSGLN(dto.facilityGLN)),
+      createSourceDestination(SourceDestinationType.LOCATION, this.formatGLNAsSGLN(dto.facility_gln)),
     ];
 
     // Send EPCIS event with retry
@@ -177,7 +177,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed received event: ${dto.eventId} - ${childEPCs.length} EPCs`,
+      `Successfully processed received event: ${dto.event_id} - ${childEPCs.length} EPCs`,
     );
   }
 
@@ -186,7 +186,7 @@ export class FacilityIntegrationService {
    * Creates EPCIS ObjectEvent with bizStep='consuming'
    */
   async handleProductConsumed(dto: ConsumedEventDto): Promise<void> {
-    this.logger.log(`Processing consumed event: ${dto.eventId}`);
+    this.logger.log(`Processing consumed event: ${dto.event_id}`);
 
     // Validate and transform products to EPC list
     const epcList: string[] = [];
@@ -201,18 +201,18 @@ export class FacilityIntegrationService {
       }
 
       // Build EPCs based on what's provided
-      if (product.serialNumbers && product.serialNumbers.length > 0) {
+      if (product.serial_numbers && product.serial_numbers.length > 0) {
         // Unit-level tracking: Create SGTINs for serial numbers
-        for (const serial of product.serialNumbers) {
+        for (const serial of product.serial_numbers) {
           const sgtin = this.gs1Service.generateSGTIN({
             gtin: product.gtin,
-            serialNumber: serial,
+            serial_number: serial,
           });
           epcList.push(`urn:epc:id:sgtin:${sgtin}`);
         }
-      } else if (product.batchNo) {
+      } else if (product.batch_no) {
         // Batch-level tracking: Use batch EPC
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(product.batchNo);
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(product.batch_no);
         epcList.push(batchEPC);
       } else {
         throw new BadRequestException(
@@ -226,17 +226,17 @@ export class FacilityIntegrationService {
     }
 
     // Build read point and business location
-    const readPoint = dto.readPoint
-      ? { id: `https://example.com/readpoints/${dto.readPoint}` }
-      : { id: `https://example.com/facilities/${dto.facilityGLN}` };
+    const readPoint = dto.read_point
+      ? { id: `https://example.com/readpoints/${dto.read_point}` }
+      : { id: `https://example.com/facilities/${dto.facility_gln}` };
 
-    const bizLocation = dto.bizLocation
-      ? { id: `https://example.com/locations/${dto.bizLocation}` }
-      : { id: `https://example.com/facilities/${dto.facilityGLN}` };
+    const bizLocation = dto.biz_location
+      ? { id: `https://example.com/locations/${dto.biz_location}` }
+      : { id: `https://example.com/facilities/${dto.facility_gln}` };
 
     // Build source/destination lists using facility GLN
     const destinationList = [
-      createSourceDestination(SourceDestinationType.LOCATION, this.formatGLNAsSGLN(dto.facilityGLN)),
+      createSourceDestination(SourceDestinationType.LOCATION, this.formatGLNAsSGLN(dto.facility_gln)),
     ];
 
     // Send EPCIS event with retry
@@ -255,7 +255,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed consumed event: ${dto.eventId} - ${epcList.length} EPCs`,
+      `Successfully processed consumed event: ${dto.event_id} - ${epcList.length} EPCs`,
     );
   }
 
@@ -289,7 +289,7 @@ export class FacilityIntegrationService {
    * Creates EPCIS ObjectEvent with bizStep='dispensing'
    */
   private async handleDispense(dto: DispenseEventDto): Promise<void> {
-    this.logger.log(`Processing dispense event: ${dto.dispensationId}`);
+    this.logger.log(`Processing dispense event: ${dto.dispensation_id}`);
 
     // Validate GTIN
     const catalogProduct = await this.masterDataService.findByGTIN(dto.gtin);
@@ -306,9 +306,9 @@ export class FacilityIntegrationService {
       for (const sgtin of dto.identifiers.sgtins) {
         epcList.push(`urn:epc:id:sgtin:${sgtin}`);
       }
-    } else if (dto.batchNumber) {
+    } else if (dto.batch_number) {
       // Batch-level tracking
-      const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(dto.batchNumber);
+      const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(dto.batch_number);
       epcList.push(batchEPC);
     } else {
       throw new BadRequestException(
@@ -325,12 +325,12 @@ export class FacilityIntegrationService {
 
     // Build quantity list
     const quantityList = dto.quantity
-      ? [createQuantity(`urn:epc:class:lgtin:${dto.gtin}.${dto.batchNumber}`, dto.quantity, UnitOfMeasure.EACH)]
+      ? [createQuantity(`urn:epc:class:lgtin:${dto.gtin}.${dto.batch_number}`, dto.quantity, UnitOfMeasure.EACH)]
       : undefined;
 
     // Build business transaction list
     const bizTransactionList = [
-      createBizTransaction('DISPENSATION', dto.dispensationId),
+      createBizTransaction('DISPENSATION', dto.dispensation_id),
     ];
 
     // Build source/destination lists using facility GLN
@@ -356,7 +356,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed dispense event: ${dto.dispensationId} - ${epcList.length} EPCs`,
+      `Successfully processed dispense event: ${dto.dispensation_id} - ${epcList.length} EPCs`,
     );
   }
 
@@ -365,7 +365,7 @@ export class FacilityIntegrationService {
    * Creates EPCIS AggregationEvent with bizStep='receiving'
    */
   private async handleReceive(dto: ReceiveEventDto): Promise<void> {
-    this.logger.log(`Processing receive event: ${dto.grnId}`);
+    this.logger.log(`Processing receive event: ${dto.grn_id}`);
 
     // Validate items array
     if (!dto.items || !Array.isArray(dto.items) || dto.items.length === 0) {
@@ -408,9 +408,9 @@ export class FacilityIntegrationService {
         } else {
           throw new BadRequestException(`Invalid SSCC: ${item.identifiers.sscc}`);
         }
-      } else if (item.batchNumber) {
+      } else if (item.batch_number) {
         // Batch-level: Use batch EPC
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batchNumber);
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batch_number);
         childEPCs.push(batchEPC);
       } else {
         throw new BadRequestException(
@@ -427,9 +427,9 @@ export class FacilityIntegrationService {
     let parentID: string;
     if (parentSSCC) {
       parentID = this.gs1Service.formatSSCCAsEPCURI(parentSSCC);
-    } else if (dto.shipment?.shipmentId) {
+    } else if (dto.shipment?.shipment_id) {
       // Use shipment ID as parent
-      parentID = `https://example.com/shipments/${dto.shipment.shipmentId}`;
+      parentID = `https://example.com/shipments/${dto.shipment.shipment_id}`;
     } else {
       parentID = `https://example.com/facilities/${dto.GLN}`;
     }
@@ -445,14 +445,14 @@ export class FacilityIntegrationService {
     const quantityList = dto.items
       .filter(item => item.quantity)
       .map(item => {
-        const epcClass = `urn:epc:class:lgtin:${item.gtin}.${item.batchNumber}`;
+        const epcClass = `urn:epc:class:lgtin:${item.gtin}.${item.batch_number}`;
         return createQuantity(epcClass, item.quantity, UnitOfMeasure.EACH);
       });
 
     // Build business transaction list
     const bizTransactionList = [
-      createBizTransaction('GRN', dto.grnId),
-      ...(dto.shipment?.shipmentId ? [createBizTransaction('SHIPMENT', dto.shipment.shipmentId)] : []),
+      createBizTransaction('GRN', dto.grn_id),
+      ...(dto.shipment?.shipment_id ? [createBizTransaction('SHIPMENT', dto.shipment.shipment_id)] : []),
     ];
 
     // Build source/destination lists using facility GLN
@@ -478,7 +478,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed receive event: ${dto.grnId} - ${childEPCs.length} EPCs`,
+      `Successfully processed receive event: ${dto.grn_id} - ${childEPCs.length} EPCs`,
     );
   }
 
@@ -487,7 +487,7 @@ export class FacilityIntegrationService {
    * Creates EPCIS ObjectEvent with bizStep='inventory_adjusting'
    */
   private async handleAdjust(dto: AdjustEventDto): Promise<void> {
-    this.logger.log(`Processing adjust event: ${dto.referenceId}`);
+    this.logger.log(`Processing adjust event: ${dto.reference_id}`);
 
     // Validate GTIN
     const catalogProduct = await this.masterDataService.findByGTIN(dto.item.gtin);
@@ -503,8 +503,8 @@ export class FacilityIntegrationService {
       for (const sgtin of dto.item.identifiers.sgtins) {
         epcList.push(`urn:epc:id:sgtin:${sgtin}`);
       }
-    } else if (dto.item.batchNumber) {
-      const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(dto.item.batchNumber);
+    } else if (dto.item.batch_number) {
+      const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(dto.item.batch_number);
       epcList.push(batchEPC);
     } else {
       throw new BadRequestException(
@@ -530,13 +530,13 @@ export class FacilityIntegrationService {
     const locationCoords = this.getLocationCoordinates(dto.location);
 
     // Build quantity list (using absolute value of quantityChange)
-    const quantityList = dto.item.quantityChange !== undefined
-      ? [createQuantity(`urn:epc:class:lgtin:${dto.item.gtin}.${dto.item.batchNumber}`, Math.abs(dto.item.quantityChange), UnitOfMeasure.EACH)]
+    const quantityList = dto.item.quantity_change !== undefined
+      ? [createQuantity(`urn:epc:class:lgtin:${dto.item.gtin}.${dto.item.batch_number}`, Math.abs(dto.item.quantity_change), UnitOfMeasure.EACH)]
       : undefined;
 
     // Build business transaction list
     const bizTransactionList = [
-      createBizTransaction('ADJUSTMENT', dto.referenceId),
+      createBizTransaction('ADJUSTMENT', dto.reference_id),
     ];
 
     // Build source/destination lists using facility GLN
@@ -562,7 +562,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed adjust event: ${dto.referenceId} - ${epcList.length} EPCs`,
+      `Successfully processed adjust event: ${dto.reference_id} - ${epcList.length} EPCs`,
     );
   }
 
@@ -571,16 +571,16 @@ export class FacilityIntegrationService {
    * Creates EPCIS ObjectEvent with bizStep='cycle_counting' for discrepancies
    */
   private async handleStockCount(dto: StockCountEventDto): Promise<void> {
-    this.logger.log(`Processing stock count event: ${dto.countSessionId}`);
+    this.logger.log(`Processing stock count event: ${dto.count_session_id}`);
 
-    const facilityGLN = dto.location?.facilityGln;
+    const facilityGLN = dto.location?.facility_gln;
     if (!facilityGLN) {
       throw new BadRequestException('Stock count event must include facilityGln in location');
     }
 
     // Process items with discrepancies
     for (const item of dto.items) {
-      if (item.systemQuantity === item.physicalQuantity) {
+      if (item.system_quantity === item.physical_quantity) {
         continue; // No discrepancy, skip
       }
 
@@ -599,8 +599,8 @@ export class FacilityIntegrationService {
         for (const sgtin of item.identifiers.sgtins) {
           epcList.push(`urn:epc:id:sgtin:${sgtin}`);
         }
-      } else if (item.batchNumber) {
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batchNumber);
+      } else if (item.batch_number) {
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batch_number);
         epcList.push(batchEPC);
       }
 
@@ -616,13 +616,13 @@ export class FacilityIntegrationService {
       const locationCoords = this.getLocationCoordinates(dto.location);
 
       // Build quantity list (use physical quantity for discrepancy)
-      const quantityList = item.physicalQuantity !== undefined
-        ? [createQuantity(`urn:epc:class:lgtin:${item.gtin}.${item.batchNumber}`, item.physicalQuantity, UnitOfMeasure.EACH)]
+      const quantityList = item.physical_quantity !== undefined
+        ? [createQuantity(`urn:epc:class:lgtin:${item.gtin}.${item.batch_number}`, item.physical_quantity, UnitOfMeasure.EACH)]
         : undefined;
 
       // Build business transaction list
       const bizTransactionList = [
-        createBizTransaction('STOCK_COUNT', dto.countSessionId),
+        createBizTransaction('STOCK_COUNT', dto.count_session_id),
       ];
 
       // Build source/destination lists using facility GLN
@@ -649,7 +649,7 @@ export class FacilityIntegrationService {
     }
 
     this.logger.log(
-      `Successfully processed stock count event: ${dto.countSessionId}`,
+      `Successfully processed stock count event: ${dto.count_session_id}`,
     );
   }
 
@@ -658,7 +658,7 @@ export class FacilityIntegrationService {
    * Creates EPCIS AggregationEvent with bizStep='returning'
    */
   private async handleReturn(dto: ReturnEventDto): Promise<void> {
-    this.logger.log(`Processing return event: ${dto.returnId}`);
+    this.logger.log(`Processing return event: ${dto.return_id}`);
 
     const childEPCs: string[] = [];
 
@@ -683,8 +683,8 @@ export class FacilityIntegrationService {
         } else {
           throw new BadRequestException(`Invalid SSCC: ${item.identifiers.sscc}`);
         }
-      } else if (item.batchNumber) {
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batchNumber);
+      } else if (item.batch_number) {
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batch_number);
         childEPCs.push(batchEPC);
       } else {
         throw new BadRequestException(
@@ -698,7 +698,7 @@ export class FacilityIntegrationService {
     }
 
     // Build parent EPC (return container or facility)
-    const parentID = `https://example.com/returns/${dto.returnId}`;
+    const parentID = `https://example.com/returns/${dto.return_id}`;
 
     // Build read point and business location
     const readPoint = this.buildReadPoint(dto.GLN, dto.location);
@@ -711,13 +711,13 @@ export class FacilityIntegrationService {
     const quantityList = dto.items
       .filter(item => item.quantity)
       .map(item => {
-        const epcClass = `urn:epc:class:lgtin:${item.gtin}.${item.batchNumber}`;
+        const epcClass = `urn:epc:class:lgtin:${item.gtin}.${item.batch_number}`;
         return createQuantity(epcClass, item.quantity, UnitOfMeasure.EACH);
       });
 
     // Build business transaction list
     const bizTransactionList = [
-      createBizTransaction('RETURN', dto.returnId),
+      createBizTransaction('RETURN', dto.return_id),
     ];
 
     // Build source/destination lists using facility GLN
@@ -743,7 +743,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed return event: ${dto.returnId} - ${childEPCs.length} EPCs`,
+      `Successfully processed return event: ${dto.return_id} - ${childEPCs.length} EPCs`,
     );
   }
 
@@ -752,9 +752,9 @@ export class FacilityIntegrationService {
    * Creates EPCIS ObjectEvent with bizStep='recalling'
    */
   private async handleRecall(dto: RecallEventDto): Promise<void> {
-    this.logger.log(`Processing recall event: ${dto.recallNoticeId}`);
+    this.logger.log(`Processing recall event: ${dto.recall_notice_id}`);
 
-    const facilityGLN = dto.location?.facilityGln;
+    const facilityGLN = dto.location?.facility_gln;
     if (!facilityGLN) {
       throw new BadRequestException('Recall event must include facilityGln in location');
     }
@@ -775,8 +775,8 @@ export class FacilityIntegrationService {
         for (const sgtin of item.identifiers.sgtins) {
           epcList.push(`urn:epc:id:sgtin:${sgtin}`);
         }
-      } else if (item.batchNumber) {
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batchNumber);
+      } else if (item.batch_number) {
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(item.batch_number);
         epcList.push(batchEPC);
       } else {
         throw new BadRequestException(
@@ -800,13 +800,13 @@ export class FacilityIntegrationService {
     const quantityList = dto.items
       .filter(item => item.quantity)
       .map(item => {
-        const epcClass = `urn:epc:class:lgtin:${item.gtin}.${item.batchNumber}`;
+        const epcClass = `urn:epc:class:lgtin:${item.gtin}.${item.batch_number}`;
         return createQuantity(epcClass, item.quantity, UnitOfMeasure.EACH);
       });
 
     // Build business transaction list
     const bizTransactionList = [
-      createBizTransaction('RECALL', dto.recallNoticeId),
+      createBizTransaction('RECALL', dto.recall_notice_id),
     ];
 
     // Build source/destination lists using facility GLN
@@ -832,7 +832,7 @@ export class FacilityIntegrationService {
     );
 
     this.logger.log(
-      `Successfully processed recall event: ${dto.recallNoticeId} - ${epcList.length} EPCs`,
+      `Successfully processed recall event: ${dto.recall_notice_id} - ${epcList.length} EPCs`,
     );
   }
 
@@ -901,7 +901,7 @@ export class FacilityIntegrationService {
       return {
         latitude: coords.latitude,
         longitude: coords.longitude,
-        accuracyMeters: coords.accuracyMeters,
+        accuracyMeters: coords.accuracy_meters,
       };
     }
 

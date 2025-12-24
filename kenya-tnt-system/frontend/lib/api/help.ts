@@ -63,6 +63,6 @@ export const helpApi = {
   },
 
   async delete(topicKey: string): Promise<void> {
-    return client.delete(`/help/${topicKey}`);
+    return client.delete(`/help/topic/${topicKey}`);
   },
 };

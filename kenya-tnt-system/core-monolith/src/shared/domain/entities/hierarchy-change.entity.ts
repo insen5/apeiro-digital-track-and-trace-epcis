@@ -40,7 +40,7 @@ export class HierarchyChange {
   oldSscc?: string;
 
   @Column({ name: 'actor_user_id', type: 'uuid' })
-  actorUserId: string;
+  actor_user_id: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'actor_user_id' })

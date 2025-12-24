@@ -35,7 +35,7 @@ export class BatchNumberService {
     while (!unique && attempts < maxAttempts) {
       attempts++;
 
-      const key = `${dto.productId}-${dto.userId}-${batchNumber}`;
+      const key = `${dto.product_id}-${dto.user_id}-${batchNumber}`;
       if (!this.usedBatchNumbers.has(key)) {
         this.usedBatchNumbers.add(key);
         unique = true;

@@ -36,8 +36,8 @@ export class FacilityOperationsService {
     const where: FindOptionsWhere<FacilityReceiving> = {};
 
     if (facilityUserId) where.facilityUserId = facilityUserId;
-    if (shipmentId) where.shipmentId = shipmentId;
-    if (consignmentId) where.consignmentId = consignmentId;
+    if (shipmentId) where.shipment_id = shipmentId;
+    if (consignmentId) where.consignment_id = consignmentId;
 
     const [data, total] = await this.receivingRepo.findAndCount({
       where,
@@ -98,8 +98,8 @@ export class FacilityOperationsService {
     const where: FindOptionsWhere<FacilityDispensing> = {};
 
     if (facilityUserId) where.facilityUserId = facilityUserId;
-    if (productId) where.productId = productId;
-    if (batchId) where.batchId = batchId;
+    if (productId) where.product_id = productId;
+    if (batchId) where.batch_id = batchId;
     if (patientId) where.patientId = patientId;
 
     const [data, total] = await this.dispensingRepo.findAndCount({
@@ -160,8 +160,8 @@ export class FacilityOperationsService {
     const where: FindOptionsWhere<FacilityInventory> = {};
 
     if (facilityUserId) where.facilityUserId = facilityUserId;
-    if (productId) where.productId = productId;
-    if (batchId) where.batchId = batchId;
+    if (productId) where.product_id = productId;
+    if (batchId) where.batch_id = batchId;
 
     const [data, total] = await this.inventoryRepo.findAndCount({
       where,
@@ -199,8 +199,8 @@ export class FacilityOperationsService {
     const existing = await this.inventoryRepo.findOne({
       where: {
         facilityUserId: data.facilityUserId!,
-        productId: data.productId!,
-        batchId: data.batchId!,
+        productId: data.product_id!,
+        batchId: data.batch_id!,
       },
     });
 

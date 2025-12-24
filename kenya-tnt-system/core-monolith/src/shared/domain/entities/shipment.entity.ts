@@ -20,70 +20,70 @@ export class Shipment extends BaseEntity {
   @Column()
   customer: string;
 
-  @Column({ name: 'pickupDate', type: 'date' })
-  pickupDate: Date;
+  @Column({ type: 'date' })
+  pickup_date: Date;
 
-  @Column({ name: 'expectedDeliveryDate', type: 'date' })
-  expectedDeliveryDate: Date;
+  @Column({ type: 'date' })
+  expected_delivery_date: Date;
 
-  @Column({ name: 'pickupLocation' })
-  pickupLocation: string;
+  @Column()
+  pickup_location: string;
 
-  @Column({ name: 'destinationAddress' })
-  destinationAddress: string;
+  @Column()
+  destination_address: string;
 
   @Column()
   carrier: string;
 
-  @Column({ name: 'userId', type: 'uuid' })
-  userId: string;
+  @Column({ type: 'uuid' })
+  user_id: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ name: 'customerId', type: 'uuid', nullable: true })
-  customerId?: string;
+  @Column({ type: 'uuid', nullable: true })
+  customer_id?: string;
 
-  @Column({ name: 'isDispatched', default: false })
-  isDispatched: boolean;
+  @Column({ default: false })
+  is_dispatched: boolean;
 
-  @Column({ name: 'ssccBarcode' })
-  ssccBarcode: string;
+  @Column()
+  sscc_barcode: string;
 
-  @Column({ name: 'eventId', nullable: true })
-  eventId?: string;
+  @Column({ nullable: true })
+  event_id?: string;
 
-  @Column({ name: 'parentSsccBarcode', nullable: true })
-  parentSsccBarcode?: string; // For supplier/distributor shipments
+  @Column({ nullable: true })
+  parent_sscc_barcode?: string; // For supplier/distributor shipments
 
-  @Column({ name: 'receiveEventId', nullable: true })
-  receiveEventId?: string; // For supplier/distributor shipments
+  @Column({ nullable: true })
+  receive_event_id?: string; // For supplier/distributor shipments
 
-  @Column({ name: 'isDeleted', default: false })
-  isDeleted: boolean;
+  @Column({ default: false })
+  is_deleted: boolean;
 
   // Master Data References
   @Column({ nullable: true, name: 'supplier_id' })
-  supplierId?: number;
+  supplier_id?: number;
 
   @Column({ nullable: true, name: 'premise_id' })
-  premiseId?: number;
+  premise_id?: number;
 
   @Column({ nullable: true, name: 'logistics_provider_id' })
-  logisticsProviderId?: number;
+  logistics_provider_id?: number;
 
   @Column({ name: 'reference_document_number', nullable: true })
-  referenceDocumentNumber?: string;
+  reference_document_number?: string;
 
   // PostGIS location columns
   // Note: TypeORM PostGIS support requires additional configuration
   // For now, using nullable string - can be converted to proper PostGIS type later
-  @Column({ name: 'pickupLocationPoint', type: 'geometry', nullable: true })
-  pickupLocationPoint?: string; // PostGIS POINT as string
+  @Column({ name: 'pickup_location_point', type: 'geometry', nullable: true })
+  pickup_location_point?: string; // PostGIS POINT as string
 
-  @Column({ name: 'destinationLocationPoint', type: 'geometry', nullable: true })
-  destinationLocationPoint?: string; // PostGIS POINT as string
+  @Column({ name: 'destination_location_point', type: 'geometry', nullable: true })
+  destination_location_point?: string; // PostGIS POINT as string
 
   @OneToMany(() => Package, (pkg) => pkg.shipment, {
     cascade: true,

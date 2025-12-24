@@ -132,3 +132,7 @@ WHERE gtin IS NOT NULL
   AND LENGTH(gtin) != 14
 ORDER BY id;
 */
+
+
+
+

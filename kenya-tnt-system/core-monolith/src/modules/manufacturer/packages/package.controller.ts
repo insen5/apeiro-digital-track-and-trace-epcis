@@ -16,9 +16,9 @@ export class ManufacturerPackageController {
 
   @Post()
   @ApiOperation({ summary: 'Create a package by aggregating cases' })
-  create(@Body() body: CreatePackageDto & { shipmentId: number }, @Req() req: any) {
+  create(@Body() body: CreatePackageDto & { shipment_id: number }, @Req() req: any) {
     const userId = req.user?.id || '00000000-0000-0000-0000-000000000001';
-    return this.packageService.create(userId, body.shipmentId, body);
+    return this.packageService.create(userId, body.shipment_id, body);
   }
 
   @Get()

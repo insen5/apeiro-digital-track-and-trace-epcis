@@ -30,8 +30,8 @@ export class DistributorShipmentController {
     
     // Debug logging
     console.log('[receiveShipment] Received body:', JSON.stringify(body, null, 2));
-    console.log('[receiveShipment] pickupDate type:', typeof body.pickupDate, 'value:', body.pickupDate);
-    console.log('[receiveShipment] expectedDeliveryDate type:', typeof body.expectedDeliveryDate, 'value:', body.expectedDeliveryDate);
+    console.log('[receiveShipment] pickup_date type:', typeof body.pickup_date, 'value:', body.pickup_date);
+    console.log('[receiveShipment] expected_delivery_date type:', typeof body.expected_delivery_date, 'value:', body.expected_delivery_date);
     
     return this.shipmentService.receiveShipment(userId, body);
   }

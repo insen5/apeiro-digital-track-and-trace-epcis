@@ -4,7 +4,7 @@
  */
 
 export interface QualityAuditEntityConfig {
-  entityType: string; // NEW: 'product', 'premise', 'facility', 'facility_prod', 'practitioner'
+  entity_type: string; // NEW: 'product', 'premise', 'facility', 'facility_prod', 'practitioner'
   entityName: string; // 'product', 'premise', 'facility'
   entityDisplayName: string;
   tableName: string;
@@ -80,6 +80,14 @@ export interface QualityAuditEntityConfig {
     value?: number; // For static values
   }[];
   
+  // Operational monitoring metrics (tracked but NOT affecting quality score)
+  // These are informational only - e.g., license expiry status, operational alerts
+  monitoringMetrics?: {
+    key: string;
+    label: string;
+    category: 'license' | 'operational' | 'alert';
+  }[];
+  
   // Complete records field list (for strict record-level completeness - REQUIRED)
   completeRecordsFields: string[];
   
@@ -101,7 +109,7 @@ export interface QualityAuditEntityConfig {
 
 export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
   product: {
-    entityType: 'product',
+    entity_type: 'product',
     entityName: 'product',
     entityDisplayName: 'Product',
     tableName: 'ppb_products',
@@ -200,7 +208,7 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
   },
   
   premise: {
-    entityType: 'premise',
+    entity_type: 'premise',
     entityName: 'premise',
     entityDisplayName: 'Premise',
     tableName: 'premises',
@@ -224,9 +232,8 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
     ],
     
     validityMetrics: [
-      { key: 'invalidGln', label: 'Invalid GLN Format (not 13 digits)', weight: 40, checkType: 'format' },
-      { key: 'duplicatePremiseIds', label: 'Duplicate Premise IDs', weight: 30, checkType: 'duplicate' },
-      { key: 'invalidLicenseDates', label: 'Invalid License Dates (future issue date)', weight: 30, checkType: 'integrity' },
+      { key: 'invalidGln', label: 'Invalid GLN Format (not 13 digits)', weight: 50, checkType: 'format' },
+      { key: 'duplicatePremiseIds', label: 'Duplicate Premise IDs', weight: 50, checkType: 'duplicate' },
     ],
     
     consistencyMetrics: [
@@ -288,12 +295,12 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
       timeliness: 0.15,
     },
     
-    // Custom validity queries for license tracking (Kenya-specific)
-    // NOTE: value is omitted so queries execute dynamically in generic service
-    customValidityQueries: [
-      { key: 'expiringSoon', label: 'Expiring Soon' },
-      { key: 'validLicenses', label: 'Valid Licenses' },
-      { key: 'invalidDates', label: 'Invalid Dates' },
+    // Operational monitoring metrics (NOT affecting quality score)
+    // These track license status for operational purposes only
+    monitoringMetrics: [
+      { key: 'expiringSoon', label: 'Licenses Expiring Soon (within 30 days)', category: 'license' as const },
+      { key: 'expiredLicenses', label: 'Licenses Expired (renewal required)', category: 'license' as const },
+      { key: 'validLicenses', label: 'Licenses Currently Valid', category: 'license' as const },
     ],
     
     // Complete records require all these fields (premise has 9 vs product's 2)
@@ -311,7 +318,7 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
   },
   
   facility: {
-    entityType: 'facility',
+    entity_type: 'facility',
     entityName: 'facility',
     entityDisplayName: 'Facility Inventory',
     tableName: 'facility_inventory',
@@ -381,7 +388,7 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
     apiBasePath: '/api/master-data/facilities',
     
     // Field mappings for enrichment
-    entityType: 'facility',
+    entity_type: 'facility',
     dateField: 'auditDate',
     scoreField: 'overallQualityScore',
     totalRecordsField: 'totalFacilities',
@@ -397,9 +404,8 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
     ],
     
     validityMetrics: [
-      { key: 'expiredLicenses', label: 'Expired Licenses', weight: 30, checkType: 'integrity' },
-      { key: 'invalidCoordinates', label: 'Invalid Coordinates', weight: 30, checkType: 'range' },
-      { key: 'duplicateFacilityCodes', label: 'Duplicate Facility Codes', weight: 40, checkType: 'duplicate' },
+      { key: 'invalidCoordinates', label: 'Invalid Coordinates', weight: 50, checkType: 'range' },
+      { key: 'duplicateFacilityCodes', label: 'Duplicate Facility Codes', weight: 50, checkType: 'duplicate' },
     ],
     
     syncConfig: {
@@ -425,6 +431,12 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
       consistency: 0.15,
       timeliness: 0.15,
     },
+    
+    // Operational monitoring metrics (NOT affecting quality score)
+    monitoringMetrics: [
+      { key: 'expiredLicenses', label: 'Licenses Expired', category: 'license' as const },
+      { key: 'expiringSoon', label: 'Licenses Expiring Soon (within 30 days)', category: 'license' as const },
+    ],
     
     // Critical fields for strict record-level completeness (ALL must be present)
     completeRecordsFields: [
@@ -452,7 +464,7 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
   },
   
   prodFacility: {
-    entityType: 'facility_prod',
+    entity_type: 'facility_prod',
     entityName: 'prodFacility',
     entityDisplayName: 'Production Facility',
     tableName: 'prod_facilities',
@@ -537,7 +549,7 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
   },
   
   practitioner: {
-    entityType: 'practitioner',
+    entity_type: 'practitioner',
     entityName: 'practitioner',
     entityDisplayName: 'Practitioner',
     tableName: 'ppb_practitioners',
@@ -595,10 +607,12 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
       timeliness: 0.05,
     },
     
-    // Custom validity queries for license tracking
-    customValidityQueries: [
-      { key: 'expiringSoon', label: 'Expiring Soon' },
-      { key: 'validLicenses', label: 'Valid Licenses' },
+    // Operational monitoring metrics (NOT affecting quality score)
+    // These track license status for operational purposes only
+    monitoringMetrics: [
+      { key: 'expiringSoon', label: 'Licenses Expiring Soon (within 30 days)', category: 'license' as const },
+      { key: 'expiredLicenses', label: 'Licenses Expired (renewal required)', category: 'license' as const },
+      { key: 'validLicenses', label: 'Licenses Currently Valid', category: 'license' as const },
     ],
     
     // Critical fields for strict record-level completeness (ALL must be present)
@@ -613,10 +627,30 @@ export const QUALITY_AUDIT_CONFIGS: Record<string, QualityAuditEntityConfig> = {
   },
 };
 
-export function getQualityAuditConfig(entityType: string): QualityAuditEntityConfig {
-  const config = QUALITY_AUDIT_CONFIGS[entityType];
+export function getQualityAuditConfig(entity_type: string): QualityAuditEntityConfig {
+  // #region agent log
+  const fs = require('fs'); try { fs.appendFileSync('/Users/apeiro/apeiro-digital-track-and-trace-epcis/.cursor/debug.log', JSON.stringify({location:'quality-audit.config.ts:616',message:'getQualityAuditConfig CALLED',data:{entityType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C'})+'\n'); } catch(e) {}
+  // #endregion
+  
+  // Map API entity types to config keys
+  const entityTypeMap: Record<string, string> = {
+    'product': 'product',
+    'premise': 'premise',
+    'facility': 'uatFacility', // UAT facilities
+    'facility_prod': 'prodFacility', // Production facilities
+    'practitioner': 'practitioner',
+  };
+  
+  const configKey = entityTypeMap[entityType] || entityType;
+  
+  // #region agent log
+  try { fs.appendFileSync('/Users/apeiro/apeiro-digital-track-and-trace-epcis/.cursor/debug.log', JSON.stringify({location:'quality-audit.config.ts:627',message:'Config key mapped',data:{entityType,configKey,hasConfig:!!QUALITY_AUDIT_CONFIGS[configKey]},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'}) +'\n'); } catch(e) {}
+  // #endregion
+  
+  const config = QUALITY_AUDIT_CONFIGS[configKey];
+  
   if (!config) {
-    throw new Error(`Unknown entity type for quality audit: ${entityType}`);
+    throw new Error(`No audit config found for entity type: ${entityType}`);
   }
   return config;
 }

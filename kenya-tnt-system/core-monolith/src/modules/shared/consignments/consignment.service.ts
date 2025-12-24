@@ -27,9 +27,9 @@ import { GS1Service, createBizTransaction, createQuantity, BizTransactionType, U
  * Filter options for consignment queries
  */
 export interface ConsignmentFilter {
-  manufacturerGLN?: string;
-  manufacturerPPBID?: string;
-  userId?: string;
+  manufacturer_gln?: string;
+  manufacturer_ppb_id?: string;
+  user_id?: string;
   // Add more filters as needed
 }
 
@@ -173,21 +173,21 @@ export class ConsignmentService {
       // Get consignment
       const consignment = await this.consignmentRepo.findOne({
         where: { id: consignmentId },
-        relations: ['consignmentBatches'],
+        relations: ['consignment_batches'],
       });
 
       if (!consignment) {
         throw new NotFoundException(`Consignment ${consignmentId} not found`);
       }
 
-      this.logger.log(`Backfilling serial numbers for consignment ${consignment.consignmentID} (ID: ${consignmentId})`);
+      this.logger.log(`Backfilling serial numbers for consignment ${consignment.consignment_id} (ID: ${consignmentId})`);
 
       // Get all batches for this consignment
-      const consignmentBatches = consignment.consignmentBatches || [];
-      const batchIds = consignmentBatches.map(cb => cb.batchId).filter((id): id is number => Boolean(id));
+      const consignment_batches = consignment.consignment_batches || [];
+      const batchIds = consignment_batches.map(cb => cb.batch_id).filter((id): id is number => Boolean(id));
 
       if (batchIds.length === 0) {
-        this.logger.warn(`No batches found for consignment ${consignment.consignmentID}`);
+        this.logger.warn(`No batches found for consignment ${consignment.consignment_id}`);
         return { batchesProcessed: 0, serialNumbersCreated: 0, errors: [] };
       }
 
@@ -203,15 +203,15 @@ export class ConsignmentService {
         try {
           // Find corresponding PPB batch record
           const ppbBatch = await ppbBatchRepo.findOne({
-            where: { batchNumber: batch.batchno },
+            where: { batchNumber: batch.batch_no },
           });
 
           if (!ppbBatch || !ppbBatch.serializationRange || ppbBatch.serializationRange.length === 0) {
-            this.logger.debug(`No serializationRange found for batch ${batch.batchno}`);
+            this.logger.debug(`No serializationRange found for batch ${batch.batch_no}`);
             continue;
           }
 
-          this.logger.log(`Processing batch ${batch.batchno} with ${ppbBatch.serializationRange.length} serialization ranges`);
+          this.logger.log(`Processing batch ${batch.batch_no} with ${ppbBatch.serializationRange.length} serialization ranges`);
 
           // Parse serialization range
           const parsedSerialization = this.parseSerializationRange(ppbBatch.serializationRange);
@@ -220,11 +220,11 @@ export class ConsignmentService {
           const serialNumbers = this.expandSerialization(parsedSerialization);
 
           if (serialNumbers.length === 0) {
-            this.logger.warn(`No serial numbers expanded for batch ${batch.batchno}`);
+            this.logger.warn(`No serial numbers expanded for batch ${batch.batch_no}`);
             continue;
           }
 
-          this.logger.log(`Expanded ${serialNumbers.length} serial numbers for batch ${batch.batchno}`);
+          this.logger.log(`Expanded ${serialNumbers.length} serial numbers for batch ${batch.batch_no}`);
 
           // Create serial number records using injected repository
           let createdForBatch = 0;
@@ -232,14 +232,14 @@ export class ConsignmentService {
           for (const serial of serialNumbers) {
             // Check if serial already exists
             const existing = await this.serialNumberRepo.findOne({
-              where: { batchId: batch.id, serialNumber: serial },
+              where: { batch_id: batch.id, serial_number: serial },
             });
 
             if (!existing) {
               const serialNumber = this.serialNumberRepo.create({
-                batchId: batch.id,
-                consignmentId: consignment.id,
-                serialNumber: serial,
+                batch_id: batch.id,
+                consignment_id: consignment.id,
+                serial_number: serial,
               });
               await this.serialNumberRepo.save(serialNumber);
               createdForBatch++;
@@ -248,10 +248,10 @@ export class ConsignmentService {
           }
 
           batchesProcessed++;
-          this.logger.log(`Created ${createdForBatch} serial numbers for batch ${batch.batchno}`);
+          this.logger.log(`Created ${createdForBatch} serial numbers for batch ${batch.batch_no}`);
 
         } catch (error: any) {
-          const errorMsg = `Error processing batch ${batch.batchno}: ${error.message}`;
+          const errorMsg = `Error processing batch ${batch.batch_no}: ${error.message}`;
           this.logger.error(errorMsg);
           errors.push(errorMsg);
           // Continue with other batches
@@ -291,52 +291,52 @@ export class ConsignmentService {
     try {
       // Check if consignment already exists
       const existing = await this.consignmentRepo.findOne({
-        where: { eventID: dto.header.eventID },
+        where: { event_id: dto.header.event_id },
       });
 
       if (existing) {
         throw new BadRequestException(
-          `Consignment with event ID ${dto.header.eventID} already exists`,
+          `Consignment with event ID ${dto.header.event_id} already exists`,
         );
       }
 
       // Handle both new (parties object) and legacy formats
       // Priority: parties object > top-level manufacturer/mah > legacy flat fields
-      const manufacturerPPBID = 
-        dto.consignment.parties?.manufacturer_party?.ppbID ||
-        dto.consignment.manufacturer?.ppbID || 
-        dto.consignment.manufacturerPPBID;
-      const MAHPPBID = 
-        dto.consignment.parties?.mah_party?.ppbID ||
-        dto.consignment.mah?.ppbID || 
-        dto.consignment.MAHPPBID;
-      const manufacturerGLN = 
+      const manufacturer_ppb_id = 
+        dto.consignment.parties?.manufacturer_party?.ppb_id ||
+        dto.consignment.manufacturer?.ppb_id || 
+        dto.consignment.manufacturer_ppb_id;
+      const mah_ppb_id = 
+        dto.consignment.parties?.mah_party?.ppb_id ||
+        dto.consignment.mah?.ppb_id || 
+        dto.consignment.mah_ppb_id;
+      const manufacturer_gln = 
         dto.consignment.parties?.manufacturer_party?.gln ||
         dto.consignment.manufacturer?.gln || 
-        dto.consignment.manufacturerGLN;
-      const MAHGLN = 
+        dto.consignment.manufacturer_gln;
+      const mah_gln = 
         dto.consignment.parties?.mah_party?.gln ||
         dto.consignment.mah?.gln || 
-        dto.consignment.MAHGLN;
-      const totalQuantity = dto.consignment.totalQuantity || 0;
+        dto.consignment.mah_gln;
+      const total_quantity = dto.consignment.total_quantity || 0;
 
       // Create consignment record
       const consignment = this.consignmentRepo.create({
-        eventID: dto.header.eventID,
-        eventType: dto.header.eventType,
-        eventTimestamp: new Date(dto.header.eventTimestamp),
-        sourceSystem: dto.header.sourceSystem,
+        event_id: dto.header.event_id,
+        eventType: dto.header.event_type,
+        eventTimestamp: new Date(dto.header.event_timestamp),
+        sourceSystem: dto.header.source_system,
         destinationSystem: dto.header.destinationSystem,
-        consignmentID: dto.consignment.consignmentID,
-        manufacturerPPBID,
-        MAHPPBID,
-        manufacturerGLN,
-        MAHGLN,
-        registrationNo: dto.consignment.registrationNo,
-        shipmentDate: new Date(dto.consignment.shipmentDate),
-        countryOfOrigin: dto.consignment.countryOfOrigin,
-        destinationCountry: dto.consignment.destinationCountry,
-        totalQuantity,
+        consignment_id: dto.consignment.consignment_id,
+        manufacturer_ppb_id,
+        mah_ppb_id,
+        manufacturer_gln,
+        mah_gln,
+          registration_no: dto.consignment.registration_no,
+          shipment_date: new Date(dto.consignment.shipment_date),
+          country_of_origin: dto.consignment.country_of_origin,
+          destination_country: dto.consignment.destination_country,
+          total_quantity: totalQuantity,
         userId,
         // Importer party details
         importerPartyName: dto.consignment.parties?.importer_party?.name,
@@ -384,15 +384,15 @@ export class ConsignmentService {
         const logistics = dto.consignment.logistics || {};
         const shipment = this.shipmentRepo.create({
           customer: metadata.customer || 'PPB Import',
-          pickupDate: new Date(dto.consignment.shipmentDate),
-          expectedDeliveryDate: new Date(dto.consignment.shipmentDate),
-          pickupLocation: logistics.origin || metadata.pickupLocation || dto.consignment.countryOfOrigin,
-          destinationAddress: logistics.final_destination_address || metadata.destinationAddress || dto.consignment.destinationCountry,
+          pickup_date: new Date(dto.consignment.shipment_date),
+          expected_delivery_date: new Date(dto.consignment.shipment_date),
+          pickup_location: logistics.origin || metadata.pickup_location || dto.consignment.country_of_origin,
+          destination_address: logistics.final_destination_address || metadata.destination_address || dto.consignment.destination_country,
           carrier: logistics.carrier || metadata.carrier || 'Unknown',
           userId,
           isDispatched: true, // Already shipped from manufacturer
           ssccBarcode: item.sscc || '', // Will be set if SSCC exists
-          isDeleted: false,
+          is_deleted: false,
         });
 
         const savedShipment = await queryRunner.manager.save(shipment);
@@ -419,7 +419,7 @@ export class ConsignmentService {
             // Package's parent is another package - find the shipment
             const parentPkg = parent.package;
             parentShipment = await queryRunner.manager.findOne(Shipment, {
-              where: { id: parentPkg.shipmentId },
+              where: { id: parentPkg.shipment_id },
             });
           }
         } else {
@@ -485,7 +485,7 @@ export class ConsignmentService {
             // Case's parent is another case - find the package
             const parentCase = parent.case;
             parentPackage = await queryRunner.manager.findOne(Package, {
-              where: { id: parentCase.packageId },
+              where: { id: parentCase.package_id },
             });
           }
         }
@@ -506,10 +506,10 @@ export class ConsignmentService {
         // This ensures no conflicts with existing cases or duplicates in this import
         if (item.sscc) {
           // Use SSCC as part of uniqueness (last 8 chars for readability)
-          uniqueLabel = `${item.label}-${savedConsignment.consignmentID}-${item.sscc.slice(-8)}`;
+          uniqueLabel = `${item.label}-${savedConsignment.consignment_id}-${item.sscc.slice(-8)}`;
         } else {
           // Use consignment ID and counter
-          uniqueLabel = `${item.label}-${savedConsignment.consignmentID}-${labelCount}`;
+          uniqueLabel = `${item.label}-${savedConsignment.consignment_id}-${labelCount}`;
         }
         
         // Ensure this label hasn't been used in this import AND doesn't exist in database
@@ -526,7 +526,7 @@ export class ConsignmentService {
         const maxAttempts = 10;
         while (attempts < maxAttempts) {
           const existingCaseWithLabel = await queryRunner.manager.findOne(Case, {
-            where: { userId, label: finalLabel },
+            where: { user_id: userId, label: finalLabel },
           });
           
           if (!existingCaseWithLabel && !usedLabels.has(finalLabel)) {
@@ -550,7 +550,7 @@ export class ConsignmentService {
 
         // Log the label being used for debugging
         this.logger.debug(
-          `Creating case with unique label: ${uniqueLabel} (original: ${item.label}, consignment: ${savedConsignment.consignmentID})`,
+          `Creating case with unique label: ${uniqueLabel} (original: ${item.label}, consignment: ${savedConsignment.consignment_id})`,
         );
 
         const caseEntity = this.caseRepo.create({
@@ -619,27 +619,27 @@ export class ConsignmentService {
           const productStatusRepo = queryRunner.manager.getRepository(ProductStatus);
           // Check if status already exists for this batch
           const existingStatus = await productStatusRepo.findOne({
-            where: { batchId: batch.id },
+            where: { batch_id: batch.id },
             order: { statusDate: 'DESC' },
           });
 
           // Only create if no status exists or if existing status is not ACTIVE
           if (!existingStatus || existingStatus.status !== 'ACTIVE') {
             const productStatus = productStatusRepo.create({
-              productId: product.id,
-              batchId: batch.id,
+              product_id: product.id,
+              batch_id: batch.id,
               status: 'ACTIVE',
-              actorUserId: userId,
-              actorType: 'manufacturer',
-              notes: `Initial status from PPB import - Consignment ${dto.consignment.consignmentID}`,
+              actor_user_id: userId,
+              actor_type: 'manufacturer',
+              notes: `Initial status from PPB import - Consignment ${dto.consignment.consignment_id}`,
             });
             await productStatusRepo.save(productStatus);
-            this.logger.log(`Created ACTIVE product status for batch ${batch.batchno}`);
+            this.logger.log(`Created ACTIVE product status for batch ${batch.batch_no}`);
           }
         } catch (error) {
           // Log but don't fail - product status is optional for analytics
           this.logger.warn(
-            `Failed to create product status for batch ${batch.batchno}: ${error.message}`,
+            `Failed to create product status for batch ${batch.batch_no}: ${error.message}`,
           );
         }
 
@@ -755,12 +755,12 @@ export class ConsignmentService {
 
         // Link batch to case via cases_products
         const caseProduct = this.casesProductsRepo.create({
-          caseId: parentCase.id,
-          productId: product.id,
-          batchId: batch.id,
+          case_id: parentCase.id,
+          product_id: product.id,
+          batch_id: batch.id,
           qty: quantity,
-          fromNumber: 1,
-          count: item.serialNumbers?.length || 1,
+          from_number: 1,
+          count: item.serial_numbers?.length || 1,
         });
         await queryRunner.manager.save(caseProduct);
 
@@ -768,8 +768,8 @@ export class ConsignmentService {
         let allSerials: string[] = [];
         
         // First, get explicit serials from serialNumbers (legacy) or serialization.explicit
-        if (item.serialNumbers && item.serialNumbers.length > 0) {
-          allSerials.push(...item.serialNumbers);
+        if (item.serial_numbers && item.serial_numbers.length > 0) {
+          allSerials.push(...item.serial_numbers);
         }
 
         // Expand serialization ranges and explicit
@@ -787,12 +787,12 @@ export class ConsignmentService {
         if (allSerials.length > 0) {
           for (const serial of allSerials) {
             const existingSerial = await this.serialNumberRepo.findOne({
-              where: { batchId: batch.id, serialNumber: serial },
+              where: { batch_id: batch.id, serialNumber: serial },
             });
 
             if (!existingSerial) {
               const serialNumber = this.serialNumberRepo.create({
-                batchId: batch.id,
+                batch_id: batch.id,
                 consignmentId: savedConsignment.id,
                 serialNumber: serial,
               });
@@ -810,13 +810,13 @@ export class ConsignmentService {
         // Link batch to consignment
         const consignmentBatch = this.consignmentBatchRepo.create({
           consignmentId: savedConsignment.id,
-          batchId: batch.id,
+          batch_id: batch.id,
           sscc: item.sscc,
         });
         await queryRunner.manager.save(consignmentBatch);
 
         // Collect batch EPCs for EPCIS ObjectEvent
-        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(batch.batchno);
+        const batchEPC = this.gs1Service.formatBatchNumberAsEPCURI(batch.batch_no);
         batchEPCs.push(batchEPC);
       }
 
@@ -833,16 +833,16 @@ export class ConsignmentService {
         processedCases.add(caseEntity.id);
 
         const caseProducts = await queryRunner.manager.find(CasesProducts, {
-          where: { caseId: caseEntity.id },
+          where: { case_id: caseEntity.id },
           relations: ['batch'],
         });
 
         if (caseProducts.length > 0) {
           const batchEPCs = caseProducts.map((cp) =>
-            this.gs1Service.formatBatchNumberAsEPCURI(cp.batch.batchno),
+            this.gs1Service.formatBatchNumberAsEPCURI(cp.batch.batch_no),
           );
-          const caseEPC = caseEntity.ssccBarcode
-            ? `urn:epc:id:sscc:${caseEntity.ssccBarcode}`
+          const caseEPC = caseEntity.sscc_barcode
+            ? `urn:epc:id:sscc:${caseEntity.sscc_barcode}`
             : `https://example.com/cases/${caseEntity.label.replace(/\s+/g, '')}`;
 
           try {
@@ -856,11 +856,11 @@ export class ConsignmentService {
               caseProducts.map(async (cp) => {
                 // Get product GTIN
                 const product = await queryRunner.manager.findOne(PPBProduct, {
-                  where: { id: cp.productId },
+                  where: { id: cp.product_id },
                 });
                 if (!product?.gtin) return null;
 
-                const epcClass = `urn:epc:class:lgtin:${product.gtin}.${cp.batch.batchno}`;
+                const epcClass = `urn:epc:class:lgtin:${product.gtin}.${cp.batch.batch_no}`;
                 return createQuantity(epcClass, Number(cp.qty), UnitOfMeasure.EACH);
               }),
             ).then((list) => list.filter((q) => q !== null));
@@ -872,21 +872,21 @@ export class ConsignmentService {
                 bizStep: 'packing',
                 disposition: 'in_progress',
                 action: 'ADD', // Explicitly set
-                quantityList: quantityList.length > 0 ? quantityList : undefined,
+                quantity_list: quantityList.length > 0 ? quantityList : undefined,
                 // Business transaction: Link to consignment
-                bizTransactionList: savedConsignment.consignmentID
-                  ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignmentID)]
+                biz_transaction_list: savedConsignment.consignment_id
+                  ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignment_id)]
                   : undefined,
                 // Actor context (P0 - Critical for L5 TNT)
-                actorType: 'manufacturer', // Determine from user role or context
-                actorUserId: userId,
-                actorGLN: user?.glnNumber || manufacturerGLN,
-                actorOrganization: user?.organization,
-                sourceEntityType: 'consignment',
-                sourceEntityId: savedConsignment.id,
+                actor_type: 'manufacturer', // Determine from user role or context
+                actor_user_id: userId,
+                actor_gln: user?.gln_number || manufacturerGLN,
+                actor_organization: user?.organization,
+                source_entity_type: 'consignment',
+                source_entity_id: savedConsignment.id,
               },
             );
-            caseEntity.eventId = eventId;
+            caseEntity.event_id = eventId;
             await queryRunner.manager.save(caseEntity);
           } catch (error: any) {
             this.logger.error(
@@ -900,13 +900,13 @@ export class ConsignmentService {
       // Cases → Packages
       for (const [sscc, pkg] of packageMap.entries()) {
         const cases = await queryRunner.manager.find(Case, {
-          where: { packageId: pkg.id },
+          where: { package_id: pkg.id },
         });
 
         if (cases.length > 0) {
           const caseEPCs = cases.map((c) =>
-            c.ssccBarcode
-              ? `urn:epc:id:sscc:${c.ssccBarcode}`
+            c.sscc_barcode
+              ? `urn:epc:id:sscc:${c.sscc_barcode}`
               : `https://example.com/cases/${c.label.replace(/\s+/g, '')}`,
           );
           const packageEPC = `urn:epc:id:sscc:${sscc}`;
@@ -922,7 +922,7 @@ export class ConsignmentService {
             const allCaseProducts = await Promise.all(
               cases.map(caseEntity =>
                 queryRunner.manager.find(CasesProducts, {
-                  where: { caseId: caseEntity.id },
+                  where: { case_id: caseEntity.id },
                   relations: ['batch'],
                 })
               )
@@ -932,11 +932,11 @@ export class ConsignmentService {
             const quantityMap = new Map<string, number>();
             for (const cp of allCaseProducts) {
               const product = await queryRunner.manager.findOne(PPBProduct, {
-                where: { id: cp.productId },
+                where: { id: cp.product_id },
               });
               if (!product?.gtin) continue;
 
-              const key = `${product.gtin}.${cp.batch.batchno}`;
+              const key = `${product.gtin}.${cp.batch.batch_no}`;
               quantityMap.set(key, (quantityMap.get(key) || 0) + Number(cp.qty));
             }
 
@@ -953,21 +953,21 @@ export class ConsignmentService {
                 bizStep: 'packing',
                 disposition: 'in_progress',
                 action: 'ADD', // Explicitly set
-                quantityList: quantityList.length > 0 ? quantityList : undefined,
+                quantity_list: quantityList.length > 0 ? quantityList : undefined,
                 // Business transaction: Link to consignment
-                bizTransactionList: savedConsignment.consignmentID
-                  ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignmentID)]
+                biz_transaction_list: savedConsignment.consignment_id
+                  ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignment_id)]
                   : undefined,
                 // Actor context (P0 - Critical for L5 TNT)
-                actorType: 'manufacturer',
-                actorUserId: userId,
-                actorGLN: user?.glnNumber || manufacturerGLN,
-                actorOrganization: user?.organization,
-                sourceEntityType: 'consignment',
-                sourceEntityId: savedConsignment.id,
+                actor_type: 'manufacturer',
+                actor_user_id: userId,
+                actor_gln: user?.gln_number || manufacturerGLN,
+                actor_organization: user?.organization,
+                source_entity_type: 'consignment',
+                source_entity_id: savedConsignment.id,
               },
             );
-            pkg.eventId = eventId;
+            pkg.event_id = eventId;
             await queryRunner.manager.save(pkg);
           } catch (error: any) {
             this.logger.error(
@@ -981,13 +981,13 @@ export class ConsignmentService {
       // Packages → Shipments
       for (const [sscc, shipment] of shipmentMap.entries()) {
         const packages = await queryRunner.manager.find(Package, {
-          where: { shipmentId: shipment.id },
+          where: { shipment_id: shipment.id },
         });
 
         if (packages.length > 0) {
           const packageEPCs = packages.map((p) =>
-            p.ssccBarcode
-              ? `urn:epc:id:sscc:${p.ssccBarcode}`
+            p.sscc_barcode
+              ? `urn:epc:id:sscc:${p.sscc_barcode}`
               : `https://example.com/packages/${p.label.replace(/\s+/g, '')}`,
           );
           const shipmentEPC = `urn:epc:id:sscc:${sscc}`;
@@ -1002,11 +1002,11 @@ export class ConsignmentService {
             // Load all case products from all packages
             const allPackageCaseProducts = await Promise.all(
               packages.map(pkg =>
-                queryRunner.manager.find(Case, { where: { packageId: pkg.id } })
+                queryRunner.manager.find(Case, { where: { package_id: pkg.id } })
                   .then(cases => Promise.all(
                     cases.map(caseEntity =>
                       queryRunner.manager.find(CasesProducts, {
-                        where: { caseId: caseEntity.id },
+                        where: { case_id: caseEntity.id },
                         relations: ['batch'],
                       })
                     )
@@ -1018,11 +1018,11 @@ export class ConsignmentService {
             const quantityMap = new Map<string, number>();
             for (const cp of allPackageCaseProducts) {
               const product = await queryRunner.manager.findOne(PPBProduct, {
-                where: { id: cp.productId },
+                where: { id: cp.product_id },
               });
               if (!product?.gtin) continue;
 
-              const key = `${product.gtin}.${cp.batch.batchno}`;
+              const key = `${product.gtin}.${cp.batch.batch_no}`;
               quantityMap.set(key, (quantityMap.get(key) || 0) + Number(cp.qty));
             }
 
@@ -1039,21 +1039,21 @@ export class ConsignmentService {
                 bizStep: 'shipping',
                 disposition: 'in_transit',
                 action: 'ADD', // Explicitly set
-                quantityList: quantityList.length > 0 ? quantityList : undefined,
+                quantity_list: quantityList.length > 0 ? quantityList : undefined,
                 // Business transaction: Link to consignment
-                bizTransactionList: savedConsignment.consignmentID
-                  ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignmentID)]
+                biz_transaction_list: savedConsignment.consignment_id
+                  ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignment_id)]
                   : undefined,
                 // Actor context (P0 - Critical for L5 TNT)
-                actorType: 'manufacturer',
-                actorUserId: userId,
-                actorGLN: user?.glnNumber || manufacturerGLN,
-                actorOrganization: user?.organization,
-                sourceEntityType: 'consignment',
-                sourceEntityId: savedConsignment.id,
+                actor_type: 'manufacturer',
+                actor_user_id: userId,
+                actor_gln: user?.gln_number || manufacturerGLN,
+                actor_organization: user?.organization,
+                source_entity_type: 'consignment',
+                source_entity_id: savedConsignment.id,
               },
             );
-            shipment.eventId = eventId;
+            shipment.event_id = eventId;
             await queryRunner.manager.save(shipment);
           } catch (error: any) {
             this.logger.error(
@@ -1072,7 +1072,7 @@ export class ConsignmentService {
             where: { id: userId },
           });
 
-          const kenyaGLN = dto.consignment.manufacturerGLN || '0000000000000';
+          const kenyaGLN = dto.consignment.manufacturer_gln || '0000000000000';
           // Note: quantityList for ObjectEvent would require per-batch quantities
           // which aren't readily available here. Can be enhanced later.
           await this.gs1Service.createObjectEvent(batchEPCs, {
@@ -1083,16 +1083,16 @@ export class ConsignmentService {
             },
             action: 'ADD', // Explicitly set
             // Business transaction: Link to consignment
-            bizTransactionList: savedConsignment.consignmentID
-              ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignmentID)]
+            biz_transaction_list: savedConsignment.consignment_id
+              ? [createBizTransaction('CONSIGNMENT', savedConsignment.consignment_id)]
               : undefined,
             // Actor context (P0 - Critical for L5 TNT)
-            actorType: 'manufacturer',
-            actorUserId: userId,
-            actorGLN: user?.glnNumber || manufacturerGLN,
-            actorOrganization: user?.organization,
-            sourceEntityType: 'consignment',
-            sourceEntityId: savedConsignment.id,
+            actor_type: 'manufacturer',
+            actor_user_id: userId,
+            actor_gln: user?.gln_number || manufacturerGLN,
+            actor_organization: user?.organization,
+            source_entity_type: 'consignment',
+            source_entity_id: savedConsignment.id,
           });
           this.logger.log(
             `EPCIS ObjectEvent created: ${batchEPCs.length} batches entered Kenya`,
@@ -1107,13 +1107,13 @@ export class ConsignmentService {
 
       await queryRunner.commitTransaction();
       this.logger.log(
-        `Consignment imported: ${savedConsignment.id} - ${savedConsignment.consignmentID}`,
+        `Consignment imported: ${savedConsignment.id} - ${savedConsignment.consignment_id}`,
       );
 
       // Return consignment with relations
       return await this.consignmentRepo.findOne({
         where: { id: savedConsignment.id },
-        relations: ['consignmentBatches', 'consignmentBatches.batch'],
+        relations: ['consignment_batches', 'consignment_batches.batch'],
       });
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -1139,8 +1139,8 @@ export class ConsignmentService {
       // Build base query
       const queryBuilder = this.consignmentRepo
         .createQueryBuilder('consignment')
-        .leftJoinAndSelect('consignment.consignmentBatches', 'consignmentBatches')
-        .leftJoinAndSelect('consignmentBatches.batch', 'batch')
+        .leftJoinAndSelect('consignment.consignment_batches', 'consignment_batches')
+        .leftJoinAndSelect('consignment_batches.batch', 'batch')
         .leftJoinAndSelect('batch.product', 'product')
         .orderBy('consignment.id', 'DESC');
 
@@ -1149,19 +1149,19 @@ export class ConsignmentService {
       const orConditions: string[] = [];
       const params: any = {};
       
-      if (filter.manufacturerPPBID) {
-        orConditions.push('consignment.manufacturerPPBID = :ppbCode');
-        params.ppbCode = filter.manufacturerPPBID;
+      if (filter.manufacturer_ppb_id) {
+        orConditions.push('consignment.manufacturer_ppb_id = :ppbCode');
+        params.ppbCode = filter.manufacturer_ppb_id;
       }
       
-      if (filter.manufacturerGLN) {
-        orConditions.push('consignment.manufacturerGLN = :supplierGLN');
-        params.supplierGLN = filter.manufacturerGLN;
+      if (filter.manufacturer_gln) {
+        orConditions.push('consignment.manufacturer_gln = :supplierGLN');
+        params.supplierGLN = filter.manufacturer_gln;
       }
       
-      if (filter.userId) {
-        orConditions.push('consignment.userId = :userId');
-        params.userId = filter.userId;
+      if (filter.user_id) {
+        orConditions.push('consignment.user_id = :userId');
+        params.user_id = filter.user_id;
       }
 
       // Apply OR conditions
@@ -1179,18 +1179,18 @@ export class ConsignmentService {
     
     // Get all batch IDs for these consignments
     const consignmentIds = consignments.map((c) => c.id);
-    const consignmentBatches = consignmentIds.length > 0 
+    const consignment_batches = consignmentIds.length > 0 
       ? await this.consignmentBatchRepo.find({
-          where: { consignmentId: In(consignmentIds) },
+          where: { consignment_id: In(consignmentIds) },
           relations: ['batch', 'batch.product'],
         })
       : [];
 
     // Get all case products that link to these batches
-    const batchIds = consignmentBatches.map(cb => cb.batchId).filter((id): id is number => Boolean(id));
+    const batchIds = consignment_batches.map(cb => cb.batch_id).filter((id): id is number => Boolean(id));
     const caseProducts = batchIds.length > 0
       ? await this.casesProductsRepo.find({
-          where: { batchId: In(batchIds) },
+          where: { batch_id: In(batchIds) },
           relations: ['case', 'batch', 'product'],
         })
       : [];
@@ -1198,11 +1198,11 @@ export class ConsignmentService {
     // Group case products by case ID
     const caseProductsByCaseId = new Map<number, typeof caseProducts>();
     for (const cp of caseProducts) {
-      if (cp.caseId) {
-        if (!caseProductsByCaseId.has(cp.caseId)) {
-          caseProductsByCaseId.set(cp.caseId, []);
+      if (cp.case_id) {
+        if (!caseProductsByCaseId.has(cp.case_id)) {
+          caseProductsByCaseId.set(cp.case_id, []);
         }
-        caseProductsByCaseId.get(cp.caseId)!.push(cp);
+        caseProductsByCaseId.get(cp.case_id)!.push(cp);
       }
     }
 
@@ -1216,7 +1216,7 @@ export class ConsignmentService {
       : [];
 
     // Get all packages with their shipment relationships
-    const packageIds = cases.map(c => c.packageId).filter((id): id is number => Boolean(id));
+    const packageIds = cases.map(c => c.package_id).filter((id): id is number => Boolean(id));
     const packages = packageIds.length > 0
       ? await this.packageRepo.find({
           where: { id: In(packageIds) },
@@ -1225,7 +1225,7 @@ export class ConsignmentService {
       : [];
 
     // Get all shipments
-    const shipmentIds = packages.map(p => p.shipmentId).filter((id): id is number => Boolean(id));
+    const shipmentIds = packages.map(p => p.shipment_id).filter((id): id is number => Boolean(id));
     const shipments = shipmentIds.length > 0
       ? await this.shipmentRepo.find({
           where: { id: In(shipmentIds) },
@@ -1251,22 +1251,22 @@ export class ConsignmentService {
     // Group cases by package
     const casesByPackageId = new Map<number, typeof cases>();
     for (const caseItem of cases) {
-      if (caseItem.packageId) {
-        if (!casesByPackageId.has(caseItem.packageId)) {
-          casesByPackageId.set(caseItem.packageId, []);
+      if (caseItem.package_id) {
+        if (!casesByPackageId.has(caseItem.package_id)) {
+          casesByPackageId.set(caseItem.package_id, []);
         }
-        casesByPackageId.get(caseItem.packageId)!.push(caseItem);
+        casesByPackageId.get(caseItem.package_id)!.push(caseItem);
       }
     }
 
     // Group packages by shipment
     const packagesByShipmentId = new Map<number, typeof packages>();
     for (const pkg of packages) {
-      if (pkg.shipmentId) {
-        if (!packagesByShipmentId.has(pkg.shipmentId)) {
-          packagesByShipmentId.set(pkg.shipmentId, []);
+      if (pkg.shipment_id) {
+        if (!packagesByShipmentId.has(pkg.shipment_id)) {
+          packagesByShipmentId.set(pkg.shipment_id, []);
         }
-        packagesByShipmentId.get(pkg.shipmentId)!.push(pkg);
+        packagesByShipmentId.get(pkg.shipment_id)!.push(pkg);
       }
     }
 
@@ -1283,7 +1283,7 @@ export class ConsignmentService {
             caseSSCC: string;
             batches: Array<{
               batchNumber: string;
-              batchId: number;
+              batch_id: number;
               gtin: string;
               productName: string;
               quantity: number;
@@ -1303,7 +1303,7 @@ export class ConsignmentService {
             caseSSCC: string;
             batches: Array<{
               batchNumber: string;
-              batchId: number;
+              batch_id: number;
               gtin: string;
               productName: string;
               quantity: number;
@@ -1319,13 +1319,13 @@ export class ConsignmentService {
       };
 
       // Get batches for this consignment
-      const consignmentBatchIds = consignmentBatches
-        .filter(cb => cb.consignmentId === consignment.id)
-        .map(cb => cb.batchId);
+      const consignmentBatchIds = consignment_batches
+        .filter(cb => cb.consignment_id === consignment.id)
+        .map(cb => cb.batch_id);
 
       // Find all case products that link to these batches
       const relevantCaseProducts = caseProducts.filter(cp => 
-        consignmentBatchIds.includes(cp.batchId)
+        consignmentBatchIds.includes(cp.batch_id)
       );
 
       // Build hierarchy: shipment → package → case → batch
@@ -1342,36 +1342,36 @@ export class ConsignmentService {
       }>();
 
       for (const caseProduct of relevantCaseProducts) {
-        if (!caseProduct || !caseProduct.caseId) {
+        if (!caseProduct || !caseProduct.case_id) {
           this.logger.warn('Skipping case product - missing caseId');
           continue;
         }
         
-        const caseItem = caseMap.get(caseProduct.caseId);
+        const caseItem = caseMap.get(caseProduct.case_id);
         if (!caseItem) {
-          this.logger.warn(`Case ${caseProduct.caseId} not found in caseMap`);
+          this.logger.warn(`Case ${caseProduct.case_id} not found in caseMap`);
           continue;
         }
 
-        if (!caseItem.packageId) {
+        if (!caseItem.package_id) {
           this.logger.warn(`Case ${caseItem.id} has no packageId`);
           continue;
         }
         
-        const pkg = packageMap.get(caseItem.packageId);
+        const pkg = packageMap.get(caseItem.package_id);
         if (!pkg) {
-          this.logger.warn(`Package ${caseItem.packageId} not found in packageMap`);
+          this.logger.warn(`Package ${caseItem.package_id} not found in packageMap`);
           continue;
         }
 
-        if (!pkg.shipmentId) {
+        if (!pkg.shipment_id) {
           this.logger.warn(`Package ${pkg.id} has no shipmentId`);
           continue;
         }
         
-        const shipment = shipmentMap.get(pkg.shipmentId);
+        const shipment = shipmentMap.get(pkg.shipment_id);
         if (!shipment) {
-          this.logger.warn(`Shipment ${pkg.shipmentId} not found in shipmentMap`);
+          this.logger.warn(`Shipment ${pkg.shipment_id} not found in shipmentMap`);
           continue;
         }
 
@@ -1420,14 +1420,14 @@ export class ConsignmentService {
         }
 
         // Track SSCCs
-        if (shipment.ssccBarcode && !ssccData.shipmentSSCCs.includes(shipment.ssccBarcode)) {
-          ssccData.shipmentSSCCs.push(shipment.ssccBarcode);
+        if (shipment.sscc_barcode && !ssccData.shipmentSSCCs.includes(shipment.sscc_barcode)) {
+          ssccData.shipmentSSCCs.push(shipment.sscc_barcode);
         }
-        if (pkg.ssccBarcode && !ssccData.packageSSCCs.includes(pkg.ssccBarcode)) {
-          ssccData.packageSSCCs.push(pkg.ssccBarcode);
+        if (pkg.sscc_barcode && !ssccData.packageSSCCs.includes(pkg.sscc_barcode)) {
+          ssccData.packageSSCCs.push(pkg.sscc_barcode);
         }
-        if (caseItem.ssccBarcode && !ssccData.caseSSCCs.includes(caseItem.ssccBarcode)) {
-          ssccData.caseSSCCs.push(caseItem.ssccBarcode);
+        if (caseItem.sscc_barcode && !ssccData.caseSSCCs.includes(caseItem.sscc_barcode)) {
+          ssccData.caseSSCCs.push(caseItem.sscc_barcode);
         }
       }
 
@@ -1446,7 +1446,7 @@ export class ConsignmentService {
               caseSSCC: string;
               batches: Array<{
                 batchNumber: string;
-                batchId: number;
+                batch_id: number;
                 gtin: string;
                 productName: string;
                 quantity: number;
@@ -1454,7 +1454,7 @@ export class ConsignmentService {
             }>;
           }>;
         } = {
-          shipmentSSCC: shipmentData.shipment?.ssccBarcode || '',
+          shipmentSSCC: shipmentData.shipment?.sscc_barcode || '',
           packages: [],
         };
 
@@ -1470,14 +1470,14 @@ export class ConsignmentService {
               caseSSCC: string;
               batches: Array<{
                 batchNumber: string;
-                batchId: number;
+                batch_id: number;
                 gtin: string;
                 productName: string;
                 quantity: number;
               }>;
             }>;
           } = {
-            packageSSCC: packageData.package?.ssccBarcode || '',
+            packageSSCC: packageData.package?.sscc_barcode || '',
             cases: [],
           };
 
@@ -1491,16 +1491,16 @@ export class ConsignmentService {
               caseSSCC: string;
               batches: Array<{
                 batchNumber: string;
-                batchId: number;
+                batch_id: number;
                 gtin: string;
                 productName: string;
                 quantity: number;
               }>;
             } = {
-              caseSSCC: caseData.case?.ssccBarcode || '',
+              caseSSCC: caseData.case?.sscc_barcode || '',
               batches: (caseData.batches || []).filter(cp => cp != null).map(cp => ({
-                batchNumber: cp.batch?.batchno || '',
-                batchId: cp.batchId || 0,
+                batchNumber: cp.batch?.batch_no || '',
+                batch_id: cp.batch_id || 0,
                 gtin: cp.product?.gtin || '',
                 productName: cp.product?.brandDisplayName || cp.product?.brandName || 'Unknown',
                 quantity: cp.qty != null ? parseFloat(String(cp.qty)) : 0,
@@ -1528,9 +1528,9 @@ export class ConsignmentService {
     // Also get all batch IDs from consignment batches
     const allBatchIds: number[] = [];
     for (const c of consignments) {
-      for (const cb of c.consignmentBatches || []) {
-        if (cb.batchId && !allBatchIds.includes(cb.batchId)) {
-          allBatchIds.push(cb.batchId);
+      for (const cb of c.consignment_batches || []) {
+        if (cb.batch_id && !allBatchIds.includes(cb.batch_id)) {
+          allBatchIds.push(cb.batch_id);
         }
       }
     }
@@ -1541,12 +1541,12 @@ export class ConsignmentService {
       try {
         serialCounts = await this.serialNumberRepo
           .createQueryBuilder('sn')
-          .select('sn.batchId', 'batchId')
+          .select('sn.batch_id', 'batchId')
           .addSelect('COUNT(sn.id)', 'count')
-          .where('sn.batchId IN (:...batchIds)', {
+          .where('sn.batch_id IN (:...batch_ids)', {
             batchIds: allBatchIds,
           })
-          .groupBy('sn.batchId')
+          .groupBy('sn.batch_id')
           .getRawMany();
       } catch (error: any) {
         this.logger.warn(`Failed to get serial number counts: ${error?.message}`);
@@ -1556,13 +1556,13 @@ export class ConsignmentService {
 
     const serialCountMap = new Map<number, number>();
     for (const sc of serialCounts) {
-      serialCountMap.set(sc.batchId, parseInt(sc.count));
+      serialCountMap.set(sc.batch_id, parseInt(sc.count));
     }
 
     // Transform to include rich GS1 data with full batch details
     return consignments.map((c) => {
-      const batches = c.consignmentBatches || [];
-      this.logger.debug(`Processing consignment ${c.id} (${c.consignmentID}): ${batches.length} consignmentBatches found`);
+      const batches = c.consignment_batches || [];
+      this.logger.debug(`Processing consignment ${c.id} (${c.consignment_id}): ${batches.length} consignment_batches found`);
       
       const uniqueGTINs = new Set<string>();
       const uniqueProducts = new Set<string>();
@@ -1573,12 +1573,12 @@ export class ConsignmentService {
         const batch = cb.batch;
         // Ensure product is loaded - if not, fetch it
         let product = batch?.product;
-        if (!product && batch?.productId) {
+        if (!product && batch?.product_id) {
           // Product relation might not be loaded, but we have productId
           // The product should already be loaded via the query, but if not, we'll handle it
         }
         
-        const serialCount = serialCountMap.get(cb.batchId) || 0;
+        const serialCount = serialCountMap.get(cb.batch_id) || 0;
         totalSerialNumbers += serialCount;
 
         // Extract GTIN from product (PPBProduct entity has gtin field)
@@ -1591,10 +1591,10 @@ export class ConsignmentService {
 
         return {
           id: batch?.id,
-          batchNumber: batch?.batchno,
+          batchNumber: batch?.batch_no,
           expiryDate: batch?.expiry,
           quantity: batch?.qty,
-          sentQuantity: batch?.sentQty,
+          sentQuantity: batch?.sent_qty,
           serialNumberCount: serialCount,
           product: product ? {
             id: product.id,
@@ -1621,20 +1621,20 @@ export class ConsignmentService {
 
       return {
         id: c.id,
-        eventID: c.eventID,
-        eventType: c.eventType,
-        eventTimestamp: c.eventTimestamp,
-        sourceSystem: c.sourceSystem,
+        eventID: c.event_id,
+        eventType: c.event_type,
+        eventTimestamp: c.event_timestamp,
+        sourceSystem: c.source_system,
         destinationSystem: c.destinationSystem,
-        consignmentID: c.consignmentID,
-        registrationNo: c.registrationNo,
-        manufacturerPPBID: c.manufacturerPPBID,
-        manufacturerGLN: c.manufacturerGLN,
-        MAHPPBID: c.MAHPPBID,
-        MAHGLN: c.MAHGLN,
-        shipmentDate: c.shipmentDate,
-        countryOfOrigin: c.countryOfOrigin,
-        destinationCountry: c.destinationCountry,
+        consignmentID: c.consignment_id,
+        registrationNo: c.registration_no,
+        manufacturerPPBID: c.manufacturer_ppb_id,
+        manufacturerGLN: c.manufacturer_gln,
+        MAHPPBID: c.mah_ppb_id,
+        MAHGLN: c.mah_gln,
+        shipmentDate: c.shipment_date,
+        countryOfOrigin: c.country_of_origin,
+        destinationCountry: c.destination_country,
         totalQuantity: c.totalQuantity,
         // Summary counts
         batchCount: batches.length,
@@ -1649,7 +1649,7 @@ export class ConsignmentService {
         ssccHierarchy: ssccHierarchyData.hierarchy,
         // Full batch details (unified PPB data)
         batches: batchDetails,
-        createdAt: c.createdAt,
+        createdAt: c.created_at,
       };
     });
     } catch (error: any) {
@@ -1676,9 +1676,9 @@ export class ConsignmentService {
     const consignment = await this.consignmentRepo.findOne({
       where: { id, userId },
       relations: [
-        'consignmentBatches',
-        'consignmentBatches.batch',
-        'consignmentBatches.batch.product',
+        'consignment_batches',
+        'consignment_batches.batch',
+        'consignment_batches.batch.product',
       ],
     });
 
@@ -1696,9 +1696,9 @@ export class ConsignmentService {
     const consignment = await this.consignmentRepo.findOne({
       where: { id },
       relations: [
-        'consignmentBatches',
-        'consignmentBatches.batch',
-        'consignmentBatches.batch.product',
+        'consignment_batches',
+        'consignment_batches.batch',
+        'consignment_batches.batch.product',
       ],
     });
 
@@ -1740,20 +1740,20 @@ export class ConsignmentService {
     
     if (supplier) {
       if (supplier.ppbCode) {
-        filter.manufacturerPPBID = supplier.ppbCode; // For now, filter by PPBID
+        filter.manufacturer_ppb_id = supplier.ppbCode; // For now, filter by PPBID
       }
       if (supplier.legalEntityGLN) {
-        filter.manufacturerGLN = supplier.legalEntityGLN; // For now, filter by GLN
+        filter.manufacturer_gln = supplier.legalEntityGLN; // For now, filter by GLN
       }
     }
     
-    if (user.glnNumber) {
-      filter.manufacturerGLN = user.glnNumber;
+    if (user.gln_number) {
+      filter.manufacturer_gln = user.gln_number;
     }
     
     // Fallback to userId if no supplier/GLN found
-    if (!filter.manufacturerPPBID && !filter.manufacturerGLN) {
-      filter.userId = userId;
+    if (!filter.manufacturer_ppb_id && !filter.manufacturer_gln) {
+      filter.user_id = userId;
     }
 
     return this.findAll(filter);
@@ -1781,20 +1781,20 @@ export class ConsignmentService {
     
     if (supplier) {
       if (supplier.ppbCode) {
-        filter.manufacturerPPBID = supplier.ppbCode;
+        filter.manufacturer_ppb_id = supplier.ppbCode;
       }
       if (supplier.legalEntityGLN) {
-        filter.manufacturerGLN = supplier.legalEntityGLN;
+        filter.manufacturer_gln = supplier.legalEntityGLN;
       }
     }
     
-    if (user.glnNumber) {
-      filter.manufacturerGLN = user.glnNumber;
+    if (user.gln_number) {
+      filter.manufacturer_gln = user.gln_number;
     }
     
     // Fallback to userId if no supplier/GLN found
-    if (!filter.manufacturerPPBID && !filter.manufacturerGLN) {
-      filter.userId = userId;
+    if (!filter.manufacturer_ppb_id && !filter.manufacturer_gln) {
+      filter.user_id = userId;
     }
 
     return this.findAll(filter);

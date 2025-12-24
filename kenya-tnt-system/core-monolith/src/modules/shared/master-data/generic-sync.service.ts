@@ -26,7 +26,7 @@ export class GenericSyncService {
    * NOW WITH SYNC LOGGING FOR AUDIT TRAIL
    */
   async sync(
-    entityType: string,
+    entity_type: string,
     customParams?: any,
     triggeredBy: string = 'manual'
   ): Promise<{ inserted: number; updated: number; errors: number; total: number; success: boolean; lastSyncedAt: Date }> {
@@ -45,7 +45,7 @@ export class GenericSyncService {
     if (config.syncLogging?.enabled) {
       const syncLogRepo = this.dataSource.getRepository(MasterDataSyncLog);
       syncLog = syncLogRepo.create({
-        entityType: entityType as any,
+        entity_type: entityType as any,
         syncStartedAt: startTime,
         syncStatus: 'in_progress',
         triggeredBy,

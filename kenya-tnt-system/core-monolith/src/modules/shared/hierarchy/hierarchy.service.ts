@@ -33,53 +33,53 @@ export class HierarchyService {
    * Pack operation: Create new package from cases
    */
   async pack(userId: string, dto: PackDto): Promise<Package> {
-    this.logger.log(`Packing ${dto.caseIds.length} cases into new package for user ${userId}`);
+    this.logger.log(`Packing ${dto.case_ids.length} cases into new package for user ${userId}`);
 
     // Validate cases exist and belong to user
     const cases = await this.caseRepo.find({
-      where: { id: In(dto.caseIds), userId },
+      where: { id: In(dto.case_ids), user_id: userId },
       relations: ['casesProducts'],
     });
 
-    if (cases.length !== dto.caseIds.length) {
+    if (cases.length !== dto.case_ids.length) {
       throw new NotFoundException('Some cases not found or do not belong to user');
     }
 
     // Check if cases are already packed
-    const alreadyPacked = cases.filter(c => c.packageId !== null);
+    const alreadyPacked = cases.filter(c => c.package_id !== null);
     if (alreadyPacked.length > 0) {
       throw new BadRequestException(
         `Cases ${alreadyPacked.map(c => c.id).join(', ')} are already packed`
       );
     }
 
-    // Generate new SSCC (GenerateSSCCDto only accepts companyPrefix, not userId)
+    // Generate new SSCC (GenerateSSCCDto only accepts company_prefix, not userId)
     const newSSCC = await this.gs1Service.generateSSCC({});
 
     // Create new package
     const newPackage = this.packageRepo.create({
       label: dto.label || `Package-${new Date().getTime()}`,
-      shipmentId: dto.shipmentId,
-      userId,
-      ssccBarcode: newSSCC,
-      ssccGeneratedAt: new Date(),
-      isDispatched: false,
+      shipment_id: dto.shipment_id,
+      user_id: userId,
+      sscc_barcode: newSSCC,
+      sscc_generated_at: new Date(),
+      is_dispatched: false,
     });
 
     const savedPackage = await this.packageRepo.save(newPackage);
 
     // Update cases to belong to this package
     await this.caseRepo.update(
-      { id: In(dto.caseIds) },
-      { packageId: savedPackage.id }
+      { id: In(dto.case_ids) },
+      { package_id: savedPackage.id }
     );
 
     // Log hierarchy change
     await this.logHierarchyChange({
-      operationType: HierarchyOperationType.PACK,
-      newSscc: newSSCC,
-      actorUserId: userId,
-      actorType: 'manufacturer', // Default, can be enhanced
+      operation_type: HierarchyOperationType.PACK,
+      new_sscc: newSSCC,
+      actor_user_id: userId,
+      actor_type: 'manufacturer', // Default, can be enhanced
       notes: dto.notes,
     });
 
@@ -94,12 +94,12 @@ export class HierarchyService {
   async packLite(userId: string, dto: PackLiteDto): Promise<Package> {
     this.logger.log(`Pack Lite operation for user ${userId}`);
     
-    const result = await this.pack(userId, dto);
+    const result = await this.pack(user_id, dto);
     
     // Update hierarchy change to PACK_LITE
     await this.hierarchyChangeRepo.update(
-      { newSscc: result.ssccBarcode },
-      { operationType: HierarchyOperationType.PACK_LITE }
+      { new_sscc: result.sscc_barcode },
+      { operation_type: HierarchyOperationType.PACK_LITE }
     );
     
     return result;
@@ -111,12 +111,12 @@ export class HierarchyService {
   async packLarge(userId: string, dto: PackLargeDto): Promise<Package> {
     this.logger.log(`Pack Large operation for user ${userId}`);
     
-    const result = await this.pack(userId, dto);
+    const result = await this.pack(user_id, dto);
     
     // Update hierarchy change to PACK_LARGE
     await this.hierarchyChangeRepo.update(
-      { newSscc: result.ssccBarcode },
-      { operationType: HierarchyOperationType.PACK_LARGE }
+      { new_sscc: result.sscc_barcode },
+      { operation_type: HierarchyOperationType.PACK_LARGE }
     );
     
     return result;
@@ -142,11 +142,11 @@ export class HierarchyService {
       throw new BadRequestException('Package has no cases to unpack');
     }
 
-    if (pkg.isDispatched) {
+    if (pkg.is_dispatched) {
       throw new BadRequestException('Cannot unpack a dispatched package');
     }
 
-    const oldSSCC = pkg.ssccBarcode;
+    const oldSSCC = pkg.sscc_barcode;
 
     // Release cases from package
     await this.caseRepo.update(
@@ -156,10 +156,10 @@ export class HierarchyService {
 
     // Log hierarchy change
     await this.logHierarchyChange({
-      operationType: HierarchyOperationType.UNPACK,
+      operation_type: HierarchyOperationType.UNPACK,
       oldSscc: oldSSCC,
-      actorUserId: userId,
-      actorType: 'distributor', // Default
+      actor_user_id: userId,
+      actor_type: 'distributor', // Default
       notes: `Unpacked package ${packageId}`,
     });
 
@@ -177,13 +177,13 @@ export class HierarchyService {
    * Unpack All: Bulk unpacking operation
    */
   async unpackAll(userId: string, dto: UnpackAllDto): Promise<Case[]> {
-    this.logger.log(`Unpacking ${dto.packageIds.length} packages for user ${userId}`);
+    this.logger.log(`Unpacking ${dto.package_ids.length} packages for user ${userId}`);
 
     const allCases: Case[] = [];
 
-    for (const packageId of dto.packageIds) {
+    for (const packageId of dto.package_ids) {
       try {
-        const cases = await this.unpack(userId, packageId);
+        const cases = await this.unpack(user_id, packageId);
         allCases.push(...cases);
       } catch (error) {
         this.logger.error(`Failed to unpack package ${packageId}:`, error.message);
@@ -193,10 +193,10 @@ export class HierarchyService {
 
     // Log bulk unpack
     await this.logHierarchyChange({
-      operationType: HierarchyOperationType.UNPACK_ALL,
-      actorUserId: userId,
-      actorType: 'distributor',
-      notes: dto.notes || `Bulk unpacked ${dto.packageIds.length} packages`,
+      operation_type: HierarchyOperationType.UNPACK_ALL,
+      actor_user_id: userId,
+      actor_type: 'distributor',
+      notes: dto.notes || `Bulk unpacked ${dto.package_ids.length} packages`,
     });
 
     this.logger.log(`Bulk unpack complete: ${allCases.length} total cases released`);
@@ -221,13 +221,13 @@ export class HierarchyService {
       throw new NotFoundException(`Package ${packageId} not found`);
     }
 
-    const oldSSCC = oldPackage.ssccBarcode;
+    const oldSSCC = oldPackage.sscc_barcode;
 
     // Unpack
-    const cases = await this.unpack(userId, packageId);
+    const cases = await this.unpack(user_id, packageId);
 
     // Pack into new package
-    const newPackage = await this.pack(userId, {
+    const newPackage = await this.pack(user_id, {
       caseIds: cases.map(c => c.id),
       shipmentId: newShipmentId,
       label: oldPackage.label + ' (Repacked)',
@@ -240,7 +240,7 @@ export class HierarchyService {
       reassignedAt: new Date(),
     });
 
-    this.logger.log(`Repacked package ${packageId}: ${oldSSCC} → ${newPackage.ssccBarcode}`);
+    this.logger.log(`Repacked package ${packageId}: ${oldSSCC} → ${newPackage.sscc_barcode}`);
 
     return newPackage;
   }
@@ -272,7 +272,7 @@ export class HierarchyService {
     return this.hierarchyChangeRepo.find({
       where: [
         { parentSscc: sscc },
-        { newSscc: sscc },
+        { new_sscc: sscc },
         { oldSscc: sscc },
       ],
       relations: ['actor'],
@@ -284,11 +284,11 @@ export class HierarchyService {
    * Log hierarchy change for audit trail
    */
   private async logHierarchyChange(data: {
-    operationType: HierarchyOperationType;
+    operation_type: HierarchyOperationType;
     parentSscc?: string;
     newSscc?: string;
     oldSscc?: string;
-    actorUserId: string;
+    actor_user_id: string;
     actorType?: string;
     notes?: string;
   }): Promise<HierarchyChange> {

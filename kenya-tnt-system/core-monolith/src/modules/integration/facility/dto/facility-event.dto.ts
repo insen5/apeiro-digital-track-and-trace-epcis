@@ -32,7 +32,7 @@ export class ProductIdentifierDto {
   })
   @IsString()
   @IsOptional()
-  batchNo?: string;
+  batch_no?: string;
 
   @ApiProperty({
     example: ['KE0010001', 'KE0010002'],
@@ -42,7 +42,7 @@ export class ProductIdentifierDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  serialNumbers?: string[];
+  serial_numbers?: string[];
 
   @ApiProperty({
     example: '123456789012345681',
@@ -60,21 +60,21 @@ export class ReceivedEventDto {
     description: 'Unique event ID from FLMIS',
   })
   @IsString()
-  eventId: string;
+  event_id: string;
 
   @ApiProperty({
     example: '2025-01-15T10:30:00Z',
     description: 'Timestamp when product was received',
   })
   @IsDateString()
-  eventTimestamp: string;
+  event_timestamp: string;
 
   @ApiProperty({
     example: '61640056789012',
     description: 'GLN of the facility receiving the product',
   })
   @IsString()
-  facilityGLN: string;
+  facility_gln: string;
 
   @ApiProperty({
     example: 'FACILITY-001',
@@ -83,7 +83,7 @@ export class ReceivedEventDto {
   })
   @IsString()
   @IsOptional()
-  facilityId?: string;
+  facility_id?: string;
 
   @ApiProperty({
     type: [ProductIdentifierDto],
@@ -101,7 +101,7 @@ export class ReceivedEventDto {
   })
   @IsString()
   @IsOptional()
-  shipmentSSCC?: string;
+  shipment_sscc?: string;
 
   @ApiProperty({
     example: 'Receiving dock A',
@@ -110,7 +110,7 @@ export class ReceivedEventDto {
   })
   @IsString()
   @IsOptional()
-  readPoint?: string;
+  read_point?: string;
 
   @ApiProperty({
     example: 'Warehouse A',
@@ -119,7 +119,7 @@ export class ReceivedEventDto {
   })
   @IsString()
   @IsOptional()
-  bizLocation?: string;
+  biz_location?: string;
 
   @ApiProperty({
     example: { carrier: 'ABC Logistics', trackingNumber: 'TRK123' },
@@ -136,21 +136,21 @@ export class ConsumedEventDto {
     description: 'Unique event ID from FLMIS',
   })
   @IsString()
-  eventId: string;
+  event_id: string;
 
   @ApiProperty({
     example: '2025-01-15T14:30:00Z',
     description: 'Timestamp when product was consumed',
   })
   @IsDateString()
-  eventTimestamp: string;
+  event_timestamp: string;
 
   @ApiProperty({
     example: '61640056789012',
     description: 'GLN of the facility where product was consumed',
   })
   @IsString()
-  facilityGLN: string;
+  facility_gln: string;
 
   @ApiProperty({
     example: 'FACILITY-001',
@@ -159,7 +159,7 @@ export class ConsumedEventDto {
   })
   @IsString()
   @IsOptional()
-  facilityId?: string;
+  facility_id?: string;
 
   @ApiProperty({
     type: [ProductIdentifierDto],
@@ -177,7 +177,7 @@ export class ConsumedEventDto {
   })
   @IsString()
   @IsOptional()
-  readPoint?: string;
+  read_point?: string;
 
   @ApiProperty({
     example: 'Pharmacy',
@@ -186,7 +186,7 @@ export class ConsumedEventDto {
   })
   @IsString()
   @IsOptional()
-  bizLocation?: string;
+  biz_location?: string;
 
   @ApiProperty({
     example: 'PATIENT-12345',
@@ -195,7 +195,7 @@ export class ConsumedEventDto {
   })
   @IsString()
   @IsOptional()
-  patientId?: string;
+  patient_id?: string;
 
   @ApiProperty({
     example: { prescriptionNumber: 'RX-001', doctorId: 'DOC-123' },

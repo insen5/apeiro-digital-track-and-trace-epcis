@@ -5,7 +5,7 @@ export class ReceiveShipmentDto {
   @ApiProperty({ description: 'Parent SSCC from manufacturer' })
   @IsString()
   @IsNotEmpty()
-  ssccBarcode: string;
+  sscc_barcode: string;
 
   @ApiProperty()
   @IsString()
@@ -15,22 +15,22 @@ export class ReceiveShipmentDto {
   @ApiProperty()
   @IsDateString()
   @IsNotEmpty()
-  pickupDate: string;
+  pickup_date: string;
 
   @ApiProperty()
   @IsDateString()
   @IsNotEmpty()
-  expectedDeliveryDate: string;
+  expected_delivery_date: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  pickupLocation: string;
+  pickup_location: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  destinationAddress: string;
+  destination_address: string;
 
   @ApiProperty()
   @IsString()

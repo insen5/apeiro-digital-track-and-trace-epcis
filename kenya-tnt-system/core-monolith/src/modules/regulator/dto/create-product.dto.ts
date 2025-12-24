@@ -5,12 +5,12 @@ export class CreateProductDto {
   @ApiProperty({ description: 'Name of the product' })
   @IsString()
   @IsNotEmpty()
-  productName: string;
+  product_name: string;
 
   @ApiProperty({ description: 'Brand Name of the product' })
   @IsString()
   @IsNotEmpty()
-  brandName: string;
+  brand_name: string;
 
   @ApiProperty({
     description: 'Global Trade Item Number (GTIN)',

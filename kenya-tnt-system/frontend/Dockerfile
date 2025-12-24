@@ -15,15 +15,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments
+ARG NEXT_PUBLIC_API_BASE_URL
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
 COPY . .
 
-# Set environment variable for build
+# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 # Build Next.js application
 RUN npm run build
@@ -54,4 +58,7 @@ ENV HOSTNAME="0.0.0.0"
 
 # Start the application
 CMD ["node", "server.js"]
+
+
+
 

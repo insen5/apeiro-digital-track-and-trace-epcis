@@ -16,7 +16,7 @@ export class AuthService {
 
     // Find user by email
     const user = await this.userRepository.findOne({
-      where: { email: email.toLowerCase(), isDeleted: false },
+      where: { email: email.toLowerCase(), is_deleted: false },
     });
 
     if (!user) {
@@ -42,14 +42,14 @@ export class AuthService {
       email: user.email,
       role: user.role,
       organization: user.organization,
-      glnNumber: user.glnNumber,
+      gln_number: user.gln_number,
       message: 'Login successful',
     };
   }
 
   async validateUser(userId: string) {
     const user = await this.userRepository.findOne({
-      where: { id: userId, isDeleted: false },
+      where: { id: userId, is_deleted: false },
     });
 
     if (!user) {
@@ -61,7 +61,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       organization: user.organization,
-      glnNumber: user.glnNumber,
+      gln_number: user.gln_number,
       valid: true,
     };
   }

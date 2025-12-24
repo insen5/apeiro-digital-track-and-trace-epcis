@@ -152,15 +152,15 @@ async function main() {
             bizStep: 'shipping',
             disposition: 'in_transit',
             action: 'ADD',
-            bizTransactionList: [
+            biz_transaction_list: [
               {
                 type: 'urn:epcglobal:cbv:btt:po',
                 bizTransaction: `SHIPMENT-${shipment.id}`
               }
             ],
-            destinationList,
+            destination_list: destinationList,
             actorType: 'manufacturer',
-            actorUserId: shipment.userId,
+            actorUserId: shipment.user_id,
             actorGLN: userContext.glnNumber,
             actorOrganization: userContext.organization,
             sourceEntityType: 'shipment',

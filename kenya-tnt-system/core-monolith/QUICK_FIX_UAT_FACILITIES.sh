@@ -65,3 +65,7 @@ echo "Once API is restarted, you can also use the sync script:"
 echo "  ./scripts/sync-uat-facilities.sh"
 echo ""
 echo "========================================="
+
+
+
+

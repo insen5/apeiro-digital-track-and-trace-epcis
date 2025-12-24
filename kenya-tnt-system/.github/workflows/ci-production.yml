@@ -1,0 +1,327 @@
+name: CI - Production
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # ===========================================
+  # BACKEND - Strictest Checks
+  # ===========================================
+  backend-production-tests:
+    name: Backend - Production Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./core-monolith
+
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4-alpine
+        env:
+          POSTGRES_DB: kenya_tnt_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./core-monolith/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (strict)
+        run: npm run lint
+
+      - name: Type check
+        run: npm run build
+
+      - name: Run all tests with coverage
+        run: npm run test:cov
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_password
+          DB_DATABASE: kenya_tnt_test
+          JWT_SECRET: test-jwt-secret
+          NODE_ENV: test
+
+      - name: Check coverage threshold (80%)
+        run: |
+          COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below 80% threshold"
+            exit 1
+          fi
+          echo "✅ Coverage $COVERAGE% meets 80% threshold"
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          directory: ./core-monolith/coverage
+
+  # ===========================================
+  # FRONTEND - Production Tests
+  # ===========================================
+  frontend-production-tests:
+    name: Frontend - Production Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (strict)
+        run: npm run lint
+
+      - name: Type check & Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.PRODUCTION_API_URL }}
+
+  # ===========================================
+  # E2E TESTS
+  # ===========================================
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [backend-production-tests, frontend-production-tests]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start full stack
+        run: docker compose -f docker-compose.production.yml up -d
+
+      - name: Wait for services
+        run: |
+          timeout 120 bash -c 'until curl -f http://localhost:4000/api/health; do sleep 5; done'
+          timeout 120 bash -c 'until curl -f http://localhost:3002; do sleep 5; done'
+
+      - name: Run E2E tests
+        run: |
+          cd core-monolith
+          npm ci
+          npm run test:e2e
+        env:
+          API_URL: http://localhost:4000/api
+          FRONTEND_URL: http://localhost:3002
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.production.yml down -v
+
+  # ===========================================
+  # SECURITY SCAN (Strict)
+  # ===========================================
+  security-scan:
+    name: Security Scan (Strict)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend - npm audit (production only)
+        working-directory: ./core-monolith
+        run: npm audit --production --audit-level=moderate
+
+      - name: Frontend - npm audit (production only)
+        working-directory: ./frontend
+        run: npm audit --production --audit-level=moderate
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '1'
+
+      - name: Run Snyk security scan
+        if: false  # Enable when you have Snyk token
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # ===========================================
+  # LOAD TESTING
+  # ===========================================
+  load-testing:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    needs: [e2e-tests]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start services
+        run: docker compose -f docker-compose.production.yml up -d
+
+      - name: Wait for backend
+        run: timeout 120 bash -c 'until curl -f http://localhost:4000/api/health; do sleep 5; done'
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run load test (1000 concurrent users)
+        run: |
+          cat > loadtest.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export const options = {
+            stages: [
+              { duration: '30s', target: 100 },
+              { duration: '1m', target: 500 },
+              { duration: '1m', target: 1000 },
+              { duration: '30s', target: 0 },
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<2000'], // 95% of requests under 2s
+              http_req_failed: ['rate<0.05'],    // Less than 5% errors
+            },
+          };
+
+          export default function () {
+            const res = http.get('http://localhost:4000/api/health');
+            check(res, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 2s': (r) => r.timings.duration < 2000,
+            });
+            sleep(1);
+          }
+          EOF
+          k6 run loadtest.js
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.production.yml down -v
+
+  # ===========================================
+  # DOCKER BUILD & PUSH TO COMPANY REGISTRY
+  # ===========================================
+  docker-build-push:
+    name: Docker - Build & Push to Registry
+    runs-on: ubuntu-latest
+    needs: [backend-production-tests, frontend-production-tests, e2e-tests, security-scan, load-testing]
+    if: github.ref == 'refs/heads/main'  # Only on main branch
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Build and push backend image
+        run: |
+          cd core-monolith
+          docker build -t ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-backend:production .
+          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-backend:production
+          docker tag ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-backend:production ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-backend:latest
+          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-backend:latest
+
+      - name: Build and push frontend image
+        run: |
+          cd frontend
+          docker build --build-arg NEXT_PUBLIC_API_BASE_URL=${{ secrets.PRODUCTION_API_URL }} -t ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-frontend:production .
+          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-frontend:production
+          docker tag ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-frontend:production ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-frontend:latest
+          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kenya-tnt-frontend:latest
+
+  # ===========================================
+  # MANUAL APPROVAL GATE
+  # ===========================================
+  await-approval:
+    name: Await Deployment Approval
+    runs-on: ubuntu-latest
+    needs: [docker-build-push]
+    environment: production  # Requires GitHub environment with approval
+
+    steps:
+      - name: Request approval
+        run: echo "✋ Awaiting manual approval for production deployment"
+
+  # ===========================================
+  # DEPLOY TO PRODUCTION
+  # ===========================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [await-approval]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_IP }}
+          username: ${{ secrets.PRODUCTION_SERVER_USER }}
+          key: ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          script: |
+            cd /app/kenya-tnt-system
+            echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_REGISTRY_USERNAME }} --password-stdin
+            docker compose -f docker-compose.production.yml pull
+            docker compose -f docker-compose.production.yml up -d
+            docker system prune -f
+
+  # ===========================================
+  # SUMMARY
+  # ===========================================
+  production-summary:
+    name: Production CI Summary
+    runs-on: ubuntu-latest
+    needs: [backend-production-tests, frontend-production-tests, e2e-tests, security-scan, load-testing, docker-build-push]
+    if: always()
+
+    steps:
+      - name: Check results
+        run: |
+          echo "🎯 Production CI Complete"
+          echo "Backend tests: ${{ needs.backend-production-tests.result }}"
+          echo "Frontend tests: ${{ needs.frontend-production-tests.result }}"
+          echo "E2E tests: ${{ needs.e2e-tests.result }}"
+          echo "Security scan: ${{ needs.security-scan.result }}"
+          echo "Load testing: ${{ needs.load-testing.result }}"
+          echo "Docker build: ${{ needs.docker-build-push.result }}"
+
+

@@ -11,7 +11,7 @@ import { Tabs } from '@/components/ui/tabs';
 import QualityAuditHistory from '@/components/shared/QualityAuditHistory';
 import QualityTrendChart from '@/components/shared/QualityTrendChart';
 import SyncStatus from '@/components/shared/SyncStatus';
-import GenericQualityAuditTab from '@/components/shared/GenericQualityAuditTab';
+import ImprovedQualityAuditTab from '@/components/shared/ImprovedQualityAuditTab';
 import { productQualityAudit } from '@/lib/api/quality-audit';
 import { AUDIT_CONFIGS } from '@/lib/types/quality-audit';
 
@@ -403,7 +403,7 @@ export default function ProductsPage() {
             label: 'Audit History',
             content: (
               <div className="space-y-6">
-                <GenericQualityAuditTab
+                <ImprovedQualityAuditTab
                   entityType="product"
                   apiBasePath="http://localhost:4000/api/master-data/products"
                   entityDisplayName="Product"

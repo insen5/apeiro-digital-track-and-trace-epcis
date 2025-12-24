@@ -40,8 +40,8 @@ export class EpcisBackfillService {
         s."eventId" as old_event_id,
         s."userId",
         s."customerId",
-        s."pickupLocation",
-        s."destinationAddress",
+        s."pickup_location",
+        s."destination_address",
         s.carrier
       FROM shipment s
       WHERE s."isDispatched" = true
@@ -71,11 +71,11 @@ export class EpcisBackfillService {
 
     for (const shipment of shipments) {
       try {
-        this.logger.log(`Processing shipment #${shipment.id} (SSCC: ${shipment.ssccBarcode})`);
+        this.logger.log(`Processing shipment #${shipment.id} (SSCC: ${shipment.sscc_barcode})`);
 
         // Get packages
         const packages = await this.packageRepo.find({
-          where: { shipmentId: shipment.id },
+          where: { shipment_id: shipment.id },
         });
 
         if (packages.length === 0) {
@@ -83,7 +83,7 @@ export class EpcisBackfillService {
           results.failed++;
           results.details.push({
             shipmentId: shipment.id,
-            sscc: shipment.ssccBarcode,
+            sscc: shipment.sscc_barcode,
             status: 'failed',
             error: 'No packages found'
           });
@@ -92,29 +92,29 @@ export class EpcisBackfillService {
 
         // Build EPCs
         const packageEPCs = packages.map(
-          p => `urn:epc:id:sscc:${p.ssccBarcode || p.label.replace(/\s+/g, '')}`
+          p => `urn:epc:id:sscc:${p.sscc_barcode || p.label.replace(/\s+/g, '')}`
         );
-        const shipmentEPC = `urn:epc:id:sscc:${shipment.ssccBarcode}`;
+        const shipmentEPC = `urn:epc:id:sscc:${shipment.sscc_barcode}`;
 
         // Get user context
-        const user = await this.userRepo.findOne({ where: { id: shipment.userId } });
+        const user = await this.userRepo.findOne({ where: { id: shipment.user_id } });
 
         // Determine destination
         let destinationList;
         if (shipment.customerId) {
           const customer = await this.userRepo.findOne({ where: { id: shipment.customerId } });
-          if (customer?.glnNumber) {
+          if (customer?.gln_number) {
             destinationList = [{
               type: 'urn:epcglobal:cbv:sdt:location',
-              destination: `urn:epc:id:sgln:${customer.glnNumber}.0`
+              destination: `urn:epc:id:sgln:${customer.gln_number}.0`
             }];
           }
         }
 
-        if (!destinationList && shipment.destinationAddress) {
+        if (!destinationList && shipment.destination_address) {
           destinationList = [{
             type: 'urn:epcglobal:cbv:sdt:location',
-            destination: `https://example.com/locations/${encodeURIComponent(shipment.destinationAddress)}`
+            destination: `https://example.com/locations/${encodeURIComponent(shipment.destination_address)}`
           }];
         }
 
@@ -126,19 +126,19 @@ export class EpcisBackfillService {
             bizStep: 'shipping',
             disposition: 'in_transit',
             action: 'ADD',
-            bizTransactionList: [
+            biz_transaction_list: [
               {
                 type: 'urn:epcglobal:cbv:btt:po',
                 bizTransaction: `SHIPMENT-${shipment.id}`
               }
             ],
             destinationList,
-            actorType: 'manufacturer',
-            actorUserId: shipment.userId,
-            actorGLN: user?.glnNumber,
-            actorOrganization: user?.organization,
-            sourceEntityType: 'shipment',
-            sourceEntityId: shipment.id,
+            actor_type: 'manufacturer',
+            actor_user_id: shipment.user_id,
+            actor_gln: user?.gln_number,
+            actor_organization: user?.organization,
+            source_entity_type: 'shipment',
+            source_entity_id: shipment.id,
           }
         );
 
@@ -149,7 +149,7 @@ export class EpcisBackfillService {
         results.success++;
         results.details.push({
           shipmentId: shipment.id,
-          sscc: shipment.ssccBarcode,
+          sscc: shipment.sscc_barcode,
           status: 'success',
           eventId: newEventId
         });
@@ -159,7 +159,7 @@ export class EpcisBackfillService {
         results.failed++;
         results.details.push({
           shipmentId: shipment.id,
-          sscc: shipment.ssccBarcode,
+          sscc: shipment.sscc_barcode,
           status: 'failed',
           error: error.message
         });

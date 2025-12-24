@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Staging environment - mirrors production with staging-specific configs
+# Usage: docker compose -f docker-compose.production.yml -f docker-compose.staging.yml up
+
+services:
+  # ============================================
+  # POSTGRES - Staging Config
+  # ============================================
+  postgres:
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kenya_tnt_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-tnt_staging_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Must be set in .env.staging
+
+  # ============================================
+  # BACKEND - Staging Config
+  # ============================================
+  backend:
+    environment:
+      - NODE_ENV=staging
+      - LOG_LEVEL=info
+      - DB_DATABASE=${POSTGRES_DB:-kenya_tnt_staging}
+      - DB_USERNAME=${POSTGRES_USER:-tnt_staging_user}
+      # Enable detailed error responses for staging debugging
+      - ENABLE_DETAILED_ERRORS=true
+    # Resource limits for staging (more generous than dev, less than prod)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # ============================================
+  # FRONTEND - Staging Config
+  # ============================================
+  frontend:
+    build:
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://staging-api.example.com/api}
+    environment:
+      - NODE_ENV=staging
+      - NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://staging-api.example.com/api}
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+# Note: Infrastructure services (opensearch, kafka, etc.) inherit from docker-compose.production.yml
+
+

@@ -109,7 +109,7 @@ export class JourneyService {
         console.log(`[Pure SQL] EPC query completed! Returned ${epcEventIds.length} results`);
         console.log(`[Pure SQL] Results type:`, Array.isArray(epcEventIds) ? 'Array' : typeof epcEventIds);
         if (epcEventIds.length > 0) {
-          console.log(`[Pure SQL] First 3 event IDs:`, epcEventIds.slice(0, 3).map((e: any) => e?.eventId || e));
+          console.log(`[Pure SQL] First 3 event IDs:`, epcEventIds.slice(0, 3).map((e: any) => e?.event_id || e));
         } else {
           console.warn(`[Pure SQL] WARNING: EPC query returned 0 results!`);
           console.warn(`[Pure SQL] This means no events found for SSCC: ${sscc}`);
@@ -137,8 +137,8 @@ export class JourneyService {
       // Combine all event IDs
       const allEventIds = [
         ...new Set([
-          ...epcEventIds.map((e: any) => e.eventId),
-          ...parentEventIds.map((e: any) => e.eventId),
+          ...epcEventIds.map((e: any) => e.event_id),
+          ...parentEventIds.map((e: any) => e.event_id),
         ]),
       ];
 
@@ -200,13 +200,13 @@ export class JourneyService {
             s.id as "shipmentId",
             s.customer as "shipmentCustomer",
             s.carrier as "shipmentCarrier",
-            s."destinationAddress" as "shipmentDestination",
-            s."pickupLocation" as "shipmentPickupLocation",
+            s."destination_address" as "shipmentDestination",
+            s."pickup_location" as "shipmentPickupLocation",
             -- Actor user data
             u.id as "actorUserTableId",
             u.email as "actorEmail",
             u.organization as "actorUserOrganization",
-            u."glnNumber" as "actorUserGLN",
+            u."gln_number" as "actorUserGLN",
             u.role as "actorUserRole"
           FROM epcis_events e
           LEFT JOIN shipment s ON e.source_entity_type = 'shipment' AND e.source_entity_id = s.id
@@ -221,7 +221,7 @@ export class JourneyService {
 
         this.logger.log(`[Pure SQL] Query succeeded! Retrieved ${eventsRaw.length} events`);
         if (eventsRaw.length > 0) {
-          this.logger.log(`[Pure SQL] Sample event: ${eventsRaw[0].eventId} - ${eventsRaw[0].actorOrganization}`);
+          this.logger.log(`[Pure SQL] Sample event: ${eventsRaw[0].event_id} - ${eventsRaw[0].actorOrganization}`);
         }
       } catch (queryError: any) {
         this.logger.error(`[Pure SQL] Query failed: ${queryError.message}`, queryError.stack);
@@ -239,10 +239,10 @@ export class JourneyService {
         const epcsRaw = await this.dataSource.query(epcQuery, allEventIds);
         
         for (const epcRow of epcsRaw) {
-          if (!epcsByEventId.has(epcRow.eventId)) {
-            epcsByEventId.set(epcRow.eventId, []);
+          if (!epcsByEventId.has(epcRow.event_id)) {
+            epcsByEventId.set(epcRow.event_id, []);
           }
-          epcsByEventId.get(epcRow.eventId)!.push(epcRow.epc);
+          epcsByEventId.get(epcRow.event_id)!.push(epcRow.epc);
         }
         
         this.logger.log(`[Pure SQL] Loaded EPCs for ${epcsByEventId.size} events`);
@@ -268,11 +268,11 @@ export class JourneyService {
 
       for (const row of eventsRaw) {
         // Get EPCs from the map we built
-        const epcs = epcsByEventId.get(row.eventId) || [];
+        const epcs = epcsByEventId.get(row.event_id) || [];
 
         const eventData: any = {
-          eventId: row.eventId,
-          eventType: row.eventType,
+          eventId: row.event_id,
+          eventType: row.event_type,
           eventTime: new Date(row.eventTime),
           bizStep: row.bizStep,
           disposition: row.disposition,
@@ -281,21 +281,21 @@ export class JourneyService {
           bizLocationId: row.bizLocationId,
           latitude: row.latitude,
           longitude: row.longitude,
-          actorType: row.actorType,
-          actorUserId: row.actorUserId,
-          actorGLN: row.actorGLN,
-          actorOrganization: row.actorOrganization || row.actorUserOrganization,
+          actor_type: row.actor_type,
+          actor_user_id: row.actorUserId,
+          actor_gln: row.actorGLN,
+          actor_organization: row.actorOrganization || row.actorUserOrganization,
           epcs: epcs,
         };
 
         // Add shipment data if available
-        if (row.shipmentId) {
+        if (row.shipment_id) {
           eventData.shipment = {
-            id: row.shipmentId,
+            id: row.shipment_id,
             customer: row.shipmentCustomer,
             carrier: row.shipmentCarrier,
-            destinationAddress: row.shipmentDestination,
-            pickupLocation: row.shipmentPickupLocation,
+            destination_address: row.shipmentDestination,
+            pickup_location: row.shipmentPickupLocation,
           };
         }
 
@@ -305,13 +305,13 @@ export class JourneyService {
             id: row.actorUserId || row.actorUserTableId,
             email: row.actorEmail,
             organization: row.actorUserOrganization,
-            glnNumber: row.actorUserGLN,
+            gln_number: row.actorUserGLN,
             role: row.actorUserRole,
           };
         }
 
         // Store in map for reuse
-        eventDataMap.set(row.eventId, eventData);
+        eventDataMap.set(row.event_id, eventData);
 
         // Determine status key
         const isReturn = row.disposition?.includes('returned');
@@ -326,19 +326,19 @@ export class JourneyService {
             : 'receiving';
 
         // Group by actor type
-        if (row.actorType === 'manufacturer' || !row.actorType) {
+        if (row.actor_type === 'manufacturer' || !row.actor_type) {
           if (!manufacturer.find((m) => m.statusKey === statusKey)) {
             manufacturer.push({ statusKey, events: [] });
           }
           manufacturer
             .find((m) => m.statusKey === statusKey)
             .events.push(eventData);
-        } else if (row.actorType === 'supplier' || row.actorType === 'cpa') {
+        } else if (row.actor_type === 'supplier' || row.actor_type === 'cpa') {
           if (!supplier.find((s) => s.statusKey === statusKey)) {
             supplier.push({ statusKey, events: [] });
           }
           supplier.find((s) => s.statusKey === statusKey).events.push(eventData);
-        } else if (row.actorType === 'facility' || row.actorType === 'user_facility') {
+        } else if (row.actor_type === 'facility' || row.actor_type === 'user_facility') {
           if (!userFacility.find((f) => f.statusKey === statusKey)) {
             userFacility.push({ statusKey, events: [] });
           }
@@ -347,7 +347,7 @@ export class JourneyService {
       }
 
       // Step 5: Build response in expected format
-      const allEvents = eventsRaw.map((row: any) => eventDataMap.get(row.eventId)!);
+      const allEvents = eventsRaw.map((row: any) => eventDataMap.get(row.event_id)!);
 
       const result: any = {
         sscc,
@@ -436,7 +436,7 @@ export class JourneyService {
       this.logger.log(`Using legacy method for SSCC: ${sscc}`);
       
       const shipment = await this.shipmentRepo.findOne({
-        where: { ssccBarcode: sscc, isDeleted: false },
+        where: { sscc_barcode: sscc, is_deleted: false },
         relations: [
           'packages',
           'packages.cases',
@@ -479,14 +479,14 @@ export class JourneyService {
         manufacturer: {
           ...shipment,
           userId: shipment.user,
-          shipping: shipment.isDispatched ? [{
-            eventId: shipment.eventId || `shipment-${shipment.id}`,
+          shipping: shipment.is_dispatched ? [{
+            eventId: shipment.event_id || `shipment-${shipment.id}`,
             eventType: 'ObjectEvent',
-            eventTime: shipment.createdAt,
+            eventTime: shipment.created_at,
             bizStep: 'shipping',
-            disposition: shipment.isDispatched ? 'in_transit' : 'pending',
-            actorType: 'manufacturer',
-            actorOrganization: shipment.user?.organization,
+            disposition: shipment.is_dispatched ? 'in_transit' : 'pending',
+            actor_type: 'manufacturer',
+            actor_organization: shipment.user?.organization,
           }] : [],
           receiving: [],
           returns: [],
@@ -569,7 +569,7 @@ export class JourneyService {
           ['consignment', consignment.id]
         );
         this.logger.log(`Found ${sourceEventsRaw.length} events via source_entity`);
-        eventIds.push(...sourceEventsRaw.map((e: any) => e.eventId));
+        eventIds.push(...sourceEventsRaw.map((e: any) => e.event_id));
       } catch (error: any) {
         this.logger.error(`Error querying source events: ${error.message}`, error.stack);
         throw error;
@@ -586,7 +586,7 @@ export class JourneyService {
           ['CONSIGNMENT', consignmentID]
         );
         this.logger.log(`Found ${bizTxnsRaw.length} events via bizTransactionList`);
-        eventIds.push(...bizTxnsRaw.map((bt: any) => bt.eventId));
+        eventIds.push(...bizTxnsRaw.map((bt: any) => bt.event_id));
       } catch (error: any) {
         this.logger.error(`Error querying biz transactions: ${error.message}`, error.stack);
         throw error;
@@ -638,14 +638,14 @@ export class JourneyService {
       // Map to entity-like objects (TypeORM will handle Date conversion)
       const events = eventsRaw.map((row: any) => ({
         id: row.id,
-        eventId: row.eventId,
-        eventType: row.eventType,
+        eventId: row.event_id,
+        eventType: row.event_type,
         eventTime: new Date(row.eventTime),
         bizStep: row.bizStep,
         action: row.action,
-        actorType: row.actorType,
-        actorOrganization: row.actorOrganization,
-        actorGLN: row.actorGLN,
+        actor_type: row.actor_type,
+        actor_organization: row.actorOrganization,
+        actor_gln: row.actorGLN,
         quantity: parseInt(row.quantity) || 1,
       }));
 
@@ -664,14 +664,14 @@ export class JourneyService {
 
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      const actorOrg = event.actorOrganization || event.actorGLN || 'Unknown';
-      const actorType = event.actorType || 'unknown';
+      const actorOrg = event.actor_organization || event.actorGLN || 'Unknown';
+      const actorType = event.actor_type || 'unknown';
 
       // Add node
       nodes.add(actorOrg);
 
       // Simple flow: if someone receives, connect from the matching shipper
-      if (event.bizStep === 'receiving' || event.action === 'OBSERVE') {
+      if (event.biz_step === 'receiving' || event.action === 'OBSERVE') {
         const recvQty = parseInt((event as any).quantity) || 1;
         
         // Look backward for shipping event with matching quantity from different org
@@ -691,8 +691,8 @@ export class JourneyService {
             source: shipOrg,
             target: actorOrg,
             value: recvQty,
-            eventTime: event.eventTime,
-            bizStep: event.bizStep || '',
+            eventTime: event.event_time,
+            bizStep: event.biz_step || '',
           });
           break; // Done, one link per receiving event
         }
@@ -705,8 +705,8 @@ export class JourneyService {
     const facilityNodes: string[] = [];
 
     for (const event of events) {
-      const actorOrg = event.actorOrganization || 'Unknown';
-      const actorType = event.actorType || 'unknown';
+      const actorOrg = event.actor_organization || 'Unknown';
+      const actorType = event.actor_type || 'unknown';
 
       if (actorType === 'manufacturer' || actorOrg.toLowerCase().includes('port')) {
         if (!portNodes.includes(actorOrg)) portNodes.push(actorOrg);
@@ -775,7 +775,7 @@ export class JourneyService {
       if (glnMatch) {
         const gln = glnMatch[1].replace(/\./g, '');
         const user = await this.userRepo.findOne({
-          where: { glnNumber: gln },
+          where: { gln_number: gln },
         });
         return user?.organization || null;
       }
@@ -789,7 +789,7 @@ export class JourneyService {
    */
   async getAllJourneys(page = 1, limit = 10): Promise<any> {
     const [shipments, total] = await this.shipmentRepo.findAndCount({
-      where: { isDispatched: true, isDeleted: false },
+      where: { is_dispatched: true, is_deleted: false },
       relations: [
         'packages',
         'packages.cases',
@@ -824,7 +824,7 @@ export class JourneyService {
   private async getUserDetails(userId: string): Promise<any | null> {
     try {
       const users = await this.dataSource.query(
-        `SELECT id, email, organization, gln_number as "glnNumber", role
+        `SELECT id, email, organization, gln_number as "gln_number", role
          FROM users
          WHERE id = $1`,
         [userId]

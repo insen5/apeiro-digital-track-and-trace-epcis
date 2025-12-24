@@ -169,13 +169,13 @@ export default function DataAnalysisTab() {
             <Calendar className="w-8 h-8 text-orange-500" />
             <div className="text-right">
               <div className="text-2xl font-bold text-green-600">
-                {report.validity.validLicenses}
+                {report.monitoring?.validLicenses || report.validity.validLicenses}
               </div>
               <div className="text-sm text-gray-600">Valid Licenses</div>
             </div>
           </div>
           <div className="text-xs text-gray-500">
-            {report.validity.expiredLicenses} expired, {report.validity.expiringSoon} expiring soon
+            {report.monitoring?.expiredLicenses || report.validity.expiredLicenses} expired, {report.monitoring?.expiringSoon || report.validity.expiringSoon} expiring soon
           </div>
         </div>
       </div>
@@ -275,35 +275,44 @@ export default function DataAnalysisTab() {
         </div>
       </div>
 
-      {/* License Status Summary */}
-      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+      {/* Operational Monitoring Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg shadow border border-blue-200">
         <div className="flex items-center gap-3 mb-6">
-          <TrendingUp className="w-6 h-6 text-green-600" />
-          <h2 className="text-xl font-bold text-gray-900">License Status Summary</h2>
+          <TrendingUp className="w-6 h-6 text-blue-600" />
+          <h2 className="text-xl font-bold text-gray-900">Operational Monitoring: License Status</h2>
+          <div className="ml-auto text-xs text-gray-600 bg-blue-100 px-3 py-1 rounded-full">
+            ℹ️ For operational tracking only - not a data quality issue
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              {report.validity.validLicenses}
+          <div className="p-4 bg-white border border-blue-200 rounded-lg shadow-sm">
+            <div className="text-3xl font-bold text-blue-600 mb-1">
+              {report.monitoring?.validLicenses || report.validity.validLicenses}
             </div>
-            <div className="text-sm font-medium text-green-800">Valid Licenses</div>
-            <div className="text-xs text-green-600 mt-1">
-              {((report.validity.validLicenses / report.overview.totalPremises) * 100).toFixed(1)}% of total
+            <div className="text-sm font-medium text-blue-900">✅ Valid Licenses</div>
+            <div className="text-xs text-blue-600 mt-1">
+              {(((report.monitoring?.validLicenses || report.validity.validLicenses) / report.overview.totalPremises) * 100).toFixed(1)}% of total
             </div>
           </div>
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="p-4 bg-white border border-yellow-200 rounded-lg shadow-sm">
             <div className="text-3xl font-bold text-yellow-600 mb-1">
-              {report.validity.expiringSoon}
+              {report.monitoring?.expiringSoon || report.validity.expiringSoon}
             </div>
-            <div className="text-sm font-medium text-yellow-800">Expiring Soon</div>
-            <div className="text-xs text-yellow-600 mt-1">Within 30 days</div>
+            <div className="text-sm font-medium text-yellow-900">⏰ Expiring Soon</div>
+            <div className="text-xs text-yellow-600 mt-1">Within 30 days - renewal cycle active</div>
           </div>
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-3xl font-bold text-red-600 mb-1">
-              {report.validity.expiredLicenses}
+          <div className="p-4 bg-white border border-orange-200 rounded-lg shadow-sm">
+            <div className="text-3xl font-bold text-orange-600 mb-1">
+              {report.monitoring?.expiredLicenses || report.validity.expiredLicenses}
             </div>
-            <div className="text-sm font-medium text-red-800">Expired Licenses</div>
-            <div className="text-xs text-red-600 mt-1">Requires renewal</div>
+            <div className="text-sm font-medium text-orange-900">📋 Expired Licenses</div>
+            <div className="text-xs text-orange-600 mt-1">Requires renewal - operational action</div>
+          </div>
+        </div>
+        <div className="mt-4 p-3 bg-white rounded-lg border border-blue-100">
+          <div className="text-sm text-gray-700">
+            <strong className="text-blue-800">Note:</strong> License expiry status is tracked for operational purposes (renewals, notifications). 
+            It does NOT affect the Data Quality Score, which measures format correctness and data integrity.
           </div>
         </div>
       </div>

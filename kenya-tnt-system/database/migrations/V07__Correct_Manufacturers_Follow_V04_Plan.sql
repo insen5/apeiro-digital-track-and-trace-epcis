@@ -186,3 +186,7 @@ COMMIT;
 -- SELECT * FROM manufacturers_view;
 -- \d product_manufacturers  -- Should show party_id now
 -- \d batches  -- Should show manufacturer_party_id now
+
+
+
+

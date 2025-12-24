@@ -40,44 +40,44 @@ export class BatchService {
   ): Promise<Batch> {
     // Verify product exists in database (synced from PPB Terminology API)
     try {
-      await this.masterDataService.findOne(dto.productId);
+      await this.masterDataService.findOne(dto.product_id);
     } catch (error) {
-      throw new NotFoundException(`Product with ID ${dto.productId} not found`);
+      throw new NotFoundException(`Product with ID ${dto.product_id} not found`);
     }
 
     // Generate batch number if not provided (using GS1 Service)
-    let batchno = dto.batchno;
-    if (!batchno) {
-      batchno = await this.gs1Service.generateBatchNumber({
-        productId: dto.productId,
-        userId,
+    let batch_no = dto.batch_no;
+    if (!batch_no) {
+      batch_no = await this.gs1Service.generateBatchNumber({
+        product_id: dto.product_id,
+        user_id: userId,
       });
     }
 
     // Check if batch number already exists
     const existing = await this.batchRepo.findOne({
-      where: { batchno },
+      where: { batch_no },
     });
 
     if (existing) {
       throw new ConflictException(
-        `Batch number ${batchno} already exists`,
+        `Batch number ${batch_no} already exists`,
       );
     }
 
     const batch = this.batchRepo.create({
-      productId: dto.productId,
-      batchno,
+      product_id: dto.product_id,
+      batch_no,
       expiry: dto.expiry,
       qty: dto.qty, // NUMERIC type - can do math operations!
-      sentQty: 0,
-      userId,
-      isEnabled: true,
+      sent_qty: 0,
+      user_id: userId,
+      is_enabled: true,
     });
 
     try {
       const saved = await this.batchRepo.save(batch);
-      this.logger.log(`Batch created: ${saved.id} - ${saved.batchno}`);
+      this.logger.log(`Batch created: ${saved.id} - ${saved.batch_no}`);
       return saved;
     } catch (error: any) {
       if (error.code === '23505') {
@@ -94,7 +94,7 @@ export class BatchService {
   async findAll(userId: string): Promise<Batch[]> {
     try {
       return await this.batchRepo.find({
-        where: { userId, isEnabled: true },
+        where: { user_id: userId, is_enabled: true },
         relations: ['product'],
         order: { id: 'DESC' },
       });
@@ -110,7 +110,7 @@ export class BatchService {
    */
   async findOne(id: number, userId: string): Promise<Batch> {
     const batch = await this.batchRepo.findOne({
-      where: { id, userId, isEnabled: true },
+      where: { id, user_id: userId, is_enabled: true },
       relations: ['product'],
     });
 
@@ -123,7 +123,7 @@ export class BatchService {
 
   /**
    * Get available quantity for a batch
-   * availableQty = qty - sentQty (now works because qty is NUMERIC!)
+   * availableQty = qty - sent_qty (now works because qty is NUMERIC!)
    */
   async getAvailableQuantity(batchId: number): Promise<number> {
     const batch = await this.batchRepo.findOne({
@@ -134,8 +134,8 @@ export class BatchService {
       throw new NotFoundException(`Batch with ID ${batchId} not found`);
     }
 
-    // Can do math operations because qty and sentQty are NUMERIC!
-    return Number(batch.qty) - Number(batch.sentQty);
+    // Can do math operations because qty and sent_qty are NUMERIC!
+    return Number(batch.qty) - Number(batch.sent_qty);
   }
 
   /**
@@ -153,7 +153,7 @@ export class BatchService {
       throw new NotFoundException(`Batch with ID ${batchId} not found`);
     }
 
-    batch.sentQty = Number(batch.sentQty) + additionalSentQty;
+    batch.sent_qty = Number(batch.sent_qty) + additionalSentQty;
     await this.batchRepo.save(batch);
   }
 
@@ -170,32 +170,32 @@ export class BatchService {
   ): Promise<Batch> {
     // Check if batch number already exists
     const existing = await this.batchRepo.findOne({
-      where: { batchno },
+      where: { batch_no: batchno },
     });
 
     if (existing) {
       // Update existing batch
       existing.qty = qty;
       existing.expiry = expiry;
-      existing.isEnabled = isEnabled;
+      existing.is_enabled = isEnabled;
       const updated = await this.batchRepo.save(existing);
-      this.logger.log(`Batch updated from PPB import: ${updated.id} - ${updated.batchno}`);
+      this.logger.log(`Batch updated from PPB import: ${updated.id} - ${updated.batch_no}`);
       return updated;
     }
 
     const batch = this.batchRepo.create({
-      productId,
-      batchno,
+      product_id: productId,
+      batch_no: batchno,
       expiry,
       qty,
-      sentQty: 0,
-      userId,
-      isEnabled,
+      sent_qty: 0,
+      user_id: userId,
+      is_enabled: isEnabled,
     });
 
     try {
       const saved = await this.batchRepo.save(batch);
-      this.logger.log(`Batch created from PPB import: ${saved.id} - ${saved.batchno}`);
+      this.logger.log(`Batch created from PPB import: ${saved.id} - ${saved.batch_no}`);
       return saved;
     } catch (error: any) {
       if (error.code === '23505') {

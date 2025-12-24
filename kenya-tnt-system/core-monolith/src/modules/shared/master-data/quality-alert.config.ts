@@ -20,7 +20,7 @@ export interface QualityAlertChannel {
 }
 
 export interface QualityAlertConfig {
-  entityType: string;
+  entity_type: string;
   thresholds: QualityAlertThreshold;
   channels: QualityAlertChannel[];
   checkFrequency: string; // e.g., 'on-sync', 'hourly', 'daily'
@@ -29,7 +29,7 @@ export interface QualityAlertConfig {
 
 export const QUALITY_ALERT_CONFIGS: Record<string, QualityAlertConfig> = {
   product: {
-    entityType: 'product',
+    entity_type: 'product',
     thresholds: {
       critical: 50,  // Score < 50 = CRITICAL
       warning: 70,   // Score < 70 = WARNING
@@ -60,7 +60,7 @@ export const QUALITY_ALERT_CONFIGS: Record<string, QualityAlertConfig> = {
   },
   
   premise: {
-    entityType: 'premise',
+    entity_type: 'premise',
     thresholds: {
       critical: 55,
       warning: 70,
@@ -84,7 +84,7 @@ export const QUALITY_ALERT_CONFIGS: Record<string, QualityAlertConfig> = {
   },
   
   facility: {
-    entityType: 'facility',
+    entity_type: 'facility',
     thresholds: {
       critical: 50,
       warning: 70,

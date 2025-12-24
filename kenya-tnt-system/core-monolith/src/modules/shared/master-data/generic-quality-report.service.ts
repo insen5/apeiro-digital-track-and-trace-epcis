@@ -19,7 +19,7 @@ export class GenericQualityReportService {
    * Config-driven approach (like checkAndAlert in Quality Alert System)
    * NOW WITH TIMELINESS SCORING AND DISTRIBUTION ANALYSIS
    */
-  async generateReport(entityType: string): Promise<any> {
+  async generateReport(entity_type: string): Promise<any> {
     const config = getQualityAuditConfig(entityType);
     
     this.logger.log(`Generating quality report for ${config.entityDisplayName}...`);
@@ -122,7 +122,7 @@ export class GenericQualityReportService {
           switch (field) {
             case 'supplierId':
               // Must exist AND not be default value 1
-              return entity[field] && entity[field] !== 1;
+            return entity[field] && entity[field] !== 1;
             
             case 'manufacturers':
               // Array must exist and not be empty
@@ -286,6 +286,74 @@ export class GenericQualityReportService {
       }
     }
 
+    // 2c. Operational Monitoring Metrics (tracked but NOT affecting quality score)
+    // These are informational only - e.g., license expiry status, operational alerts
+    const monitoring: Record<string, number> = {};
+    if (config.monitoringMetrics) {
+      for (const metric of config.monitoringMetrics) {
+        // Execute monitoring queries based on key (license tracking, operational status)
+        switch (metric.key) {
+          case 'expiringSoon': {
+            // License expires within 30 days from today
+            const now = new Date();
+            const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            
+            this.logger.log(`[Monitoring] Checking expiringSoon: ${now.toISOString()} to ${thirtyDaysFromNow.toISOString()}`);
+            
+            const count = await repository
+              .createQueryBuilder('entity')
+              .where('entity.licenseValidUntil IS NOT NULL')
+              .andWhere('entity.licenseValidUntil BETWEEN :now AND :thirtyDaysFromNow', { 
+                now, 
+                thirtyDaysFromNow 
+              })
+              .andWhere('entity.isTest IS NOT TRUE')
+              .getCount();
+            
+            this.logger.log(`[Monitoring] ExpiringSoon count: ${count}`);
+            monitoring[metric.key] = count;
+            break;
+          }
+          case 'expiredLicenses': {
+            // License has already expired
+            const now = new Date();
+            
+            this.logger.log(`[Monitoring] Checking expiredLicenses: < ${now.toISOString()}`);
+            
+            const count = await repository
+              .createQueryBuilder('entity')
+              .where('entity.licenseValidUntil IS NOT NULL')
+              .andWhere('entity.licenseValidUntil < :now', { now })
+              .andWhere('entity.isTest IS NOT TRUE')
+              .getCount();
+            
+            this.logger.log(`[Monitoring] ExpiredLicenses count: ${count}`);
+            monitoring[metric.key] = count;
+            break;
+          }
+          case 'validLicenses': {
+            // License is currently valid (expires in the future)
+            const now = new Date();
+            
+            this.logger.log(`[Monitoring] Checking validLicenses: > ${now.toISOString()}`);
+            
+            const count = await repository
+              .createQueryBuilder('entity')
+              .where('entity.licenseValidUntil IS NOT NULL')
+              .andWhere('entity.licenseValidUntil > :now', { now })
+              .andWhere('entity.isTest IS NOT TRUE')
+              .getCount();
+            
+            this.logger.log(`[Monitoring] ValidLicenses count: ${count}`);
+            monitoring[metric.key] = count;
+            break;
+          }
+          default:
+            monitoring[metric.key] = 0;
+        }
+      }
+    }
+
     // 3. Get last sync timestamp
     // Try different field names: lastSyncedAt (product), last_updated (premise), lastUpdated
     let lastSynced = null;
@@ -356,6 +424,10 @@ export class GenericQualityReportService {
       hoursSinceSync
     );
 
+    // Calculate consistency score (currently placeholder)
+    // TODO: Implement actual consistency checks based on config.consistencyMetrics
+    const consistencyScore = 100; // Placeholder - assumes no consistency issues
+
     return {
       overview: {
         totalRecords,
@@ -365,9 +437,16 @@ export class GenericQualityReportService {
       },
       completeness,
       validity,
+      monitoring, // NEW: Operational monitoring metrics (license status, etc.)
       distribution,
       issues,
       recommendations,
+      scores: {
+        completeness: Math.round(completeness.completenessPercentage * 100) / 100,
+        validity: Math.round(normalizedValidityScore * 100) / 100,
+        consistency: Math.round(consistencyScore * 100) / 100,
+        timeliness: Math.round(timelinessScore * 100) / 100,
+      },
     };
   }
 
@@ -484,7 +563,7 @@ export class GenericQualityReportService {
    * Config-driven thresholds for different entity types
    */
   private async calculateTimelinessScore(
-    entityType: string,
+    entity_type: string,
     lastSyncDate: Date | null
   ): Promise<{ score: number; hoursSinceSync: number }> {
     const config = getQualityAuditConfig(entityType);
@@ -512,7 +591,7 @@ export class GenericQualityReportService {
    * Supports both boolean and categorical fields
    */
   private async generateDistributionAnalysis(
-    entityType: string,
+    entity_type: string,
     repository: any
   ): Promise<any> {
     const config = getQualityAuditConfig(entityType);

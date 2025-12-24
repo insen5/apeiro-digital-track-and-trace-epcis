@@ -1,0 +1,25 @@
+# Development Dockerfile - Hot Reload Support
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies)
+RUN npm ci && \
+    npm cache clean --force
+
+# Copy config files
+COPY next.config.ts tsconfig.json postcss.config.mjs eslint.config.mjs ./
+
+# Source code will be mounted as volume in docker-compose.dev.yml
+# This allows hot reload without rebuilding the image
+
+# Expose port
+EXPOSE 3002
+
+# Start Next.js development server
+CMD ["npm", "run", "dev"]
+
+

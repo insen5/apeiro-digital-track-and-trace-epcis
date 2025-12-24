@@ -15,23 +15,23 @@ import { Type } from 'class-transformer';
 export class PPBHeaderDto {
   @ApiProperty({ example: 'EVT-2025-0001' })
   @IsString()
-  eventID: string;
+  event_id: string;
 
   @ApiProperty({ example: 'REGULATORY_INSTANTIATION' })
   @IsString()
-  eventType: string;
+  event_type: string;
 
   @ApiProperty({ example: '2025-11-01T12:45:00Z' })
   @IsDateString()
-  eventTimestamp: string;
+  event_timestamp: string;
 
   @ApiProperty({ example: 'PPB' })
   @IsString()
-  sourceSystem: string;
+  source_system: string;
 
   @ApiProperty({ example: 'TNT' })
   @IsString()
-  destinationSystem: string;
+  destination_system: string;
 
   @ApiProperty({ example: '1.0', required: false })
   @IsString()
@@ -78,7 +78,7 @@ export class PPBItemDto {
   })
   @IsString()
   @IsOptional()
-  parentSSCC?: string;
+  parent_sscc?: string;
 
   // Batch-specific fields
   @ApiProperty({
@@ -88,7 +88,7 @@ export class PPBItemDto {
   })
   @IsString()
   @IsOptional()
-  GTIN?: string;
+  gtin?: string;
 
   @ApiProperty({
     example: 'Metformin 500mg Tablets',
@@ -97,7 +97,7 @@ export class PPBItemDto {
   })
   @IsString()
   @IsOptional()
-  productName?: string;
+  product_name?: string;
 
   @ApiProperty({
     example: '5343545',
@@ -106,7 +106,7 @@ export class PPBItemDto {
   })
   @IsString()
   @IsOptional()
-  batchNo?: string;
+  batch_no?: string;
 
   @ApiProperty({
     example: 'Active',
@@ -115,7 +115,7 @@ export class PPBItemDto {
   })
   @IsString()
   @IsOptional()
-  batchStatus?: string;
+  batch_status?: string;
 
   @ApiProperty({
     example: '2024-09-16',
@@ -124,7 +124,7 @@ export class PPBItemDto {
   })
   @IsDateString()
   @IsOptional()
-  manufactureDate?: string;
+  manufacture_date?: string;
 
   @ApiProperty({
     example: '2027-09-16',
@@ -133,7 +133,7 @@ export class PPBItemDto {
   })
   @IsDateString()
   @IsOptional()
-  expiryDate?: string;
+  expiry_date?: string;
 
   @ApiProperty({
     example: 5000,
@@ -142,12 +142,12 @@ export class PPBItemDto {
   })
   @IsNumber()
   @IsOptional()
-  quantityApproved?: number;
+  quantity_approved?: number;
 
   @ApiProperty({
     example: 5000,
     required: false,
-    description: 'Quantity - legacy field, use quantityApproved instead',
+    description: 'Quantity - legacy field, use quantity_approved instead',
   })
   @IsNumber()
   @IsOptional()
@@ -162,7 +162,7 @@ export class PPBItemDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  serialNumbers?: string[];
+  serial_numbers?: string[];
 
   @ApiProperty({
     example: 'PH111D',
@@ -228,7 +228,7 @@ export class PPBItemDto {
 export class ManufacturerDto {
   @ApiProperty({ example: '345345' })
   @IsString()
-  ppbID: string;
+  ppb_id: string;
 
   @ApiProperty({ example: '61640056789012', required: false })
   @IsString()
@@ -239,7 +239,7 @@ export class ManufacturerDto {
 export class MAHDto {
   @ApiProperty({ example: '34234324' })
   @IsString()
-  ppbID: string;
+  ppb_id: string;
 
   @ApiProperty({ example: '61640056789013', required: false })
   @IsString()
@@ -257,7 +257,7 @@ export class PartyDto {
   @ApiProperty({ example: '345345', required: false })
   @IsString()
   @IsOptional()
-  ppbID?: string;
+  ppb_id?: string;
 
   @ApiProperty({ example: 'urn:epc:id:sgln:7894500.00001.0', required: false })
   @IsString()
@@ -356,7 +356,7 @@ export class LogisticsDto {
 export class PPBConsignmentDto {
   @ApiProperty({ example: 'CNS-2025-98765' })
   @IsString()
-  consignmentID: string;
+  consignment_id: string;
 
   @ApiProperty({ example: 'CRN-2024-0001', required: false })
   @IsString()
@@ -365,24 +365,24 @@ export class PPBConsignmentDto {
 
   @ApiProperty({ example: '2025-10-25' })
   @IsDateString()
-  shipmentDate: string;
+  shipment_date: string;
 
   @ApiProperty({ example: 'IN' })
   @IsString()
-  countryOfOrigin: string;
+  country_of_origin: string;
 
   @ApiProperty({ example: 'KE' })
   @IsString()
-  destinationCountry: string;
+  destination_country: string;
 
   @ApiProperty({ example: '12243324' })
   @IsString()
-  registrationNo: string;
+  registration_no: string;
 
   @ApiProperty({ example: 10000, required: false })
   @IsNumber()
   @IsOptional()
-  totalQuantity?: number;
+  total_quantity?: number;
 
   // New structure: parties object
   @ApiProperty({ type: PartiesDto, required: false })
@@ -415,22 +415,22 @@ export class PPBConsignmentDto {
   @ApiProperty({ example: '345345', required: false })
   @IsString()
   @IsOptional()
-  manufacturerPPBID?: string;
+  manufacturer_ppb_id?: string;
 
   @ApiProperty({ example: '34234324', required: false })
   @IsString()
   @IsOptional()
-  MAHPPBID?: string;
+  mah_ppb_id?: string;
 
   @ApiProperty({ example: '345345', required: false })
   @IsString()
   @IsOptional()
-  manufacturerGLN?: string;
+  manufacturer_gln?: string;
 
   @ApiProperty({ example: '34234324', required: false })
   @IsString()
   @IsOptional()
-  MAHGLN?: string;
+  mah_gln?: string;
 
   @ApiProperty({
     type: [PPBItemDto],

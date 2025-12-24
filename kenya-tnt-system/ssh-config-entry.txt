@@ -1,0 +1,45 @@
+# SSH Config Entry for TNT Staging Server
+# 
+# Add this to your ~/.ssh/config file for easy access
+# Then you can just use: ssh tnt-staging
+#
+# Instructions:
+# 1. Open or create ~/.ssh/config
+# 2. Copy the lines below and paste at the end
+# 3. Save and close
+# 4. Now you can connect with: ssh tnt-staging
+
+# ===== Copy from here =====
+
+# TNT Staging Server (requires UHC Cloud VPN)
+Host tnt-staging
+    HostName 10.10.101.181
+    User ubuntu
+    IdentityFile ~/keys/kenya-tnt-staging.pem
+    StrictHostKeyChecking no
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    # Note: Requires VPN connection to UHC Cloud
+
+# Optional: Add an alias using the domain name
+Host tnt-staging.apeiro-digital.com
+    HostName 10.10.101.181
+    User ubuntu
+    IdentityFile ~/keys/kenya-tnt-staging.pem
+    StrictHostKeyChecking no
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# ===== Copy to here =====
+
+# After adding this, you can connect using any of these:
+# 
+# ssh tnt-staging
+# ssh tnt-staging.apeiro-digital.com
+# ssh ubuntu@10.10.101.181 -i ~/keys/kenya-tnt-staging.pem
+#
+# All three will work the same way!
+
+# To add this automatically, run:
+# cat kenya-tnt-system/ssh-config-entry.txt >> ~/.ssh/config
+

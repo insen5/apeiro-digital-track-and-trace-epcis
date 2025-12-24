@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { QUALITY_AUDIT_CONFIGS, QualityAuditEntityConfig } from './quality-audit.config';
+import { QUALITY_AUDIT_CONFIGS, QualityAuditEntityConfig, getQualityAuditConfig } from './quality-audit.config';
 
 /**
  * Generic Quality Audit Enrichment Service
@@ -66,12 +66,14 @@ export class GenericQualityAuditEnrichmentService {
    * Get enriched audit data for any entity type
    */
   async getEnrichedAuditData(
-    entityType: string,
+    entity_type: string,
     repository: Repository<any>,
     days: number = 30,
   ): Promise<QualityAuditEnrichedData> {
     try {
-      const config = QUALITY_AUDIT_CONFIGS[entityType];
+      // Get config for this entity type using the mapping function
+      const config = getQualityAuditConfig(entityType);
+      
       if (!config) {
         throw new Error(`No audit config found for entity type: ${entityType}`);
       }
@@ -109,6 +111,10 @@ export class GenericQualityAuditEnrichmentService {
         history,
       };
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/6eb6168d-a48c-4538-bea8-2cbf5c49c96f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'generic-quality-audit-enrichment.service.ts:112',message:'ERROR in getEnrichedAuditData',data:{entityType,errorMessage:error.message,errorStack:error.stack},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+      // #endregion
+      
       this.logger.error(`Failed to get enriched audit data for ${entityType}:`, error);
       throw error;
     }
@@ -121,47 +127,67 @@ export class GenericQualityAuditEnrichmentService {
     repository: Repository<any>,
     config: QualityAuditEntityConfig,
   ): Promise<QualityAuditSnapshot | null> {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/6eb6168d-a48c-4538-bea8-2cbf5c49c96f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'generic-quality-audit-enrichment.service.ts:123',message:'getLatestAudit attempting query',data:{entity_type:config.entityType,dateField:config.dateField,tableName:config.tableName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+    
     // Use find with take(1) instead of findOne to avoid selection condition requirement
-    const audits = await repository.find({
-      order: { [config.dateField]: 'DESC' },
-      take: 1,
-    });
+    try {
+      const audits = await repository.find({
+        order: { [config.dateField]: 'DESC' },
+        take: 1,
+      });
 
-    if (!audits || audits.length === 0) return null;
+      if (!audits || audits.length === 0) return null;
 
-    return this.normalizeAudit(audits[0], config);
+      return this.normalizeAudit(audits[0], config);
+    } catch (error) {
+      this.logger.error(`Failed to get latest audit for ${config.entityType}: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
-   * Get audit history (last N records)
+   * Get audit history (last N records) with dimension breakdowns
    */
   private async getAuditHistory(
     repository: Repository<any>,
     config: QualityAuditEntityConfig,
     limit: number = 20,
-  ): Promise<QualityAuditSnapshot[]> {
+  ): Promise<any[]> {
     const audits = await repository.find({
       order: { [config.dateField]: 'DESC' },
       take: limit,
     });
 
-    return audits.map((audit) => this.normalizeAudit(audit, config));
+    // Enrich each audit with its dimension breakdown
+    const enrichedAudits = [];
+    for (const audit of audits) {
+      const normalized = this.normalizeAudit(audit, config);
+      const dimensionBreakdown = await this.getDimensionBreakdown(audit, config);
+      enrichedAudits.push({
+        ...normalized,
+        dimensionBreakdown,
+      });
+    }
+    return enrichedAudits;
   }
 
   /**
    * Normalize audit record to standard format
+   * NOTE: Parse all numeric fields to ensure they're numbers, not strings
    */
   private normalizeAudit(audit: any, config: QualityAuditEntityConfig): QualityAuditSnapshot {
     return {
       id: audit.id,
       date: audit[config.dateField],
-      totalRecords: audit[config.totalRecordsField],
-      overallQualityScore: audit[config.scoreField] || 0,
-      completeRecords: audit.completeRecords || 0,
-      completenessPercentage: audit.completenessPercentage || 0,
+      totalRecords: Number(audit[config.totalRecordsField]) || 0,
+      overallQualityScore: Number(audit[config.scoreField]) || 0,
+      completeRecords: Number(audit.completeRecords) || 0,
+      completenessPercentage: Number(audit.completenessPercentage) || 0,
       triggeredBy: audit.triggeredBy,
       notes: audit.notes,
-      createdAt: audit.createdAt,
+      createdAt: audit.created_at,
       fullReport: audit.fullReport,
     };
   }
@@ -389,3 +415,6 @@ export class GenericQualityAuditEnrichmentService {
     return actionMap[label] || 'Review and correct data as needed';
   }
 }
+
+
+

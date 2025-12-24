@@ -6,12 +6,12 @@ export class CaseProductDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()
-  productId: number;
+  product_id: number;
 
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()
-  batchId: number;
+  batch_id: number;
 
   @ApiProperty()
   @IsNumber()

@@ -487,3 +487,7 @@ describe('GS1ParserService', () => {
     });
   });
 });
+
+
+
+

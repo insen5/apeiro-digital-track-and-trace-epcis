@@ -424,33 +424,7 @@ export default function DataQualityTab() {
       {/* Validity Issues */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold mb-4">Data Validity Issues</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded-r-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <XCircle className="w-5 h-5 text-red-600" />
-              <span className="font-medium text-gray-900">Expired Licenses</span>
-            </div>
-            <div className="text-3xl font-bold text-red-600">
-              {report?.validity?.expiredLicenses || 0}
-            </div>
-            <div className="text-sm text-red-700 mt-1">
-              Immediate action required
-            </div>
-          </div>
-
-          <div className="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-r-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
-              <span className="font-medium text-gray-900">Expiring Soon</span>
-            </div>
-            <div className="text-3xl font-bold text-orange-600">
-              {report?.validity?.expiringSoon || 0}
-            </div>
-            <div className="text-sm text-orange-700 mt-1">
-              Within 30 days
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded-r-lg">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="w-5 h-5 text-yellow-600" />

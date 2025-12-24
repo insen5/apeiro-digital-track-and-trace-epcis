@@ -31,8 +31,8 @@ export class ProductVerificationsService {
     const where: FindOptionsWhere<ProductVerifications> = {};
 
     if (sgtin) where.sgtin = Like(`%${sgtin}%`);
-    if (productId) where.productId = productId;
-    if (batchId) where.batchId = batchId;
+    if (productId) where.product_id = productId;
+    if (batchId) where.batch_id = batchId;
     if (verificationResult) where.verificationResult = verificationResult;
     if (verifierUserId) where.verifierUserId = verifierUserId;
     if (isConsumerVerification !== undefined)

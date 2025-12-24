@@ -306,3 +306,7 @@ ORDER BY tc.table_name;
 **Last Updated**: December 9, 2025  
 **Next Review**: After snake_case migration completion
 
+
+
+
+

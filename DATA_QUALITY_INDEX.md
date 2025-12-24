@@ -1,7 +1,9 @@
 # Data Quality Documentation Index
 
-**Last Updated:** December 17, 2025  
+**Last Updated:** December 18, 2025  
 **Purpose:** Quick reference for all data quality documentation across the system
+
+> **✨ Recent Update**: Calculation logic and enrichment docs moved to `master-data/docs/` (closer to code!)
 
 ---
 
@@ -23,8 +25,8 @@ Located in: `kenya-tnt-system/core-monolith/src/modules/shared/master-data/`
 | **Module Overview** | [master-data/README.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/README.md) | Complete module documentation |
 | **System Architecture** | [master-data/docs/ARCHITECTURE.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/ARCHITECTURE.md) | Quality audit system architecture |
 | **Sync System** | [master-data/docs/SYNC_SYSTEM.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/SYNC_SYSTEM.md) | Standardized sync logging |
-| **Quality Parameters** | [master-data/docs/QUALITY_PARAMETERS.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/QUALITY_PARAMETERS.md) | Calculation logic & dimensions |
-| **Enrichment Guide** | [master-data/docs/ENRICHMENT_GUIDE.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/ENRICHMENT_GUIDE.md) | Visual comparison & enrichment |
+| **Quality Parameters** ✨ | [master-data/docs/QUALITY_PARAMETERS.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/QUALITY_PARAMETERS.md) | Calculation logic & dimensions (moved Dec 18) |
+| **Enrichment Guide** ✨ | [master-data/docs/ENRICHMENT_GUIDE.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/ENRICHMENT_GUIDE.md) | Visual comparison & enrichment (moved Dec 18) |
 | **Table Analysis** | [master-data/docs/TABLE_ANALYSIS.md](./kenya-tnt-system/core-monolith/src/modules/shared/master-data/docs/TABLE_ANALYSIS.md) | Quality table structure |
 
 ### Configuration & Operations
@@ -194,5 +196,6 @@ Located in: `master-data/__tests__/`
 ---
 
 **Maintained By**: Backend Team  
+**Last Updated**: December 18, 2025 (Documentation reorganization)  
 **Last Quality Audit**: December 17, 2025  
-**Next Scheduled Audit**: December 18, 2025 03:00 UTC
+**Next Scheduled Audit**: December 19, 2025 03:00 UTC

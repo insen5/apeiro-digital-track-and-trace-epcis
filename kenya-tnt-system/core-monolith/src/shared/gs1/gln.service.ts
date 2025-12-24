@@ -62,28 +62,28 @@ export class GLNService {
   /**
    * Generate a GLN from company prefix and location reference
    *
-   * @param companyPrefix GS1 Company Prefix (6-12 digits)
+   * @param company_prefix GS1 Company Prefix (6-12 digits)
    * @param locationReference Location reference number (will be padded to fit)
    * @returns 13-digit GLN
    */
   generateGLN(
-    companyPrefix: string,
+    company_prefix: string,
     locationReference?: number | string,
   ): string {
     // Validate company prefix format (6-12 digits)
-    if (!/^\d{6,12}$/.test(companyPrefix)) {
+    if (!/^\d{6,12}$/.test(company_prefix)) {
       throw new Error(
-        `Invalid GS1 Company Prefix: ${companyPrefix}. Must be 6-12 digits.`,
+        `Invalid GS1 Company Prefix: ${company_prefix}. Must be 6-12 digits.`,
       );
     }
 
-    const prefixLength = companyPrefix.length;
+    const prefixLength = company_prefix.length;
     // Location reference length = 12 - prefixLength
     const locationRefLength = 12 - prefixLength;
 
     if (locationRefLength < 1) {
       throw new Error(
-        `Company Prefix too long: ${companyPrefix}. Maximum length is 12 digits for GLN.`,
+        `Company Prefix too long: ${company_prefix}. Maximum length is 12 digits for GLN.`,
       );
     }
 
@@ -103,7 +103,7 @@ export class GLNService {
     }
 
     // Build 12-digit base: Company Prefix + Location Reference
-    const base = companyPrefix + locationRef;
+    const base = company_prefix + locationRef;
 
     if (base.length !== 12) {
       throw new Error(
@@ -118,7 +118,7 @@ export class GLNService {
     const gln = base + checkDigit;
 
     this.logger.log(
-      `Generated GLN: ${gln} (Company Prefix: ${companyPrefix}, Location Ref: ${locationRef})`,
+      `Generated GLN: ${gln} (Company Prefix: ${company_prefix}, Location Ref: ${locationRef})`,
     );
     return gln;
   }
@@ -126,18 +126,18 @@ export class GLNService {
   /**
    * Generate HQ GLN (typically uses location reference 0000 or 0001)
    */
-  generateHQGLN(companyPrefix: string): string {
-    return this.generateGLN(companyPrefix, 0);
+  generateHQGLN(company_prefix: string): string {
+    return this.generateGLN(company_prefix, 0);
   }
 
   /**
    * Generate GLN for a specific location (e.g., warehouse, premise)
    */
   generateLocationGLN(
-    companyPrefix: string,
+    company_prefix: string,
     locationNumber: number,
   ): string {
-    return this.generateGLN(companyPrefix, locationNumber);
+    return this.generateGLN(company_prefix, locationNumber);
   }
 
   /**

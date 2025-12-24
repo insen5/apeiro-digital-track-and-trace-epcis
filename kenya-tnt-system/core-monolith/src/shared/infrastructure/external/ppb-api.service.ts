@@ -249,7 +249,7 @@ export class PPBApiService {
           await productRepo.update(existing.id, {
             productName: product.productName,
             brandName: product.brandName,
-            isEnabled: product.isEnabled,
+            isEnabled: product.is_enabled,
           });
         } else {
           // Create new
@@ -257,8 +257,8 @@ export class PPBApiService {
             productName: product.productName,
             brandName: product.brandName,
             gtin: product.gtin,
-            userId: product.userId,
-            isEnabled: product.isEnabled,
+            userId: product.user_id,
+            isEnabled: product.is_enabled,
           });
         }
       }

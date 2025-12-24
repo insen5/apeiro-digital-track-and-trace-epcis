@@ -26,8 +26,8 @@ export class DemoController {
   @Get('gs1/batch')
   async generateDemoBatch() {
     const batchNo = await this.gs1Service.generateBatchNumber({
-      productId: 1,
-      userId: 'demo-user',
+      product_id: 1,
+      user_id: 'demo-user',
     });
     return {
       batchNumber: batchNo,
@@ -40,7 +40,7 @@ export class DemoController {
   generateDemoSGTIN() {
     const sgtin = this.gs1Service.generateSGTIN({
       gtin: '01234567890123',
-      serialNumber: 'SN123456',
+      serial_number: 'SN123456',
     });
     return {
       sgtin,

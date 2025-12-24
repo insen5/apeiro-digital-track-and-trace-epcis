@@ -85,9 +85,9 @@ export class SSCCService {
    * @returns 18-digit GS1-compliant SSCC
    */
   async generateSSCC(dto?: GenerateSSCCDto): Promise<string> {
-    const companyPrefix = dto?.companyPrefix;
+    const company_prefix = dto?.company_prefix;
 
-    if (!companyPrefix) {
+    if (!company_prefix) {
       this.logger.warn(
         'No GS1 Company Prefix provided. Generating SSCC without prefix (non-GS1 compliant).',
       );
@@ -96,19 +96,19 @@ export class SSCCService {
     }
 
     // Validate company prefix format (6-12 digits)
-    if (!/^\d{6,12}$/.test(companyPrefix)) {
+    if (!/^\d{6,12}$/.test(company_prefix)) {
       throw new Error(
-        `Invalid GS1 Company Prefix: ${companyPrefix}. Must be 6-12 digits.`,
+        `Invalid GS1 Company Prefix: ${company_prefix}. Must be 6-12 digits.`,
       );
     }
 
-    const prefixLength = companyPrefix.length;
+    const prefixLength = company_prefix.length;
     // Serial reference length = 17 - 1 (extension) - prefixLength
     const serialReferenceLength = 16 - prefixLength;
 
     if (serialReferenceLength < 1) {
       throw new Error(
-        `Company Prefix too long: ${companyPrefix}. Maximum length is 12 digits for SSCC.`,
+        `Company Prefix too long: ${company_prefix}. Maximum length is 12 digits for SSCC.`,
       );
     }
 
@@ -130,7 +130,7 @@ export class SSCCService {
       const extensionDigit = '0';
 
       // Build 17-digit base: Extension + Company Prefix + Serial Reference
-      const base = extensionDigit + companyPrefix + serialReference;
+      const base = extensionDigit + company_prefix + serialReference;
 
       if (base.length !== 17) {
         throw new Error(
@@ -159,7 +159,7 @@ export class SSCCService {
     }
 
     this.logger.log(
-      `Generated GS1-compliant SSCC: ${sscc} (Company Prefix: ${companyPrefix})`,
+      `Generated GS1-compliant SSCC: ${sscc} (Company Prefix: ${company_prefix})`,
     );
     return sscc;
   }
@@ -218,7 +218,7 @@ export class SSCCService {
     try {
       // Check in Shipment table
       const shipmentExists = await this.shipmentRepo.findOne({
-        where: { ssccBarcode: sscc },
+        where: { sscc_barcode: sscc },
         select: ['id'],
       });
 
@@ -228,7 +228,7 @@ export class SSCCService {
 
       // Check in Package table
       const packageExists = await this.packageRepo.findOne({
-        where: { ssccBarcode: sscc },
+        where: { sscc_barcode: sscc },
         select: ['id'],
       });
 
@@ -238,7 +238,7 @@ export class SSCCService {
 
       // Check in Case table
       const caseExists = await this.caseRepo.findOne({
-        where: { ssccBarcode: sscc },
+        where: { sscc_barcode: sscc },
         select: ['id'],
       });
 
@@ -263,22 +263,22 @@ export class SSCCService {
    *
    * Extracts company prefix from SSCC if not provided
    */
-  formatAsEPCURI(sscc: string, companyPrefix?: string): string {
+  formatAsEPCURI(sscc: string, company_prefix?: string): string {
     if (!this.validateSSCC(sscc)) {
       throw new Error(`Invalid SSCC: ${sscc}`);
     }
 
-    if (companyPrefix) {
+    if (company_prefix) {
       // Use provided company prefix
     const extension = sscc.substring(0, 1); // Extension digit
-      const prefixLength = companyPrefix.length;
+      const prefixLength = company_prefix.length;
       const serialReference = sscc.substring(1 + prefixLength, 17); // Serial reference
     const checkDigit = sscc.substring(17); // Check digit
 
-      return `urn:epc:id:sscc:${companyPrefix}.${serialReference}${checkDigit}`;
+      return `urn:epc:id:sscc:${company_prefix}.${serialReference}${checkDigit}`;
     } else {
       // Try to extract from SSCC (assumes 8-digit prefix for now)
-      // This is a fallback - should provide companyPrefix when available
+      // This is a fallback - should provide company_prefix when available
       const extension = sscc.substring(0, 1);
       // Default to 8-digit prefix extraction (most common in our system)
       const assumedPrefixLength = 8;

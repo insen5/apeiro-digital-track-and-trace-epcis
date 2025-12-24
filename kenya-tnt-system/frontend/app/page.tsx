@@ -28,7 +28,7 @@ export default function Home() {
   const getRoleHomePage = (role: string) => {
     switch (role) {
       case 'dha':
-        return '/regulator/ppb-batches';
+        return '/regulator'; // Updated to use dashboard landing page
       case 'manufacturer':
         return '/manufacturer/batches';
       case 'cpa':
@@ -135,7 +135,7 @@ export default function Home() {
           </h2>
             
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Link href="/regulator/products" className="block group">
+            <Link href="/regulator" className="block group">
                 <ModuleCard
                   title="Pharmacy and Poisons Board"
                   description="Product catalog, journey tracking, recall management, system administration"
@@ -146,6 +146,7 @@ export default function Home() {
                 }
                 color="blue"
                   endpoints={[
+                    "/regulator",
                     "/regulator/products",
                     "/regulator/ppb-batches",
                     "/regulator/journey",

@@ -4,7 +4,12 @@
 help:
 	@echo "Kenya TNT System - Docker Commands"
 	@echo ""
-	@echo "Production:"
+	@echo "🟢 Coexist Mode (Recommended - works with FLMIS):"
+	@echo "  make coexist-up       - Start TNT alongside FLMIS (no conflicts)"
+	@echo "  make coexist-down     - Stop TNT (keeps FLMIS running)"
+	@echo "  make coexist-rebuild  - Rebuild and restart TNT"
+	@echo ""
+	@echo "Production (Standalone):"
 	@echo "  make prod-up          - Start all services (production mode)"
 	@echo "  make prod-down        - Stop all services"
 	@echo "  make prod-rebuild     - Rebuild and restart everything"
@@ -33,7 +38,7 @@ help:
 	@echo "  make clean            - Stop and remove containers, networks, volumes"
 	@echo ""
 
-# Production mode
+# Production mode (standalone - will conflict with FLMIS)
 prod-up:
 	docker compose -f docker-compose.production.yml up -d
 
@@ -42,6 +47,17 @@ prod-down:
 
 prod-rebuild:
 	docker compose -f docker-compose.production.yml up -d --build
+
+# Coexist mode (runs alongside FLMIS with no port conflicts)
+coexist-up:
+	@echo "Starting TNT System (coexists with FLMIS)..."
+	docker compose -f docker-compose.coexist.yml up -d
+
+coexist-down:
+	docker compose -f docker-compose.coexist.yml down
+
+coexist-rebuild:
+	docker compose -f docker-compose.coexist.yml up -d --build
 
 # Development mode
 dev-up:
@@ -108,3 +124,7 @@ test:
 	@echo "Testing service health..."
 	@curl -f http://localhost:4000/api/health || echo "❌ Backend not healthy"
 	@curl -f http://localhost:3002 > /dev/null 2>&1 && echo "✅ Frontend healthy" || echo "❌ Frontend not healthy"
+
+
+
+

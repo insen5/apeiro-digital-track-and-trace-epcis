@@ -10,7 +10,7 @@ export class CreateShipmentDto {
   })
   @IsNumber()
   @IsOptional()
-  supplierId?: number;
+  supplier_id?: number;
 
   @ApiProperty({ 
     required: false,
@@ -19,7 +19,7 @@ export class CreateShipmentDto {
   })
   @IsNumber()
   @IsOptional()
-  premiseId?: number;
+  premise_id?: number;
 
   @ApiProperty({ 
     required: false,
@@ -28,12 +28,12 @@ export class CreateShipmentDto {
   })
   @IsNumber()
   @IsOptional()
-  logisticsProviderId?: number;
+  logistics_provider_id?: number;
 
   // Legacy fields (for backward compatibility - required if master data IDs not provided)
   @ApiProperty({ 
     required: false,
-    description: 'Customer name (required if supplierId not provided)',
+    description: 'Customer name (required if supplier_id not provided)',
   })
   @IsString()
   @IsOptional()
@@ -42,32 +42,32 @@ export class CreateShipmentDto {
   @ApiProperty()
   @IsDateString()
   @IsNotEmpty()
-  pickupDate: Date;
+  pickup_date: Date;
 
   @ApiProperty()
   @IsDateString()
   @IsNotEmpty()
-  expectedDeliveryDate: Date;
+  expected_delivery_date: Date;
 
   @ApiProperty({ 
     required: false,
-    description: 'Pickup location (required if premiseId not provided)',
+    description: 'Pickup location (required if premise_id not provided)',
   })
   @IsString()
   @IsOptional()
-  pickupLocation?: string;
+  pickup_location?: string;
 
   @ApiProperty({ 
     required: false,
-    description: 'Destination address (required if premiseId not provided)',
+    description: 'Destination address (required if premise_id not provided)',
   })
   @IsString()
   @IsOptional()
-  destinationAddress?: string;
+  destination_address?: string;
 
   @ApiProperty({ 
     required: false,
-    description: 'Carrier name (required if logisticsProviderId not provided)',
+    description: 'Carrier name (required if logistics_provider_id not provided)',
   })
   @IsString()
   @IsOptional()
@@ -76,13 +76,13 @@ export class CreateShipmentDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  customerId?: string;
+  customer_id?: string;
 
   @ApiProperty({ type: [Number] })
   @IsArray()
   @IsNumber({}, { each: true })
   @IsNotEmpty()
-  packageIds: number[];
+  package_ids: number[];
 
   @ApiProperty({ 
     required: false,
@@ -91,6 +91,6 @@ export class CreateShipmentDto {
   })
   @IsString()
   @IsOptional()
-  ssccBarcode?: string;
+  sscc_barcode?: string;
 }
 

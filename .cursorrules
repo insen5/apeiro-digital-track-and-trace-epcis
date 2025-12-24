@@ -210,3 +210,603 @@ mv OLD_DOC.md docs/archive/OLD_DOC_YYYY-MM-DD.md
 
 **Last Updated**: December 11, 2025
 **Purpose**: Prevent documentation confusion and ensure AI references latest files only
+
+# ====================================================================================
+# TECHNOLOGY STACK (Added: Dec 19, 2025)
+# ====================================================================================
+
+## Backend (NestJS Monolith)
+- **Framework**: NestJS 11.x (Node.js 20+)
+- **ORM**: TypeORM 0.3.27
+- **Database**: PostgreSQL 14+ with PostGIS extension
+- **API Documentation**: Swagger/OpenAPI
+- **Event Store**: OpenSearch + Kafka
+- **EPCIS**: OpenEPCIS REST API (external service)
+- **Authentication**: JWT tokens + API keys (for facility integration)
+
+## Frontend (Next.js)
+- **Framework**: Next.js 16.x with App Router
+- **UI Library**: React 19.x
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Rendering**: Server components by default, 'use client' for interactivity
+- **API Client**: Custom fetch wrapper in lib/api/client.ts
+
+## Infrastructure
+- **Containers**: Docker + Docker Compose
+- **Build Strategy**: Multi-stage Dockerfile (development, staging, production targets)
+- **Orchestration**: Docker Compose (environment-specific configs)
+- **Reverse Proxy**: Nginx (optional, for SSL/TLS)
+
+## Module Architecture
+```
+core-monolith/src/
+├── main.ts                    # Application entry point
+├── shared/                    # Shared infrastructure
+│   ├── infrastructure/        # Database, config, auth
+│   └── domain/entities/       # TypeORM entities
+└── modules/                   # Feature modules
+    ├── manufacturer/          # Batch, consignment, shipment management
+    ├── regulator/             # PPB oversight, recalls, analytics
+    ├── distributor/           # Distribution, hierarchy
+    ├── integration/           # External API integrations
+    └── shared/master-data/    # Product, premise, facility management
+```
+
+# ====================================================================================
+# NON-FUNCTIONAL REQUIREMENTS (Added: Dec 19, 2025)
+# ====================================================================================
+
+**See**: NFR_MATRIX.md for detailed requirements
+
+## Environment Characteristics
+
+### Development
+- **Purpose**: Fast iteration, easy debugging
+- **Performance**: No limits (2GB RAM, unlimited response time)
+- **Logging**: debug/verbose level
+- **Testing**: Optional, focus on speed
+- **Deployment**: Hot reload enabled via docker-compose.dev.yml
+- **Docker Target**: `development`
+
+### Staging
+- **Purpose**: Production-like testing, QA validation
+- **Performance**: Response time < 2s, Memory < 1GB, Startup < 120s
+- **Logging**: log/verbose level
+- **Testing**: 70% coverage required, integration tests mandatory
+- **Deployment**: Production build, real external APIs (test accounts)
+- **Docker Target**: `staging`
+
+### Production
+- **Purpose**: Live system, maximum reliability
+- **Performance**: Response time < 500ms, Memory < 512MB, Startup < 60s
+- **Uptime**: 99.9% target
+- **Error Rate**: < 0.1%
+- **Logging**: error level only
+- **Testing**: 80% coverage required, load tests (1000 users)
+- **Deployment**: Optimized build, manual approval required
+- **Docker Target**: `production`
+
+## Docker Build Strategy
+- **Single Dockerfile** with multi-stage builds
+- **Different targets** for each environment (development, staging, production)
+- **Same codebase** progresses through all environments
+- **No separate Dockerfiles** per environment
+
+# ====================================================================================
+# GS1 & EPCIS STANDARDS (Added: Dec 19, 2025)
+# ====================================================================================
+
+## GS1 Identifiers (MUST validate format and check digits)
+
+### GTIN-14 (Global Trade Item Number)
+- **Purpose**: Product identification
+- **Format**: 14 digits with check digit
+- **Example**: 08886001234567
+- **Validation**: Check digit algorithm required
+
+### GLN-13 (Global Location Number)
+- **Purpose**: Location/Party identification
+- **Format**: 13 digits with check digit
+- **Example**: 8886001234561
+- **Usage**: Facilities, manufacturers, distributors
+
+### SSCC-18 (Serial Shipping Container Code)
+- **Purpose**: Logistics unit identifier (pallets, cases)
+- **Format**: 18 digits with check digit
+- **Example**: 088860012345678901
+- **Usage**: Packaging hierarchy
+
+### SGTIN (Serialized GTIN)
+- **Purpose**: Individual product instance
+- **Format**: GTIN + serial number
+- **Example**: urn:epc:id:sgtin:8886001.234567.1001
+- **Usage**: Unit-level traceability
+
+## EPCIS 2.0 Event Types
+
+### ObjectEvent
+- **Purpose**: Single item actions (receive, ship, observe, destroy)
+- **Requirements**: what (EPC), when (timestamp), where (location), why (business step)
+
+### AggregationEvent
+- **Purpose**: Packaging hierarchy (pack/unpack)
+- **Usage**: Pallet → Case → Package → Serial Number
+- **Actions**: ADD (pack), DELETE (unpack), OBSERVE (verify)
+
+### TransformationEvent
+- **Purpose**: Manufacturing process (inputs → outputs)
+- **Usage**: Raw materials → finished products
+
+### AssociationEvent
+- **Purpose**: Item relationships
+- **Usage**: Product associations, component tracking
+
+## Event Requirements Checklist
+- [ ] **What**: Product identifier (GTIN, SGTIN, SSCC)
+- [ ] **When**: ISO 8601 timestamp
+- [ ] **Where**: Location GLN
+- [ ] **Why**: Business step (receiving, shipping, etc.) + disposition (in_progress, in_transit)
+- [ ] **Bizstep**: Valid EPCIS business step
+- [ ] **ReadPoint**: Physical location of event
+- [ ] **BizLocation**: Business location context
+
+# ====================================================================================
+# EXTERNAL INTEGRATIONS (Added: Dec 19, 2025)
+# ====================================================================================
+
+## PPB (Pharmacy & Poisons Board) APIs
+
+### Product Catalog API
+- **Purpose**: Sync product master data (registered products)
+- **Endpoint**: PPB_TERMINOLOGY_API_URL environment variable
+- **Authentication**: API key (PPB_TERMINOLOGY_API_KEY)
+- **Frequency**: Scheduled (daily) + on-demand
+- **Module**: modules/integration/ppb/
+
+### Premise Registry API
+- **Purpose**: Sync facility/premise registrations
+- **Endpoint**: PPB_UAT_API_URL environment variable
+- **Authentication**: API key (PPB_UAT_API_KEY)
+- **Frequency**: Scheduled (weekly) + on-demand
+- **Module**: modules/integration/ppb/
+
+## Safaricom HIE (Health Information Exchange)
+
+### UAT Facilities API
+- **Purpose**: Test environment facility master data
+- **Endpoint**: HIE_UAT_URL environment variable
+- **Authentication**: API key based
+- **Frequency**: Scheduled (weekly)
+- **Module**: modules/shared/master-data/
+
+### Prod Facilities API
+- **Purpose**: Production facility master data
+- **Endpoint**: HIE_PROD_URL environment variable
+- **Authentication**: API key based
+- **Frequency**: Scheduled (weekly)
+- **Module**: modules/shared/master-data/
+
+## FLMIS (Facility Logistics Management Information System)
+
+### Event Ingestion API
+- **Purpose**: Receive facility-level logistics events
+- **Events**: Receive, dispense, stock count, destruction
+- **Authentication**: Per-facility API keys
+- **Frequency**: Real-time push (future: webhooks)
+- **Module**: modules/integration/facility/
+- **Endpoint**: POST /api/integration/facility/events
+
+## Integration Best Practices
+- ALWAYS use environment variables for endpoints and credentials
+- NEVER hardcode API keys or URLs
+- Log all external API calls with request/response (exclude sensitive data)
+- Implement retry logic with exponential backoff
+- Cache API responses when appropriate
+- Handle rate limiting gracefully
+- Validate data received from external systems
+
+# ====================================================================================
+# TESTING STRATEGY (Added: Dec 19, 2025)
+# ====================================================================================
+
+## Unit Tests
+
+### File Naming
+- **Location**: Next to source file (e.g., `batch.service.spec.ts` next to `batch.service.ts`)
+- **Pattern**: `*.spec.ts`
+- **Framework**: Jest
+
+### Best Practices
+- Mock external dependencies (PPB API, EPCIS, database)
+- Test service logic in isolation
+- Test happy path + error scenarios
+- Use descriptive test names: `should create batch when valid data provided`
+- Minimum coverage: 0% (dev), 70% (staging), 80% (prod)
+
+### Example Structure
+```typescript
+describe('BatchService', () => {
+  let service: BatchService;
+  let mockRepository: MockType<Repository<Batch>>;
+
+  beforeEach(async () => {
+    // Setup mocks
+  });
+
+  describe('createBatch', () => {
+    it('should create batch when valid GTIN provided', async () => {
+      // Arrange, Act, Assert
+    });
+
+    it('should throw error when invalid GTIN provided', async () => {
+      // Test error handling
+    });
+  });
+});
+```
+
+## Integration Tests
+
+### Purpose
+- Test API endpoints end-to-end
+- Verify database operations
+- Test module interactions
+
+### Setup
+- Use test database (separate from dev)
+- Seed test data before tests
+- Clean up after tests
+- Mock external APIs (PPB, Safaricom)
+
+### Test Files
+- Location: `test/` directory
+- Pattern: `*.e2e-spec.ts`
+- Run with: `npm run test:e2e`
+
+## E2E Tests (Staging/Production only)
+
+### Critical User Journeys
+1. **Master Data Sync Flow**
+   - Trigger PPB product sync
+   - Verify data quality metrics
+   - Check audit records
+
+2. **Consignment Creation & Tracking**
+   - Create consignment via API
+   - Generate EPCIS events
+   - Track through supply chain
+
+3. **Batch Validation**
+   - Submit batch for PPB approval
+   - Verify approval workflow
+   - Check notifications
+
+4. **FLMIS Event Ingestion**
+   - Receive facility event
+   - Validate and enrich data
+   - Store in database
+
+## Load Testing (Staging/Production)
+
+### Staging
+- **Concurrent Users**: 100
+- **Duration**: 15 minutes
+- **Target**: < 2s response time
+- **Tool**: k6 or Artillery
+
+### Production
+- **Concurrent Users**: 1000
+- **Duration**: 30 minutes
+- **Target**: < 500ms response time
+- **Tool**: k6 or Artillery
+
+# ====================================================================================
+# MASTER DATA QUALITY SYSTEM (Added: Dec 19, 2025)
+# ====================================================================================
+
+## Quality Dimensions (4 automated metrics)
+
+### 1. Completeness (0-100%)
+- **Definition**: Percentage of required fields that are populated
+- **Calculation**: (populated_required_fields / total_required_fields) × 100
+- **Example**: Product with 8 out of 10 required fields = 80% complete
+- **Thresholds**: < 70% = Poor, 70-90% = Fair, > 90% = Good
+
+### 2. Validity (0-100%)
+- **Definition**: Percentage of fields that match expected format/values
+- **Validation**: Format, data type, enum values, regex patterns
+- **Example**: Valid GTIN format, valid email, valid phone number
+- **Thresholds**: < 80% = Poor, 80-95% = Fair, > 95% = Good
+
+### 3. Consistency (0-100%)
+- **Definition**: Cross-field validation passes
+- **Checks**: Related fields match, referential integrity, business rules
+- **Example**: Expiry date > manufacturing date, valid GLN for location
+- **Thresholds**: < 90% = Poor, 90-98% = Fair, > 98% = Good
+
+### 4. Timeliness (hours since last sync)
+- **Definition**: Data freshness indicator
+- **Calculation**: Current time - last_synced_at
+- **Example**: Data synced 2 hours ago = 2 hours
+- **Thresholds**: < 24h = Fresh, 24-168h = Stale, > 168h = Very Stale
+
+## Sync Strategies
+
+### Real-time (On-demand)
+- **Trigger**: User action (button click, API call)
+- **Use Case**: Immediate data needs, manual refresh
+- **Implementation**: Direct API call to external system
+- **Module**: Sync service methods
+
+### Scheduled (Automated)
+- **Trigger**: Cron job (daily, weekly)
+- **Use Case**: Bulk data refresh, background sync
+- **Implementation**: NestJS @Cron() decorators
+- **Module**: Scheduled tasks in master-data module
+
+### Webhook (Future)
+- **Trigger**: Push notification from external system
+- **Use Case**: Real-time updates from source
+- **Implementation**: Webhook endpoint + validation
+- **Module**: Integration module webhook handlers
+
+## Quality Audit Components
+
+### Generic Audit Tab
+- **Purpose**: Reusable component across all entity types
+- **Location**: `components/shared/GenericQualityAuditTab.tsx`
+- **Features**: 
+  - Displays 4 quality metrics with visual indicators
+  - Field-level issue highlighting
+  - Sync status and last sync time
+  - Manual sync trigger button
+
+### Field-level Highlighting
+- **Red**: Missing required field or invalid data
+- **Yellow**: Warning or potential issue
+- **Green**: Valid and complete data
+- **Gray**: Optional field, not populated
+
+### Sync Status Tracking
+- **Status**: success, partial_success, failed, pending
+- **Metadata**: Last sync time, record count, error messages
+- **Storage**: `master_data_sync_logs` table
+
+### Automated Quality Alerts
+- **Trigger**: Quality score drops below threshold
+- **Notification**: Email, in-app notification (future)
+- **Action**: Manual review required
+
+## Implementation Pattern
+
+### For New Master Data Entities
+1. Define quality audit configuration in `QUALITY_AUDIT_CONFIGS`
+2. Implement sync service with quality validation
+3. Add sync log entry after each sync
+4. Use `GenericQualityAuditTab` component in UI
+5. Schedule automated sync with @Cron()
+
+### Example Configuration
+```typescript
+export const QUALITY_AUDIT_CONFIGS = {
+  'Product': {
+    requiredFields: ['gtin', 'name', 'manufacturer'],
+    validationRules: {
+      gtin: (value) => validateGTIN(value),
+      email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    },
+    consistencyChecks: [
+      { fields: ['expiryDate', 'mfgDate'], rule: 'expiry > mfg' }
+    ]
+  }
+};
+```
+
+# ====================================================================================
+# PROJECT STRUCTURE & NAVIGATION (Added: Dec 19, 2025)
+# ====================================================================================
+
+## Key Directories
+
+### Backend (core-monolith/)
+```
+src/
+├── main.ts                              # Application entry point
+├── app.module.ts                        # Root module
+├── shared/
+│   ├── infrastructure/
+│   │   └── database/                    # Database config, migrations
+│   └── domain/
+│       └── entities/                    # TypeORM entities (follow naming standards!)
+└── modules/
+    ├── manufacturer/                    # Batch, consignment, shipment
+    │   ├── controllers/
+    │   ├── services/
+    │   └── dtos/
+    ├── regulator/                       # PPB oversight, analytics, recalls
+    ├── distributor/                     # Distribution, hierarchy management
+    ├── integration/                     # External API integrations
+    │   ├── ppb/                        # PPB API integration
+    │   ├── facility/                   # FLMIS integration
+    │   └── epcis/                      # EPCIS event service
+    └── shared/
+        └── master-data/                 # Product, premise, facility sync & quality
+```
+
+### Frontend (frontend/)
+```
+app/
+├── page.tsx                             # Homepage
+├── layout.tsx                           # Root layout
+├── regulator/                           # PPB module pages
+├── manufacturer/                        # Manufacturer module pages
+├── distributor/                         # Distributor module pages
+└── shared/                              # Shared pages
+
+components/
+├── shared/                              # Reusable components
+│   ├── GenericQualityAuditTab.tsx      # Quality audit component (use this!)
+│   └── ImprovedQualityAuditTab.tsx     # Enhanced audit component
+└── ui/                                  # shadcn/ui components
+
+lib/
+├── api/
+│   └── client.ts                        # API client (all API calls go through this)
+└── utils/                               # Utility functions
+```
+
+### Database
+```
+database/
+└── migrations/                          # SQL migration files
+    ├── V01__initial_schema.sql
+    ├── V02__Add_ILMD_And_Clinical_Data_Support.sql
+    ├── V03__Normalize_Parties_Eliminate_ppb_batches_Redundancy.sql
+    └── V05__Complete_Parties_Object_Persistence.sql
+```
+
+## Important Files to Reference
+
+### Documentation (ALWAYS START HERE)
+- `DOCUMENTATION_INDEX.md` - Complete documentation navigation
+- `ARCHITECTURE.md` - System architecture
+- `DATA_PERSISTENCE_ANALYSIS.md` - Database schema details
+- `NFR_MATRIX.md` - Non-functional requirements
+
+### Code Examples (Follow These Patterns)
+- `core-monolith/src/shared/domain/entities/epcis-event.entity.ts` - Gold standard entity
+- `core-monolith/src/shared/domain/entities/facility-inventory.entity.ts` - Gold standard entity
+- `core-monolith/src/modules/shared/master-data/generic-quality-audit-enrichment.service.ts` - Quality system
+- `frontend/components/shared/GenericQualityAuditTab.tsx` - Quality UI component
+
+### Configuration
+- `docker-compose.dev.yml` - Development environment
+- `docker-compose.staging.yml` - Staging environment
+- `docker-compose.production.yml` - Production environment
+- `.env.*.template` - Environment variable templates
+
+# ====================================================================================
+# BEFORE CREATING NEW FEATURES - CHECKLIST (Added: Dec 19, 2025)
+# ====================================================================================
+
+## New Database Table?
+- [ ] Use snake_case for column names
+- [ ] Use camelCase for entity properties
+- [ ] Add @Column({ name: 'snake_name' }) mapping
+- [ ] Create migration file (V0X__Description.sql)
+- [ ] Test migration on copy of prod data
+- [ ] Follow epcis-event.entity.ts pattern
+
+## New External Integration?
+- [ ] Add to integration module
+- [ ] Use API key authentication via environment variables
+- [ ] Implement retry logic with exponential backoff
+- [ ] Log all external API calls (exclude sensitive data)
+- [ ] Mock in tests
+- [ ] Document in README
+
+## New Master Data Entity?
+- [ ] Implement 4 quality dimensions (completeness, validity, consistency, timeliness)
+- [ ] Add quality audit configuration to QUALITY_AUDIT_CONFIGS
+- [ ] Create sync service (real-time + scheduled)
+- [ ] Add sync log entries
+- [ ] Use GenericQualityAuditTab component in UI
+- [ ] Schedule automated sync with @Cron()
+
+## EPCIS Event?
+- [ ] Follow GS1 standards (GTIN, GLN, SSCC formats)
+- [ ] Validate event structure (what, when, where, why)
+- [ ] Include business step and disposition
+- [ ] Test with OpenEPCIS API
+- [ ] Document event type and usage
+
+## User-Facing Feature?
+- [ ] Determine module (regulator, manufacturer, distributor)
+- [ ] Create DTOs with validation decorators
+- [ ] Implement service logic with error handling
+- [ ] Add Swagger documentation (@ApiOperation, @ApiResponse)
+- [ ] Create frontend page/component
+- [ ] Add to appropriate module navbar
+- [ ] Write unit tests (70-80% coverage for staging/prod)
+
+# ====================================================================================
+# DEBUGGING & TROUBLESHOOTING (Added: Dec 19, 2025)
+# ====================================================================================
+
+## Common Issues & Solutions
+
+### Database Connection Errors
+**Symptom**: `ECONNREFUSED 127.0.0.1:5432` or `password authentication failed`
+**Check**:
+1. Environment variables: `DATABASE_URL` or `DB_HOST`, `DB_PASSWORD`
+2. Docker container status: `docker ps`
+3. PostgreSQL logs: `docker logs kenya-tnt-postgres`
+**Fix**: Verify environment variables match docker-compose.yml
+
+### Build Failures
+**Symptom**: Docker build fails, npm install errors
+**Check**:
+1. Disk space: `df -h`
+2. Docker cache: `docker system df`
+3. node_modules: May be corrupted
+**Fix**: 
+```bash
+rm -rf node_modules package-lock.json
+npm install
+docker system prune -a
+```
+
+### Port Conflicts
+**Symptom**: `Port 4000 already in use`
+**Check**: `lsof -i :4000` or `docker ps`
+**Fix**: 
+```bash
+docker stop $(docker ps -q)  # Stop all containers
+# Or kill process: kill -9 <PID>
+```
+
+### CORS Errors
+**Symptom**: `CORS policy: No 'Access-Control-Allow-Origin' header`
+**Check**: Backend `CORS_ORIGIN` environment variable
+**Fix**: Set `CORS_ORIGIN=*` for dev, specific domain for prod
+
+### Frontend API Connection Errors
+**Symptom**: `Failed to fetch`, `NetworkError`
+**Check**: 
+1. Backend running: `curl http://localhost:4000/api/health`
+2. `NEXT_PUBLIC_API_BASE_URL` matches backend URL
+3. Browser console for actual error
+**Fix**: Verify environment variable and backend availability
+
+## Logging Best Practices
+
+### Backend (NestJS)
+```typescript
+// ✅ Good: Use NestJS Logger
+import { Logger } from '@nestjs/common';
+const logger = new Logger('BatchService');
+logger.log('[createBatch] Creating batch for GTIN: 12345');
+logger.error('[createBatch] Failed to create batch', error.stack);
+
+// ❌ Bad: console.log
+console.log('Creating batch');  // Don't do this!
+```
+
+### Log Levels by Environment
+- **Development**: `debug` or `verbose` - Log everything
+- **Staging**: `log` - Standard operations
+- **Production**: `error` - Only errors and critical issues
+
+### What NOT to Log
+- ❌ Passwords
+- ❌ API keys or tokens
+- ❌ JWT tokens
+- ❌ Personal Identifiable Information (PII)
+- ❌ Credit card numbers
+
+---
+
+**Last Updated**: December 19, 2025
+**Version**: 2.0
+**Status**: Comprehensive project rules for Kenya TNT System
+

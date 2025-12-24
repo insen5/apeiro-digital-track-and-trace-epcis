@@ -13,7 +13,7 @@ import { Case } from './case.entity';
 import { User } from './user.entity';
 
 @Entity('packages')
-@Unique(['userId', 'eventId'])
+@Unique(['user_id', 'event_id'])
 export class Package extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -21,11 +21,11 @@ export class Package extends BaseEntity {
   @Column()
   label: string;
 
-  @Column({ name: 'shipmentId' })
-  shipmentId: number;
+  @Column()
+  shipment_id: number;
 
   @ManyToOne(() => Shipment, (shipment) => shipment.packages)
-  @JoinColumn({ name: 'shipmentId' })
+  @JoinColumn({ name: 'shipment_id' })
   shipment: Shipment;
 
   @OneToMany(() => Case, (cases) => cases.package, {
@@ -33,29 +33,29 @@ export class Package extends BaseEntity {
   })
   cases: Case[];
 
-  @Column({ name: 'userId', type: 'uuid' })
-  userId: string;
+  @Column({ type: 'uuid' })
+  user_id: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ name: 'eventId', nullable: true })
-  eventId?: string;
+  @Column({ nullable: true })
+  event_id?: string;
 
-  @Column({ name: 'isDispatched', default: false })
-  isDispatched: boolean;
+  @Column({ default: false })
+  is_dispatched: boolean;
 
   @Column({ nullable: true, name: 'sscc_barcode' })
-  ssccBarcode?: string;
+  sscc_barcode?: string;
 
   @Column({ nullable: true, name: 'sscc_generated_at', type: 'timestamp' })
-  ssccGeneratedAt?: Date;
+  sscc_generated_at?: Date;
 
   @Column({ nullable: true, name: 'previous_sscc' })
-  previousSscc?: string;
+  previous_sscc?: string;
 
   @Column({ nullable: true, name: 'reassigned_at', type: 'timestamp' })
-  reassignedAt?: Date;
+  reassigned_at?: Date;
 }
 

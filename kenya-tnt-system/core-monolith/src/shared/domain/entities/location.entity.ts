@@ -60,3 +60,7 @@ export class Location extends BaseEntity {
   @Column({ nullable: true, length: 2 })
   country?: string;
 }
+
+
+
+

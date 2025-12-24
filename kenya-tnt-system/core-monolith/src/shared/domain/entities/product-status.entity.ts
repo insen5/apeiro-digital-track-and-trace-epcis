@@ -11,25 +11,25 @@ import { Batch } from './batch.entity';
 import { PPBProduct } from './ppb-product.entity';
 
 @Entity('product_status')
-@Index(['productId'])
-@Index(['batchId'])
+@Index(['product_id'])
+@Index(['batch_id'])
 @Index(['sgtin'])
 @Index(['status'])
-@Index(['statusDate'])
-@Index(['actorUserId'])
+@Index(['status_date'])
+@Index(['actor_user_id'])
 export class ProductStatus {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'product_id', nullable: true })
-  productId?: number;
+  @Column({ nullable: true })
+  product_id?: number;
 
   @ManyToOne(() => PPBProduct, { nullable: true })
   @JoinColumn({ name: 'product_id' })
   product?: PPBProduct;
 
-  @Column({ name: 'batch_id', nullable: true })
-  batchId?: number;
+  @Column({ nullable: true })
+  batch_id?: number;
 
   @ManyToOne(() => Batch, { nullable: true })
   @JoinColumn({ name: 'batch_id' })
@@ -41,27 +41,27 @@ export class ProductStatus {
   @Column()
   status: string; // 'ACTIVE', 'LOST', 'STOLEN', 'DAMAGED', 'SAMPLE', 'EXPORT', 'DISPENSING'
 
-  @Column({ name: 'previous_status', nullable: true })
-  previousStatus?: string; // Previous status for history
+  @Column({ nullable: true })
+  previous_status?: string; // Previous status for history
 
-  @Column({ name: 'status_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  statusDate: Date;
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  status_date: Date;
 
-  @Column({ name: 'actor_user_id', type: 'uuid' })
-  actorUserId: string;
+  @Column({ type: 'uuid' })
+  actor_user_id: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'actor_user_id' })
   actor?: User;
 
-  @Column({ name: 'actor_type', nullable: true })
-  actorType?: string; // 'manufacturer', 'supplier', 'facility'
+  @Column({ nullable: true })
+  actor_type?: string; // 'manufacturer', 'supplier', 'facility'
 
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  created_at: Date;
 }
 
 

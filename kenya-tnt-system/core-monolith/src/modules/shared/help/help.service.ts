@@ -94,7 +94,7 @@ export class HelpService {
     if (existing) {
       // Update
       Object.assign(existing, data);
-      existing.updatedAt = new Date();
+      existing.updated_at = new Date();
       return this.helpRepo.save(existing);
     } else {
       // Create

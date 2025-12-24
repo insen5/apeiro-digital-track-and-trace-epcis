@@ -41,10 +41,10 @@ export class RecallRequest extends BaseEntity {
   transporter: string;
 
   @Column()
-  pickupLocation: string;
+  pickup_location: string;
 
   @Column({ type: 'date' })
-  pickupDate: Date;
+  pickup_date: Date;
 
   @Column()
   deliveryLocation: string;

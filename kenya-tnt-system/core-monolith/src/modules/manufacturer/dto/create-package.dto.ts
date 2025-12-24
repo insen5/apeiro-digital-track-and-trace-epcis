@@ -11,6 +11,6 @@ export class CreatePackageDto {
   @IsArray()
   @IsNumber({}, { each: true })
   @IsNotEmpty()
-  caseIds: number[];
+  case_ids: number[];
 }
 

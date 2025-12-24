@@ -70,7 +70,7 @@ export interface AggregationEvent {
   eventID: string; // UUID format: urn:uuid:...
   type: 'AggregationEvent';
   eventTime: string; // ISO 8601 timestamp
-  eventTimeZoneOffset: string; // e.g., '+04:00'
+  event_time_zone_offset: string; // e.g., '+04:00'
   parentID: string; // EPC URI
   childEPCs: string[]; // Array of EPC URIs
   action: 'ADD' | 'DELETE' | 'OBSERVE';
@@ -90,7 +90,7 @@ export interface ObjectEvent {
   eventID: string;
   type: 'ObjectEvent';
   eventTime: string;
-  eventTimeZoneOffset: string;
+  event_time_zone_offset: string;
   epcList: string[]; // Array of EPC URIs
   action: 'ADD' | 'DELETE' | 'OBSERVE';
   bizStep?: string;

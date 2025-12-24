@@ -474,58 +474,7 @@ export default function DataQualityTab() {
           <h2 className="text-xl font-bold text-gray-900">Data Validity</h2>
         </div>
 
-        {/* License Status Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="p-5 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <div className="text-sm font-medium text-green-800">Valid Licenses</div>
-            </div>
-            <div className="text-3xl font-bold text-green-600 mb-1">
-              {report.validity.validLicenses}
-            </div>
-            <div className="text-sm text-green-700">
-              {((report.validity.validLicenses / report.overview.totalPremises) * 100).toFixed(1)}% of total premises
-            </div>
-            <div className="text-xs text-green-600 mt-2">
-              License expires &gt; 30 days from now
-            </div>
-          </div>
-
-          <div className="p-5 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <AlertTriangle className="w-6 h-6 text-yellow-600" />
-              <div className="text-sm font-medium text-yellow-800">Expiring Soon</div>
-            </div>
-            <div className="text-3xl font-bold text-yellow-600 mb-1">
-              {report.validity.expiringSoon}
-            </div>
-            <div className="text-sm text-yellow-700">
-              {((report.validity.expiringSoon / report.overview.totalPremises) * 100).toFixed(1)}% of total premises
-            </div>
-            <div className="text-xs text-yellow-600 mt-2">
-              License expires within 30 days
-            </div>
-          </div>
-
-          <div className="p-5 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <XCircle className="w-6 h-6 text-red-600" />
-              <div className="text-sm font-medium text-red-800">Expired Licenses</div>
-            </div>
-            <div className="text-3xl font-bold text-red-600 mb-1">
-              {report.validity.expiredLicenses}
-            </div>
-            <div className="text-sm text-red-700">
-              {((report.validity.expiredLicenses / report.overview.totalPremises) * 100).toFixed(1)}% of total premises
-            </div>
-            <div className="text-xs text-red-600 mt-2">
-              ⚠️ Requires immediate renewal
-            </div>
-          </div>
-        </div>
-
-        {/* Data Integrity Issues */}
+        {/* Data Integrity Issues - Real validity metrics only */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className={`p-4 rounded-lg border ${report.validity.duplicatePremiseIds > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
             <div className="text-xs font-medium text-gray-600 mb-2">Duplicate Premise IDs</div>
@@ -544,16 +493,6 @@ export default function DataQualityTab() {
             </div>
             <div className="text-xs text-gray-500 mt-1">
               GS1 format validation
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-lg border ${report.validity.invalidDates > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
-            <div className="text-xs font-medium text-gray-600 mb-2">Invalid Dates</div>
-            <div className={`text-2xl font-bold ${report.validity.invalidDates > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {report.validity.invalidDates}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              Date format issues
             </div>
           </div>
         </div>

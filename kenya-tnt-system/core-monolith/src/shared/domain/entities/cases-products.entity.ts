@@ -14,32 +14,32 @@ export class CasesProducts {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'caseId' })
-  caseId: number;
+  @Column()
+  case_id: number;
 
   @ManyToOne(() => Case, (cases) => cases.products)
-  @JoinColumn({ name: 'caseId' })
+  @JoinColumn({ name: 'case_id' })
   case: Case;
 
-  @Column({ name: 'productId' })
-  productId: number;
+  @Column()
+  product_id: number;
 
   @ManyToOne(() => PPBProduct)
-  @JoinColumn({ name: 'productId' })
+  @JoinColumn({ name: 'product_id' })
   product: PPBProduct;
 
-  @Column({ name: 'batchId' })
-  batchId: number;
+  @Column()
+  batch_id: number;
 
   @ManyToOne(() => Batch)
-  @JoinColumn({ name: 'batchId' })
+  @JoinColumn({ name: 'batch_id' })
   batch: Batch;
 
   @Column('decimal', { precision: 15, scale: 2 }) // FIXED: NUMERIC instead of VARCHAR
   qty: number;
 
-  @Column({ name: 'fromNumber' })
-  fromNumber: number;
+  @Column()
+  from_number: number;
 
   @Column()
   count: number;

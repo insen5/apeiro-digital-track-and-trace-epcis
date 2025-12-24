@@ -6,11 +6,11 @@ export class PackDto {
   @IsArray()
   @ArrayMinSize(1)
   @IsNumber({}, { each: true })
-  caseIds: number[];
+  case_ids: number[];
 
   @ApiProperty({ description: 'Shipment ID for the new package' })
   @IsNumber()
-  shipmentId: number;
+  shipment_id: number;
 
   @ApiProperty({ description: 'Label for the new package', required: false })
   @IsOptional()
@@ -25,12 +25,12 @@ export class PackDto {
 
 export class PackLiteDto extends PackDto {
   @ApiProperty({ description: 'Indicates this is a lite (small) pack operation' })
-  packType: 'LITE' = 'LITE';
+  pack_type: 'LITE' = 'LITE';
 }
 
 export class PackLargeDto extends PackDto {
   @ApiProperty({ description: 'Indicates this is a large pack operation' })
-  packType: 'LARGE' = 'LARGE';
+  pack_type: 'LARGE' = 'LARGE';
 }
 
 export class UnpackAllDto {
@@ -38,7 +38,7 @@ export class UnpackAllDto {
   @IsArray()
   @ArrayMinSize(1)
   @IsNumber({}, { each: true })
-  packageIds: number[];
+  package_ids: number[];
 
   @ApiProperty({ description: 'Notes for this unpack operation', required: false })
   @IsOptional()

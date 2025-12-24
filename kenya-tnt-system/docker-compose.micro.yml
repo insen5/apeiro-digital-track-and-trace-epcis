@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # POSTGRES DATABASE (Kenya TNT) - Optimized for 1GB RAM
+  # ============================================
+  postgres:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: kenya-tnt-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kenya_tnt_db}
+      POSTGRES_USER: ${POSTGRES_USER:-tnt_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tnt_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./core-monolith/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    command: 
+      - "postgres"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "max_connections=50"
+      - "-c"
+      - "work_mem=4MB"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tnt_user} -d ${POSTGRES_DB:-kenya_tnt_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tnt-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ============================================
+  # BACKEND API (NestJS) - Optimized
+  # ============================================
+  backend:
+    build:
+      context: ./core-monolith
+      dockerfile: Dockerfile
+    container_name: kenya-tnt-backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tnt_user}:${POSTGRES_PASSWORD:-tnt_password}@postgres:5432/${POSTGRES_DB:-kenya_tnt_db}
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tnt-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    command: ["node", "dist/main.js"]
+
+  # ============================================
+  # FRONTEND (Next.js) - Optimized
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: kenya-tnt-frontend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - backend
+    networks:
+      - tnt-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+networks:
+  tnt-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+

@@ -211,7 +211,7 @@ export class GS1ParserService {
     }
 
     // Extract Serial Number (21)
-    match = data.match(patternsWithParens.serialNumber) || data.match(patternsWithoutParens.serialNumber);
+    match = data.match(patternsWithParens.serial_number) || data.match(patternsWithoutParens.serial_number);
     if (match) {
       const warnings: string[] = [];
       result.serial_number = this.validateFieldLength(match[1].trim(), '21', warnings);

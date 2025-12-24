@@ -13,7 +13,7 @@ export class QualityAlertService {
    * Check quality score and trigger alerts if needed
    */
   async checkAndAlert(
-    entityType: string,
+    entity_type: string,
     score: number,
     metadata: {
       totalRecords: number;
@@ -155,7 +155,7 @@ export class QualityAlertService {
    * Build email content
    */
   private buildEmailContent(
-    entityType: string,
+    entity_type: string,
     score: number,
     severity: string,
     metadata: any

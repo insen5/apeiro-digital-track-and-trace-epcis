@@ -30,3 +30,7 @@ export class SupplierRole {
   @Column({ type: 'varchar', length: 50 })
   role: string; // e.g., "National Distributor", "Wholesaler", "Importer"
 }
+
+
+
+

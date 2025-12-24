@@ -1,0 +1,13 @@
+# Override file to avoid port conflicts with FLMIS
+# TNT Postgres: 5433 (FLMIS uses 5432)
+# EPCIS Service: 8084 (FLMIS backend uses 8080)
+
+services:
+  postgres:
+    ports:
+      - "5433:5432"
+
+  epcis-service:
+    ports:
+      - "8084:8080"
+

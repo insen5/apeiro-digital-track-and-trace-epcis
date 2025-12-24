@@ -13,41 +13,41 @@ import { EPCISEventDestination } from './epcis-event-destination.entity';
 import { EPCISEventSensor } from './epcis-event-sensor.entity';
 
 @Entity('epcis_events')
-@Index(['eventTime'])
-@Index(['parentId'])
-@Index(['bizStep'])
-@Index(['eventType'])
-@Index(['actorType'])
-@Index(['actorUserId'])
-@Index(['actorGLN'])
+@Index(['event_time'])
+@Index(['parent_id'])
+@Index(['biz_step'])
+@Index(['event_type'])
+@Index(['actor_type'])
+@Index(['actor_user_id'])
+@Index(['actor_gln'])
 @Index(['action'])
 export class EPCISEvent {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'event_id', unique: true })
-  eventId: string;
+  @Column({ unique: true })
+  event_id: string;
 
-  @Column({ name: 'event_type' })
-  eventType: string; // 'AggregationEvent', 'ObjectEvent', etc.
+  @Column()
+  event_type: string; // 'AggregationEvent', 'ObjectEvent', etc.
 
-  @Column({ name: 'parent_id', nullable: true })
-  parentId?: string;
+  @Column({ nullable: true })
+  parent_id?: string;
 
-  @Column({ name: 'biz_step', nullable: true })
-  bizStep?: string;
+  @Column({ nullable: true })
+  biz_step?: string;
 
   @Column({ nullable: true })
   disposition?: string;
 
-  @Column({ name: 'event_time', type: 'timestamp' })
-  eventTime: Date;
+  @Column({ type: 'timestamp' })
+  event_time: Date;
 
-  @Column({ name: 'read_point_id', nullable: true })
-  readPointId?: string;
+  @Column({ nullable: true })
+  read_point_id?: string;
 
-  @Column({ name: 'biz_location_id', nullable: true })
-  bizLocationId?: string;
+  @Column({ nullable: true })
+  biz_location_id?: string;
 
   @Column('decimal', { precision: 10, scale: 8, nullable: true })
   latitude?: number;
@@ -59,41 +59,41 @@ export class EPCISEvent {
   @Column({ nullable: true })
   action?: 'ADD' | 'DELETE' | 'OBSERVE';
 
-  @Column({ name: 'event_timezone_offset', nullable: true })
-  eventTimeZoneOffset?: string; // e.g., '+04:00'
+  @Column({ nullable: true })
+  event_timezone_offset?: string; // e.g., '+04:00'
 
   // Error declaration (1.2 and 2.0)
-  @Column({ name: 'error_declaration_time', nullable: true })
-  errorDeclarationTime?: Date;
+  @Column({ nullable: true })
+  error_declaration_time?: Date;
 
-  @Column({ name: 'error_declaration_reason', nullable: true })
-  errorDeclarationReason?: string;
+  @Column({ nullable: true })
+  error_declaration_reason?: string;
 
-  @Column({ name: 'error_corrective_event_ids', type: 'text', array: true, nullable: true })
-  errorCorrectiveEventIds?: string[];
+  @Column({ type: 'text', array: true, nullable: true })
+  error_corrective_event_ids?: string[];
 
   // Actor context (P0 - Critical for L5 TNT)
-  @Column({ name: 'actor_type', nullable: true })
-  actorType?: string;
+  @Column({ nullable: true })
+  actor_type?: string;
 
-  @Column({ name: 'actor_user_id', type: 'uuid', nullable: true })
-  actorUserId?: string;
+  @Column({ type: 'uuid', nullable: true })
+  actor_user_id?: string;
 
-  @Column({ name: 'actor_gln', nullable: true })
-  actorGLN?: string;
+  @Column({ nullable: true })
+  actor_gln?: string;
 
-  @Column({ name: 'actor_organization', nullable: true })
-  actorOrganization?: string;
+  @Column({ nullable: true })
+  actor_organization?: string;
 
   // Source entity tracking
-  @Column({ name: 'source_entity_type', nullable: true })
-  sourceEntityType?: string;
+  @Column({ nullable: true })
+  source_entity_type?: string;
 
-  @Column({ name: 'source_entity_id', nullable: true })
-  sourceEntityId?: number;
+  @Column({ nullable: true })
+  source_entity_id?: number;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  created_at: Date;
 
   // Relationships
   // Temporarily commented out to fix column mapping issue in getConsignmentFlow
